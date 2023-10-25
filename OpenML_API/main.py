@@ -1,3 +1,7 @@
+# Autor: Florian Merlau
+# Description: This file is used to test the OpenML_API class
+# Version: 0.0.5
+
 from OpenML_API import OpenML_API
 
 def main():

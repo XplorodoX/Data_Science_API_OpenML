@@ -1,3 +1,7 @@
+# Autor: Florian Merlau
+# Description: This file contains the OpenML_API class, which is used to access the OpenML API
+# Version: 0.1
+
 import openml
 
 class OpenML_API:
