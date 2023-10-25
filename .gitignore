@@ -11,7 +11,9 @@ dist/
 # Compiled Java class files
 *.class
 
-.vscode/
+__pycache__/
+
+vscode/
 
 # Compiled Python bytecode
 *.py[cod]
