@@ -12,24 +12,22 @@ app = dash.Dash(external_stylesheets=[dbc.themes.COSMO])
 @app.callback(
     Output('results_table', 'data'),
     [Input('search_button', 'n_clicks')],
-    [State('limit_input', 'value')]
+    [State('date_range', 'start_date'),
+     State('date_range', 'end_date'),
+     State('number_of_attributes_slider1', 'value'),
+     State('number_of_attributes_slider2', 'value'),
+     State('limit_input', 'value')]
 )
 
-def update_table(n_clicks, limit):
+def update_table(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
     if n_clicks is None:
         return []
 
     try:
         api = OpenML_API()
-        datasets, not_maatching_count = api.filter_datasets_by_attribute_types(limit)
-
-        # Umwandeln der Ergebnisse in ein Format, das von Dash DataTable unterstützt wird
-        data_for_table = [{
-            'name': dataset_name,
-            'features': ", ".join(features)
-        } for dataset_name, features in datasets]
-
-        return data_for_table
+        # Erweitern Sie diese Methode, um die neuen Filterkriterien zu berücksichtigen
+        datasets = api.filter_datasets_by_attribute_types(start_date, end_date, num_attributes_range, num_features_range, limit)
+        return pd.DataFrame(datasets).to_dict('records')
     except Exception as e:
         print(f"Fehler beim Abrufen von OpenML-Daten: {e}")
         return []
