@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import openml
 
 class OpenML_API:
@@ -25,37 +27,36 @@ class OpenML_API:
         except Exception as e:
             self.logger.error(f"Fehler beim Herunterladen des Datensatzes {dataset_id}: {e}")
             raise
-    
-    def filter_datasets_by_attribute_types(self, attribute_types, start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=None, require_all=True):
-        if not isinstance(attribute_types, list):
-            attribute_types = [attribute_types]
-        
+
+    def filter_datasets_by_attribute_types(self, start_date=None, end_date=None, num_attributes_range=None,
+                                           num_features_range=None, limit=None):
         datasets_list = self.list_datasets()
         dataset_ids = datasets_list['did'].tolist()
-        filtered_dataset_names = []
+        filtered_datasets = []
         not_matching_count = 0
 
+        if start_date and end_date and start_date > end_date:
+            raise ValueError("Startdatum muss vor dem Enddatum liegen.")
+
         for dataset_id in dataset_ids:
-            dataset = self.get_dataset(dataset_id)
-            try:
-                # Überprüfen der Attributtypen
-                if require_all:
-                    matches = all(dataset.get_features_by_type(data_type=attr_type) for attr_type in attribute_types)
-                else:
-                    matches = any(dataset.get_features_by_type(data_type=attr_type) for attr_type in attribute_types)
-
-                # Zusätzliche Filterlogik hier einfügen
-                # z.B. Überprüfung des Datumsbereichs, der Anzahl der Datenpunkte und der Anzahl der Features
-
-                if matches:
-                    features = dataset.features
-                    # Weitere Informationen aus dem Datensatz extrahieren, wie z.B. das Erstellungsdatum
-                    filtered_dataset_names.append((dataset.name, features))
-            except Exception as e:
-                print(f"Fehler beim Verarbeiten des Datensatzes {dataset_id}: {e}")
-                matches = False
-
-            if limit and len(filtered_dataset_names) >= limit:
+            if limit is not None and limit <= 0:
                 break
 
-        return filtered_dataset_names, not_matching_count
+            try:
+                dataset = self.get_dataset(dataset_id)
+                dataset_features = dataset.features
+                dataset_date = dataset.upload_date
+
+                if (not start_date or start_date < dataset_date) and (not end_date or end_date > dataset_date):
+
+                    filtered_datasets.append((dataset_id, dataset.name))
+
+                    if limit is not None:
+                        limit -= 1
+                else:
+                    not_matching_count += 1
+
+            except Exception as e:
+                print(f"Fehler bei der Verarbeitung des Datensatzes {dataset_id}: {e}")
+
+        return filtered_datasets, not_matching_count

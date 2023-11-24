@@ -5,7 +5,6 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc, dash_table
 from dash.dependencies import Input, Output, State
 import pandas as pd
-import openml
 
 app = dash.Dash(external_stylesheets=[dbc.themes.COSMO])
 
@@ -118,7 +117,7 @@ app.layout = dbc.Container([
 
             #Limiter für Anzahl Datensätze
             dbc.Label("Max Datensätze"),
-            dbc.Input(id='limit_input', type='number', value=100),
+            dbc.Input(id='limit_input', type='number', value=10),
             html.Br(),
             dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
         ], width=4),

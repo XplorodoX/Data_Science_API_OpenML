@@ -5,3 +5,4 @@ plotly
 pandas
 openml
 requests
+dash_bootstrap_components
