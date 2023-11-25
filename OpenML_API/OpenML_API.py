@@ -28,6 +28,7 @@ class OpenML_API:
             self.logger.error(f"Fehler beim Herunterladen des Datensatzes {dataset_id}: {e}")
             raise
 
+    # TODO: Filtern nach Anzahl der Features
     def filter_datasets_by_attribute_types(self, start_date=None, end_date=None, num_attributes_range=None,
                                            num_features_range=None, limit=None):
         datasets_list = self.list_datasets()

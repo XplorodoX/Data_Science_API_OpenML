@@ -18,6 +18,7 @@ app = dash.Dash(external_stylesheets=[dbc.themes.COSMO])
      State('limit_input', 'value')]
 )
 
+# TODO Erweitern Sie diese Methode, um die neuen Filterkriterien zu berücksichtigen + Lister der Datasets einzubinden in eine Liste
 def update_table(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
     if n_clicks is None:
         return []

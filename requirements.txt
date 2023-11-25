@@ -1,8 +1,8 @@
 dash
+dash_bootstrap_components
 dash-core-components
 dash-html-components
 plotly
 pandas
 openml
 requests
-dash_bootstrap_components
