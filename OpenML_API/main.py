@@ -1,4 +1,5 @@
 import time
+
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
@@ -71,13 +72,6 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
                         "border-radius": "5px",  # Abgerundete Ecken
                         "box-shadow": "0 2px 2px rgba(0,0,0,0.1)"  # Schatten für Tiefe
                     },
-                ),
-                html.Div(
-                    [
-                        dbc.Button("Datensatz herunterladen", id=f"download_button_{idx}", color="success", className="mr-2"),
-                        dbc.Button("Zur Webseite", id=f"webpage_button_{idx}", color="primary")
-                    ],
-                    className="d-flex justify-content-end"
                 )
             ]
         )
@@ -89,42 +83,6 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
         list_group_items.append(collapse)
 
     return list_group_items
-
-
-# Wenn ein "Datensatz herunterladen" Button geklickt wird, könntest du die Logik zum Herunterladen implementieren.
-# Ebenso könntest du die Logik zum Weiterleiten auf eine Webseite implementieren, wenn der "Zur Webseite" Button geklickt wird.
-# Hier sind Platzhalter-Funktionen für beide Aktionen:
-
-@app.callback(
-    Output('output', 'children'),  # Hier könntest du eine Bestätigungsnachricht anzeigen
-    [Input(f'download_button_{idx}', 'n_clicks') for idx in range(1, 11)]
-)
-def download_dataset(*args):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return ""
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    dataset_index = int(button_id.split('_')[-1])
-
-    # Hier kannst du die Logik zum Herunterladen des Datensatzes implementieren, z.B. mit Flask-Download-Link oder einer anderen Methode.
-    return f"Datensatz {dataset_index} wurde heruntergeladen."
-
-
-@app.callback(
-    Output('webpage_redirect', 'href'),  # Hier leitest du auf die gewünschte Webseite weiter
-    [Input(f'webpage_button_{idx}', 'n_clicks') for idx in range(1, 11)]
-)
-def redirect_to_webpage(*args):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return "/"
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    dataset_index = int(button_id.split('_')[-1])
-
-    # Hier kannst du die Logik implementieren, um auf die gewünschte Webseite weiterzuleiten.
-    # Zum Beispiel mit dash.redirect() oder einem ähnlichen Ansatz.
-    return "/ziel-webseite"  # Ändere "/ziel-webseite" in die tatsächliche Ziel-URL.
-
 
 # Callback für das Umschalten der Collapse-Komponenten
 @app.callback(
