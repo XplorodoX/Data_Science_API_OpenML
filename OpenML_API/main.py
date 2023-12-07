@@ -48,7 +48,7 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
                 html.Div(
                     [
                         html.H5(f"{dataset['name']}", className="mb-1"),
-                        html.Small("Click to view details", className="text-secondary"),
+                        html.Small(f"Anzahl der Features: {dataset['NumberOfAttributes']}", className="text-secondary"),
                         html.P("Weitere Informationen hier...")
                     ],
                     className="d-flex w-100 justify-content-between",
@@ -96,52 +96,65 @@ def toggle_collapse(n_clicks, is_open):
 
     return new_is_open
 
+
 # Hinzufügen der Filter- und Listenkomponenten zum Layout
 app.layout = dbc.Container([
     html.H1("OpenML Datensatzsuche"),
     dbc.Row([
         dbc.Col([
-            # Filter für Datum
-            dbc.Label("Datum"),
-            dcc.DatePickerRange(
-                id='date_range',
-                start_date=datetime.now() - timedelta(30),  # Startdatum auf 30 Tage zurückgesetzt
-                end_date=datetime.now(),  # Heutiges Datum als Enddatum
-                min_date_allowed=datetime(2000, 1, 1),  # Mindestdatum
-                max_date_allowed=datetime.now(),  # Maximaldatum
-                display_format='DD.MM.YYYY',
-                initial_visible_month=datetime.now(),  # Initial sichtbarer Monat
-            ),
-            html.Br(),
+            dbc.Card([
+                dbc.CardHeader("Filter"),
+                dbc.CardBody([
+                    html.Div([
+                        dbc.Label("Datum"),
+                        dcc.DatePickerRange(
+                            id='date_range',
+                            start_date=datetime.now() - timedelta(30),
+                            end_date=datetime.now(),
+                            min_date_allowed=datetime(2000, 1, 1),
+                            max_date_allowed=datetime.now(),
+                            display_format='DD.MM.YYYY',
+                            initial_visible_month=datetime.now()
+                        )
+                    ]),
 
-            # Filter für Anzahl der Attribute und Features (Slider)
-            dbc.Label("Anzahl der Attribute (Slider 1)"),
-            dcc.RangeSlider(
-                id='number_of_attributes_slider1',
-                min=0, max=100, step=1, value=[0, 100],
-                marks={i: str(i) for i in range(0, 101, 10)}
-            ),
-            html.Br(),
+                    # Maximalwert für Attribute
+                    html.Div([
+                        dbc.Label("Maximalwert für Anzahl der Attribute"),
+                        dbc.Input(id='max_attributes_input', type='number', value=100)
+                    ]),
+                    html.Br(),
 
-            dbc.Label("Anzahl der Features (Slider 2)"),
-            dcc.RangeSlider(
-                id='number_of_attributes_slider2',
-                min=0, max=100, step=1, value=[0, 100],
-                marks={i: str(i) for i in range(0, 101, 10)}
-            ),
-            html.Br(),
-
-            # Limiter für Anzahl Datensätze
-            dbc.Label("Max Datensätze"),
-            dbc.Input(id='limit_input', type='number', value=10),
-            html.Br(),
-            dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
+                    html.Div([
+                        dbc.Label("Anzahl der Attribute (Slider 1)"),
+                        dcc.RangeSlider(
+                            id='number_of_attributes_slider1',
+                            min=0, max=100, step=1, value=[0, 100],
+                            marks={i: str(i) for i in range(0, 101, 10)}
+                        )
+                    ]),
+                    html.Div([
+                        dbc.Label("Anzahl der Features (Slider 2)"),
+                        dcc.RangeSlider(
+                            id='number_of_attributes_slider2',
+                            min=0, max=100, step=1, value=[0, 100],
+                            marks={i: str(i) for i in range(0, 101, 10)}
+                        )
+                    ]),
+                    html.Div([
+                        dbc.Label("Max Datensätze"),
+                        dbc.Input(id='limit_input', type='number', value=10)
+                    ]),
+                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3")
+                ])
+            ])
         ], width=4),
     ]),
     dbc.Row([
         dbc.Col(id='list_group', width=12)
     ]),
 ], fluid=True)
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
