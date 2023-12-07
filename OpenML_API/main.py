@@ -1,15 +1,13 @@
 import dash
-from dash import html, dcc, dash_table
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import json
 from datetime import datetime, timedelta
-import pandas as pd
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# OpenML-API-Mockup
 class OpenML_API:
     def filter_datasets_by_attribute_types(self, start_date, end_date, num_attributes_range, num_features_range, limit):
         # Platzhalter für die API-Logik
@@ -51,10 +49,19 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
                     [
                         html.H5(f"{dataset['name']}", className="mb-1"),
                         html.Small("Click to view details", className="text-secondary"),
+                        html.P("Weitere Informationen hier...")
                     ],
                     className="d-flex w-100 justify-content-between",
                     id={"type": "toggle", "index": idx},
-                    style={"cursor": "pointer"},
+                    style={
+                        "cursor": "pointer",
+                        "padding": "10px",
+                        "margin-bottom": "5px",
+                        "background-color": "#f8f9fa",  # Leichter Hintergrund
+                        "border": "1px solid #ddd",  # Subtiler Rand
+                        "border-radius": "5px",  # Abgerundete Ecken
+                        "box-shadow": "0 2px 2px rgba(0,0,0,0.1)"  # Schatten für Tiefe
+                    },
                 )
             ]
         )
@@ -132,7 +139,7 @@ app.layout = dbc.Container([
         ], width=4),
     ]),
     dbc.Row([
-        dbc.Col(id='list_group', width=8)
+        dbc.Col(id='list_group', width=12)
     ]),
 ], fluid=True)
 
