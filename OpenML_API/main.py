@@ -100,13 +100,13 @@ def toggle_collapse(n_clicks, is_open):
 # Hinzufügen der Filter- und Listenkomponenten zum Layout
 app.layout = dbc.Container([
     html.H1("OpenML Datensatzsuche"),
-    dbc.Row([
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Filter"),
-                dbc.CardBody([
-                    html.Div([
-                        dbc.Label("Datum"),
+    dbc.Card([
+        dbc.CardHeader("Filter"),
+        dbc.CardBody([
+            dbc.CardGroup([
+                dbc.Card([
+                    dbc.CardHeader("Datum"),
+                    dbc.CardBody([
                         dcc.DatePickerRange(
                             id='date_range',
                             start_date=datetime.now() - timedelta(30),
@@ -115,46 +115,49 @@ app.layout = dbc.Container([
                             max_date_allowed=datetime.now(),
                             display_format='DD.MM.YYYY',
                             initial_visible_month=datetime.now()
-                        )
+                        ),
                     ]),
-
-                    # Maximalwert für Attribute
-                    html.Div([
-                        dbc.Label("Maximalwert für Anzahl der Attribute"),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Maximalwert für Anzahl der Attribute"),
+                    dbc.CardBody([
                         dbc.Input(id='max_attributes_input', type='number', value=100)
                     ]),
-                    html.Br(),
-
-                    html.Div([
-                        dbc.Label("Anzahl der Attribute (Slider 1)"),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Anzahl der Attribute (Slider 1)"),
+                    dbc.CardBody([
                         dcc.RangeSlider(
                             id='number_of_attributes_slider1',
                             min=0, max=100, step=1, value=[0, 100],
                             marks={i: str(i) for i in range(0, 101, 10)}
-                        )
+                        ),
                     ]),
-                    html.Div([
-                        dbc.Label("Anzahl der Features (Slider 2)"),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Anzahl der Features (Slider 2)"),
+                    dbc.CardBody([
                         dcc.RangeSlider(
                             id='number_of_attributes_slider2',
                             min=0, max=100, step=1, value=[0, 100],
                             marks={i: str(i) for i in range(0, 101, 10)}
-                        )
+                        ),
                     ]),
-                    html.Div([
-                        dbc.Label("Max Datensätze"),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Max Datensätze"),
+                    dbc.CardBody([
                         dbc.Input(id='limit_input', type='number', value=10)
                     ]),
-                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3")
-                ])
-            ])
-        ], width=4),
+                ]),
+            ]),
+            dbc.Button('Suchen', id='search_button', color="primary", className="mt-3")
+        ])
     ]),
     dbc.Row([
         dbc.Col(id='list_group', width=12)
     ]),
 ], fluid=True)
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
