@@ -107,61 +107,74 @@ app.layout = dbc.Container([
     dbc.Card([
         dbc.CardHeader("Filter"),
         dbc.CardBody([
-            dbc.CardGroup([
-                dbc.Card([
-                    dbc.CardHeader("Datum"),
-                    dbc.CardBody([
-                        dcc.DatePickerRange(
-                            id='date_range',
-                            start_date=datetime.now() - timedelta(30),
-                            end_date=datetime.now(),
-                            min_date_allowed=datetime(2000, 1, 1),
-                            max_date_allowed=datetime.now(),
-                            display_format='DD.MM.YYYY',
-                            initial_visible_month=datetime.now()
-                        ),
+            dcc.Loading(  # Hier wird der Ladebalken für die Filterelemente hinzugefügt
+                id="loading",
+                type="default",
+                children=[
+                    dbc.CardGroup([
+                        dbc.Card([
+                            dbc.CardHeader("Datum"),
+                            dbc.CardBody([
+                                dcc.DatePickerRange(
+                                    id='date_range',
+                                    start_date=datetime.now() - timedelta(30),
+                                    end_date=datetime.now(),
+                                    min_date_allowed=datetime(2000, 1, 1),
+                                    max_date_allowed=datetime.now(),
+                                    display_format='DD.MM.YYYY',
+                                    initial_visible_month=datetime.now()
+                                ),
+                            ]),
+                        ]),
+                        dbc.Card([
+                            dbc.CardHeader("Maximalwert für Anzahl der Attribute"),
+                            dbc.CardBody([
+                                dbc.Input(id='max_attributes_input', type='number', value=100)
+                            ]),
+                        ]),
+                        dbc.Card([
+                            dbc.CardHeader("Anzahl der Attribute (Slider 1)"),
+                            dbc.CardBody([
+                                dcc.RangeSlider(
+                                    id='number_of_attributes_slider1',
+                                    min=0, max=100, step=1, value=[0, 100],
+                                    marks={i: str(i) for i in range(0, 101, 10)}
+                                ),
+                            ]),
+                        ]),
+                        dbc.Card([
+                            dbc.CardHeader("Anzahl der Features (Slider 2)"),
+                            dbc.CardBody([
+                                dcc.RangeSlider(
+                                    id='number_of_attributes_slider2',
+                                    min=0, max=100, step=1, value=[0, 100],
+                                    marks={i: str(i) for i in range(0, 101, 10)}
+                                ),
+                            ]),
+                        ]),
+                        dbc.Card([
+                            dbc.CardHeader("Max Datensätze"),
+                            dbc.CardBody([
+                                dbc.Input(id='limit_input', type='number', value=10)
+                            ]),
+                        ]),
                     ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Maximalwert für Anzahl der Attribute"),
-                    dbc.CardBody([
-                        dbc.Input(id='max_attributes_input', type='number', value=100)
-                    ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Anzahl der Attribute (Slider 1)"),
-                    dbc.CardBody([
-                        dcc.RangeSlider(
-                            id='number_of_attributes_slider1',
-                            min=0, max=100, step=1, value=[0, 100],
-                            marks={i: str(i) for i in range(0, 101, 10)}
-                        ),
-                    ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Anzahl der Features (Slider 2)"),
-                    dbc.CardBody([
-                        dcc.RangeSlider(
-                            id='number_of_attributes_slider2',
-                            min=0, max=100, step=1, value=[0, 100],
-                            marks={i: str(i) for i in range(0, 101, 10)}
-                        ),
-                    ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Max Datensätze"),
-                    dbc.CardBody([
-                        dbc.Input(id='limit_input', type='number', value=10)
-                    ]),
-                ]),
-            ]),
-            dbc.Button('Suchen', id='search_button', color="primary", className="mt-3")
+                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3")
+                ],
+            ),
         ])
     ]),
     dbc.Row([
-        dbc.Col(id='list_group', width=12)
+        dcc.Loading(  # Hier wird der Ladebalken für die List Group hinzugefügt
+            id="loading_list",
+            type="default",
+            children=[
+                dbc.Col(id='list_group', width=12)
+            ],
+        )
     ]),
 ], fluid=True)
 
+
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
