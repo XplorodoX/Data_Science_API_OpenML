@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+
 class OpenML_API:
     def filter_datasets_by_attribute_types(self, start_date, end_date, num_attributes_range, num_features_range, limit):
         # Platzhalter für die API-Logik
@@ -35,15 +36,21 @@ def create_figure_for_dataset(dataset_id):
      State('date_range', 'end_date'),
      State('number_of_attributes_slider1', 'value'),
      State('number_of_attributes_slider2', 'value'),
-     State('limit_input', 'value')]
+     State('limit_input', 'value'),
+     State('filter_range_dropdown', 'value')]
 )
-def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
+def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit, filter_range):
     if n_clicks is None:
         return []
 
     time.sleep(2)
 
     datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
+
+    # Aktualisiere die Maximalwerte der Slider basierend auf dem Wert aus dem Dropdown-Menü
+    num_attributes_slider1_max = filter_range
+    num_attributes_slider2_max = filter_range
+
     list_group_items = []
 
     for idx, dataset in enumerate(datasets, start=1):
@@ -156,6 +163,20 @@ app.layout = dbc.Container([
                             dbc.CardHeader("Max Datensätze"),
                             dbc.CardBody([
                                 dbc.Input(id='limit_input', type='number', value=10)
+                            ]),
+                        ]),
+                        dbc.Card([  # Dropdown-Menü für die Filter-Range hinzugefügt
+                            dbc.CardHeader("Filter-Range auswählen"),
+                            dbc.CardBody([
+                                dcc.Dropdown(
+                                    id='filter_range_dropdown',
+                                    options=[
+                                        {'label': '10', 'value': 10},
+                                        {'label': '20', 'value': 20},
+                                        {'label': '30', 'value': 30},
+                                    ],
+                                    value=10  # Standardwert auswählen
+                                )
                             ]),
                         ]),
                     ]),
