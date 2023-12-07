@@ -1,10 +1,12 @@
-import dash
-from OpenML_API import OpenML_API
 from datetime import datetime, timedelta
+
+import dash
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import html, dcc, dash_table
 from dash.dependencies import Input, Output, State
-import pandas as pd
+
+from OpenML_API import OpenML_API
 
 app = dash.Dash(external_stylesheets=[dbc.themes.COSMO])
 
@@ -17,7 +19,6 @@ app = dash.Dash(external_stylesheets=[dbc.themes.COSMO])
      State('number_of_attributes_slider2', 'value'),
      State('limit_input', 'value')]
 )
-
 # TODO Erweitern Sie diese Methode, um die neuen Filterkriterien zu berücksichtigen + Lister der Datasets einzubinden in eine Liste
 def update_table(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
     if n_clicks is None:
@@ -26,17 +27,19 @@ def update_table(n_clicks, start_date, end_date, num_attributes_range, num_featu
     try:
         api = OpenML_API()
         # Erweitern Sie diese Methode, um die neuen Filterkriterien zu berücksichtigen
-        datasets = api.filter_datasets_by_attribute_types(start_date, end_date, num_attributes_range, num_features_range, limit)
+        datasets = api.filter_datasets_by_attribute_types(start_date, end_date, num_attributes_range,
+                                                          num_features_range, limit)
         return pd.DataFrame(datasets).to_dict('records')
     except Exception as e:
         print(f"Fehler beim Abrufen von OpenML-Daten: {e}")
         return []
 
+
 app.layout = dbc.Container([
     html.H1("OpenML Datensatzsuche"),
     dbc.Row([
         dbc.Col([
-            #Filter für Datum
+            # Filter für Datum
             dbc.Label("Datum"),
             dcc.DatePickerRange(
                 id='date_range',
@@ -51,7 +54,7 @@ app.layout = dbc.Container([
                 style={'padding': '10px'}  # Stil-Anpassungen
             ),
 
-            #Filter für Anzahl Features (Slider)
+            # Filter für Anzahl Features (Slider)
             dbc.Label("Anzahl der Datenpunkte (0-100)"),
             dcc.RangeSlider(
                 id='number_of_attributes_slider1',
@@ -62,7 +65,7 @@ app.layout = dbc.Container([
                 marks={i: str(i) for i in range(0, 101, 10)}
             ),
 
-            #Filter für Anzahl Features (Slider)
+            # Filter für Anzahl Features (Slider)
             dbc.Label("Anzahl der Features (0-100)"),
             dcc.RangeSlider(
                 id='number_of_attributes_slider2',
@@ -73,7 +76,7 @@ app.layout = dbc.Container([
                 marks={i: str(i) for i in range(0, 101, 10)}
             ),
 
-            #Filter für Anzahl Features (Slider)
+            # Filter für Anzahl Features (Slider)
             dbc.Label("Anzahl der numerischen Features (0-100)"),
             dcc.RangeSlider(
                 id='number_of_attributes_slider3',
@@ -84,7 +87,7 @@ app.layout = dbc.Container([
                 marks={i: str(i) for i in range(0, 101, 10)}
             ),
 
-            #Filter für Anzahl Features (Slider)
+            # Filter für Anzahl Features (Slider)
             dbc.Label("Anzahl der Kategorialen Features (0-100)"),
             dcc.RangeSlider(
                 id='number_of_attributes_slider4',
@@ -94,7 +97,7 @@ app.layout = dbc.Container([
                 value=[0, 100],
                 marks={i: str(i) for i in range(0, 101, 10)}
             ),
-            #Filter für Anzahl Features (Slider)
+            # Filter für Anzahl Features (Slider)
             dbc.Label("Anzahl der Ordinal Features (0-100)"),
             dcc.RangeSlider(
                 id='number_of_attributes_slider5',
@@ -105,7 +108,7 @@ app.layout = dbc.Container([
                 marks={i: str(i) for i in range(0, 101, 10)}
             ),
 
-            #Filter für Anzahl Features (Slider)
+            # Filter für Anzahl Features (Slider)
             dbc.Label("Anzahl der unique Features (0-100)"),
             dcc.RangeSlider(
                 id='number_of_attributes_slider6',
@@ -116,7 +119,7 @@ app.layout = dbc.Container([
                 marks={i: str(i) for i in range(0, 101, 10)}
             ),
 
-            #Limiter für Anzahl Datensätze
+            # Limiter für Anzahl Datensätze
             dbc.Label("Max Datensätze"),
             dbc.Input(id='limit_input', type='number', value=10),
             html.Br(),
@@ -127,7 +130,7 @@ app.layout = dbc.Container([
         dbc.Col([
             dash_table.DataTable(
                 id='results_table',
-                columns=[{'name': 'Name', 'id': 'name'}, 
+                columns=[{'name': 'Name', 'id': 'name'},
                          {'name': 'Anzahl Attribute', 'id': 'NumberOfAttributes'}],
                 data=[],
                 page_size=10,

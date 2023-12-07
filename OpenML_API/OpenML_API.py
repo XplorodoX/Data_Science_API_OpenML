@@ -1,14 +1,13 @@
-from datetime import datetime
-
 import openml
 
 class OpenML_API:
     def __init__(self):
-        pass
-    
-    def list_datasets(self, output_format='dataframe'):
+        self.logger = None
+
+    @staticmethod
+    def list_datasets(output_format='dataframe'):
         return openml.datasets.list_datasets(output_format=output_format)
-    
+
     def get_dataset(self, dataset_id, download_data=False, download_qualities=False, download_features_meta_data=True):
         try:
             return openml.datasets.get_dataset(
@@ -45,7 +44,7 @@ class OpenML_API:
 
             try:
                 dataset = self.get_dataset(dataset_id)
-                dataset_features = dataset.features
+                # dataset_features = dataset.features
                 dataset_date = dataset.upload_date
 
                 if (not start_date or start_date < dataset_date) and (not end_date or end_date > dataset_date):
