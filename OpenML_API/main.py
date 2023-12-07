@@ -1,3 +1,5 @@
+import time
+
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
@@ -38,6 +40,8 @@ def create_figure_for_dataset(dataset_id):
 def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
     if n_clicks is None:
         return []
+
+    time.sleep(2)
 
     datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
     list_group_items = []
