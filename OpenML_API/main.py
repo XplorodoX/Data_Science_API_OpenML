@@ -1,5 +1,4 @@
 import time
-
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
@@ -35,10 +34,9 @@ def create_figure_for_dataset(dataset_id):
      State('date_range', 'end_date'),
      State('number_of_attributes_slider1', 'value'),
      State('number_of_attributes_slider2', 'value'),
-     State('limit_input', 'value'),
-     State('filter_range_dropdown', 'value')]
+     State('limit_input', 'value')]
 )
-def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit, filter_range):
+def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
     if n_clicks is None:
         return []
 
@@ -46,19 +44,21 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
 
     datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
 
-    # Aktualisiere die Maximalwerte der Slider basierend auf dem Wert aus dem Dropdown-Menü
-    num_attributes_slider1_max = filter_range
-    num_attributes_slider2_max = filter_range
-
     list_group_items = []
 
     for idx, dataset in enumerate(datasets, start=1):
+        # Hier anstelle von Platzhaltern die tatsächlichen Daten abrufen (z.B. aus Ihrer API)
+        num_downloads = 1000  # Beispielwert für die Anzahl der Downloads
+        data_dimensions = "1000x100"  # Beispielwert für die Datenabmessungen
+
         list_group_item = dbc.ListGroupItem(
             [
                 html.Div(
                     [
                         html.H5(f"{dataset['name']}", className="mb-1"),
                         html.Small(f"Anzahl der Features: {dataset['NumberOfAttributes']}", className="text-secondary"),
+                        html.Small(f"Anzahl der Downloads: {num_downloads}", className="text-secondary"),
+                        html.Small(f"Datenabmessungen: {data_dimensions}", className="text-secondary"),
                         html.P("Weitere Informationen hier...")
                     ],
                     className="d-flex w-100 justify-content-between",
@@ -83,6 +83,7 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
         list_group_items.append(collapse)
 
     return list_group_items
+
 
 # Callback für das Umschalten der Collapse-Komponenten
 @app.callback(
@@ -109,6 +110,7 @@ def toggle_collapse(n_clicks, is_open):
 
 # Hinzufügen der Filter- und Listenkomponenten zum Layout
 app.layout = dbc.Container([
+    html.Img(src='logo.png', height=50),
     html.H1("OpenML Datensatzsuche"),
     dbc.Card([
         dbc.CardHeader("Filter"),
