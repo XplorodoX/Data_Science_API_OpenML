@@ -3,27 +3,55 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
-import plotly.express as px
+import plotly.graph_objs as go
 import json
+from OpenML_API import OpenML_API
 from datetime import datetime, timedelta
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-class OpenML_API:
-    def filter_datasets_by_attribute_types(self, start_date, end_date, num_attributes_range, num_features_range, limit):
-        # Platzhalter für die API-Logik
-        return [{"name": f"Dataset {i}", "NumberOfAttributes": i} for i in range(1, limit + 1)]
-
 # Funktion zum Abrufen und Filtern von Datensätzen
+# def filter_datasets_by_attribute_types(self, start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=None):
 def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=10):
-    api = OpenML_API()
-    datasets = api.filter_datasets_by_attribute_types(start_date, end_date, num_attributes_range, num_features_range, limit)
-    return datasets
+    """
+        Fetches datasets from OpenML based on various criteria.
+
+        :param start_date: The start date for filtering datasets (datetime object).
+        :param end_date: The end date for filtering datasets (datetime object).
+        :param num_attributes_range: Tuple specifying the range of the number of attributes (min, max).
+        :param num_features_range: Tuple specifying the range of the number of features (min, max).
+        :param limit: Maximum number of datasets to fetch.
+        :return: List of filtered datasets.
+        """
+
+    # Validate date range
+    if start_date and end_date and start_date > end_date:
+        raise ValueError("Start date must be before end date.")
+
+    api_instance = OpenML_API()
+
+    try:
+        # Call the filter_datasets_by_attribute_types method on the instance
+        datasets = api_instance.filter_datasets_by_attribute_types(
+            start_date, end_date, num_attributes_range, num_features_range, limit
+        )
+        return datasets
+    except Exception as e:
+        # Handle potential errors during API call
+        print(f"Error fetching datasets: {e}")
+        return []
 
 # Funktion zum Erstellen eines Diagramms für ein gegebenes Dataset
-def create_figure_for_dataset(dataset_id):
-    df = px.data.gapminder().query("country=='Canada'")
-    fig = px.line(df, x="year", y="gdpPercap", title=f"GDP Per Capita over Time for {dataset_id}")
+def create_placeholder_figure():
+    # Create a simple scatter plot as a placeholder
+    fig = go.Figure(data=[
+        go.Scatter(x=[1, 2, 3], y=[4, 1, 2], mode='markers', marker=dict(color='LightSkyBlue'), name='Placeholder Data'),
+        go.Scatter(x=[1, 2, 3], y=[2, 3, 1], mode='markers', marker=dict(color='Violet'), name='Placeholder Data 2')
+    ])
+
+    # Add layout details
+    fig.update_layout(title='Placeholder Figure', xaxis_title='X Axis', yaxis_title='Y Axis')
+
     return fig
 
 # Callback für das Aktualisieren der Datensatzliste
@@ -47,21 +75,24 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
     list_group_items = []
 
     for idx, dataset in enumerate(datasets, start=1):
-        # Hier anstelle von Platzhaltern die tatsächlichen Daten abrufen (z.B. aus Ihrer API)
-        num_downloads = 1000  # Beispielwert für die Anzahl der Downloads
-        data_dimensions = "1000x100"  # Beispielwert für die Datenabmessungen
+        dataset_name = dataset[1]
+        num_downloads = 1000  # Assuming this is a placeholder and you will replace it with actual data
+
+        # Retrieve the dimensions from the dataset tuple
+        rows = int(dataset[2])
+        columns = int(dataset[3])
+
+        data_dimensions = f"{rows}x{columns}"
 
         list_group_item = dbc.ListGroupItem(
             [
                 html.Div(
                     [
-                        html.H5(f"{dataset['name']}", className="mb-1"),
-                        html.Small(f"Anzahl der Features: {dataset['NumberOfAttributes']}", className="text-secondary"),
-                        html.Small(f"Anzahl der Downloads: {num_downloads}", className="text-secondary"),
-                        html.Small(f"Datenabmessungen: {data_dimensions}", className="text-secondary"),
-                        html.P("Weitere Informationen hier...")
+                        html.H5(dataset_name, className="mb-1"),
+                        html.Small(f"Downloads: {num_downloads}", className="text-secondary"),
+                        html.Small(f"Dimension: {data_dimensions}", className="text-secondary"),
                     ],
-                    className="d-flex w-100 justify-content-between",
+                    className="d-flex flex-column",
                     id={"type": "toggle", "index": idx},
                     style={
                         "cursor": "pointer",
@@ -76,8 +107,8 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
             ]
         )
         collapse = dbc.Collapse(
-            dbc.Card(dbc.CardBody([dcc.Graph(figure=create_figure_for_dataset(dataset['name']))])),
-            id={"type": "collapse", "index": idx},
+            dbc.Card(dbc.CardBody([dcc.Graph(figure=create_placeholder_figure())])),
+            id={"type": "collapse", "index": idx}
         )
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
@@ -125,7 +156,7 @@ app.layout = dbc.Container([
                             dbc.CardBody([
                                 dcc.DatePickerRange(
                                     id='date_range',
-                                    start_date=datetime.now() - timedelta(30),
+                                    start_date=datetime.now() - timedelta(10000),
                                     end_date=datetime.now(),
                                     min_date_allowed=datetime(2000, 1, 1),
                                     max_date_allowed=datetime.now(),
