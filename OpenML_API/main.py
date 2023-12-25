@@ -44,18 +44,21 @@ def create_statistics_figure():
     [
         Output('list_group', 'children'),
         Output('statistics_figure', 'figure'),
-        Output('statistics_figure', 'style')
+        Output('statistics_figure', 'style'),
+        Output('progress_bar', 'value'),
+        Output('progress_bar', 'style')
     ],
     [Input('search_button', 'n_clicks')],
     [State('date_range', 'start_date'),
      State('date_range', 'end_date'),
      State('number_of_attributes_slider1', 'value'),
      State('number_of_attributes_slider2', 'value'),
-     State('limit_input', 'value')]
+     State('limit_input', 'value'),
+     State('interval-component', 'n_intervals')]
 )
-def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
+def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit, n_intervals):
     if n_clicks is None:
-        return [], go.Figure(), {'display': 'none'}
+        return [], go.Figure(), {'display': 'none'}, 0, {'visibility': 'hidden'}
 
     datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
 
@@ -97,7 +100,22 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attri
     statistics_figure = create_statistics_figure() if datasets else go.Figure()
     statistics_style = {'display': 'block'} if datasets else {'display': 'none'}
 
-    return list_group_items, statistics_figure, statistics_style
+    remaining_time = (20 - n_intervals) * 0.1  # Annahme, dass ein Intervall 0,1 Sekunden dauert
+    progress_value = max(100 - int((remaining_time / 2) * 100), 0)
+
+    progress_style = {'visibility': 'visible'} if n_intervals < 20 else {'visibility': 'hidden'}
+
+    return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
+
+@app.callback(
+    Output('interval-component', 'disabled'),
+    [Input('search_button', 'n_clicks')],
+    [State('interval-component', 'disabled')]
+)
+def toggle_interval(n_clicks, disabled):
+    if n_clicks:
+        return False
+    return True
 
 @app.callback(
     Output({"type": "collapse", "index": dash.ALL}, "is_open"),
@@ -169,12 +187,12 @@ app.layout = dbc.Container([
                 ]),
             ]),
             dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
-            dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}),
+            dbc.Progress(id='progress_bar', value=0, style={"visibility": "hidden", "height": "20px", "margin-top": "15px"}),
         ])
     ]),
-    dcc.Graph(id='statistics_figure', style={'display': 'none'}),  # Statistikgrafik
+    dcc.Graph(id='statistics_figure', style={'display': 'none'}),
     dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
-    dcc.Interval(id='interval-component', interval=1 * 1000, n_intervals=0),
+    dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
 ], fluid=True)
 
 if __name__ == '__main__':
