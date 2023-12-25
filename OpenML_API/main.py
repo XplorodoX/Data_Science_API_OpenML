@@ -10,57 +10,42 @@ from datetime import datetime, timedelta
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# Funktion zum Abrufen und Filtern von Datensätzen
-# def filter_datasets_by_attribute_types(self, start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=None):
 def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=10):
-    """
-        Fetches datasets from OpenML based on various criteria.
-
-        :param start_date: The start date for filtering datasets (datetime object).
-        :param end_date: The end date for filtering datasets (datetime object).
-        :param num_attributes_range: Tuple specifying the range of the number of attributes (min, max).
-        :param num_features_range: Tuple specifying the range of the number of features (min, max).
-        :param limit: Maximum number of datasets to fetch.
-        :return: List of filtered datasets.
-        """
-
-    # Validate date range
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must be before end date.")
 
     api_instance = OpenML_API()
 
     try:
-        # Call the filter_datasets_by_attribute_types method on the instance
         datasets = api_instance.filter_datasets_by_attribute_types(
             start_date, end_date, num_attributes_range, num_features_range, limit
         )
         return datasets
     except Exception as e:
-        # Handle potential errors during API call
         print(f"Error fetching datasets: {e}")
         return []
 
-# Funktion zum Erstellen eines Diagramms für ein gegebenes Dataset
 def create_placeholder_figure():
-    # Create a simple scatter plot as a placeholder
     fig = go.Figure(data=[
         go.Scatter(x=[1, 2, 3], y=[4, 1, 2], mode='markers', marker=dict(color='LightSkyBlue'), name='Placeholder Data'),
         go.Scatter(x=[1, 2, 3], y=[2, 3, 1], mode='markers', marker=dict(color='Violet'), name='Placeholder Data 2')
     ])
-
-    # Add layout details
     fig.update_layout(title='Placeholder Figure', xaxis_title='X Axis', yaxis_title='Y Axis')
-
     return fig
 
-# Callback für das Aktualisieren der Datensatzliste
-# Callback für das Aktualisieren der Datensatzliste
+def create_statistics_figure():
+    fig = go.Figure(data=[
+        go.Bar(x=['Dataset 1', 'Dataset 2', 'Dataset 3'], y=[50, 30, 70], name='Anzahl der Features')
+    ])
+    fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
+    return fig
+
 @app.callback(
-    [Output('list_group', 'children'),
-     Output('progress_bar', 'value'),
-     Output('progress_bar', 'children'),
-     Output('progress_bar', 'style')],  # Hinzufügen von Output für den Stil der Fortschrittsleiste
+    [
+        Output('list_group', 'children'),
+        Output('statistics_figure', 'figure'),
+        Output('statistics_figure', 'style')
+    ],
     [Input('search_button', 'n_clicks')],
     [State('date_range', 'start_date'),
      State('date_range', 'end_date'),
@@ -68,29 +53,16 @@ def create_placeholder_figure():
      State('number_of_attributes_slider2', 'value'),
      State('limit_input', 'value')]
 )
-
-def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
+def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
     if n_clicks is None:
-        return [], 0, None, {"height": "20px", "visibility": "visible"}
-
-    progress_value = 10
-    progress_label = f"Fortschritt: {progress_value}%"
-    progress_style = {"height": "20px", "visibility": "visible"}
-
-    time.sleep(2)
+        return [], go.Figure(), {'display': 'none'}
 
     datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
 
     list_group_items = []
-
     for idx, dataset in enumerate(datasets, start=1):
         dataset_name = dataset[1]
-        num_downloads = 1000  # Assuming this is a placeholder and you will replace it with actual data
-
-        # Retrieve the dimensions from the dataset tuple
-        rows = int(dataset[2])
-        columns = int(dataset[3])
-
+        rows, columns = int(dataset[2]), int(dataset[3])
         data_dimensions = f"{rows}x{columns}"
 
         list_group_item = dbc.ListGroupItem(
@@ -98,7 +70,7 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
                 html.Div(
                     [
                         html.H5(dataset_name, className="mb-1"),
-                        html.Small(f"Downloads: {num_downloads}", className="text-secondary"),
+                        html.Small(f"Downloads: 1000", className="text-secondary"),
                         html.Small(f"Dimension: {data_dimensions}", className="text-secondary"),
                     ],
                     className="d-flex flex-column",
@@ -107,10 +79,10 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
                         "cursor": "pointer",
                         "padding": "10px",
                         "margin-bottom": "5px",
-                        "background-color": "#f8f9fa",  # Leichter Hintergrund
-                        "border": "1px solid #ddd",  # Subtiler Rand
-                        "border-radius": "5px",  # Abgerundete Ecken
-                        "box-shadow": "0 2px 2px rgba(0,0,0,0.1)"  # Schatten für Tiefe
+                        "background-color": "#f8f9fa",
+                        "border": "1px solid #ddd",
+                        "border-radius": "5px",
+                        "box-shadow": "0 2px 2px rgba(0,0,0,0.1)"
                     },
                 )
             ]
@@ -122,38 +94,11 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
 
-    progress_value = 100
-    progress_label = "Fertig!"
+    statistics_figure = create_statistics_figure() if datasets else go.Figure()
+    statistics_style = {'display': 'block'} if datasets else {'display': 'none'}
 
-    # Wenn der Fortschritt 100% erreicht, wird die Fortschrittsleiste ausgeblendet
-    if progress_value >= 100:
-        progress_style = {"height": "20px", "display": "none"}
+    return list_group_items, statistics_figure, statistics_style
 
-    return list_group_items, progress_value, progress_label, progress_style
-
-# Funktion zum Erstellen einer Platzhalter-Grafik für die Statistik über alle Datensätze
-def create_statistics_figure():
-    # Create a simple bar chart as a placeholder for the statistics
-    fig = go.Figure(data=[
-        go.Bar(x=['Dataset 1', 'Dataset 2', 'Dataset 3'], y=[50, 30, 70], name='Anzahl der Features')
-    ])
-
-    # Add layout details
-    fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
-
-    return fig
-
-# Callback für das regelmäßige Aktualisieren der Fortschrittsleiste
-@app.callback(
-    [Output('progress_bar', 'value'), Output('progress_bar', 'children')],
-    [Input('interval-component', 'n_intervals')]
-)
-def update_progress(n):
-    progress = min(n * 10, 100)  # Erhöht den Fortschritt um 10% pro Sekunde
-    return progress, f"{progress}%"  # Aktualisiert den Wert und das Label der Fortschrittsleiste
-
-
-# Callback für das Umschalten der Collapse-Komponenten
 @app.callback(
     Output({"type": "collapse", "index": dash.ALL}, "is_open"),
     [Input({"type": "toggle", "index": dash.ALL}, "n_clicks")],
@@ -161,112 +106,76 @@ def update_progress(n):
 )
 def toggle_collapse(n_clicks, is_open):
     ctx = dash.callback_context
-
     if not ctx.triggered:
         return is_open
 
-    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    button_id = json.loads(button_id)
-
+    button_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])
     idx = button_id["index"] - 1
 
     new_is_open = is_open[:]
     new_is_open[idx] = not is_open[idx]
-
     return new_is_open
 
-
-# Hinzufügen der Filter- und Listenkomponenten zum Layout
 app.layout = dbc.Container([
-    #html.Img(src='logo.png', height=50),
-    html.H1("OpenML Datensatzsuche"),
     dbc.Card([
         dbc.CardHeader("Filter"),
         dbc.CardBody([
-            dcc.Loading(  # Hier wird der Ladebalken für die Filterelemente hinzugefügt
-                id="loading",
-                type="default",
-                children=[
-                    dbc.CardGroup([
-                        dbc.Card([
-                            dbc.CardHeader("Datum"),
-                            dbc.CardBody([
-                                dcc.DatePickerRange(
-                                    id='date_range',
-                                    start_date=datetime.now() - timedelta(10000),
-                                    end_date=datetime.now(),
-                                    min_date_allowed=datetime(2000, 1, 1),
-                                    max_date_allowed=datetime.now(),
-                                    display_format='DD.MM.YYYY',
-                                    initial_visible_month=datetime.now()
-                                ),
-                            ]),
-                        ]),
-                        dbc.Card([
-                            dbc.CardHeader("Maximalwert für Anzahl der Attribute"),
-                            dbc.CardBody([
-                                dbc.Input(id='max_attributes_input', type='number', value=100)
-                            ]),
-                        ]),
-                        dbc.Card([
-                            dbc.CardHeader("Anzahl der Attribute (Slider 1)"),
-                            dbc.CardBody([
-                                dcc.RangeSlider(
-                                    id='number_of_attributes_slider1',
-                                    min=0, max=100, step=1, value=[0, 100],
-                                    marks={i: str(i) for i in range(0, 101, 10)}
-                                ),
-                            ]),
-                        ]),
-                        dbc.Card([
-                            dbc.CardHeader("Anzahl der Features (Slider 2)"),
-                            dbc.CardBody([
-                                dcc.RangeSlider(
-                                    id='number_of_attributes_slider2',
-                                    min=0, max=100, step=1, value=[0, 100],
-                                    marks={i: str(i) for i in range(0, 101, 10)}
-                                ),
-                            ]),
-                        ]),
-                        dbc.Card([
-                            dbc.CardHeader("Max Datensätze"),
-                            dbc.CardBody([
-                                dbc.Input(id='limit_input', type='number', value=10)
-                            ]),
-                        ]),
-                        dbc.Card([  # Dropdown-Menü für die Filter-Range hinzugefügt
-                            dbc.CardHeader("Filter-Range auswählen"),
-                            dbc.CardBody([
-                                dcc.Dropdown(
-                                    id='filter_range_dropdown',
-                                    options=[
-                                        {'label': '10', 'value': 10},
-                                        {'label': '20', 'value': 20},
-                                        {'label': '30', 'value': 30},
-                                    ],
-                                    value=10  # Standardwert auswählen
-                                )
-                            ]),
-                        ]),
+            dbc.CardGroup([
+                dbc.Card([
+                    dbc.CardHeader("Datum"),
+                    dbc.CardBody([
+                        dcc.DatePickerRange(
+                            id='date_range',
+                            start_date=datetime.now() - timedelta(10000),
+                            end_date=datetime.now(),
+                            min_date_allowed=datetime(2000, 1, 1),
+                            max_date_allowed=datetime.now(),
+                            display_format='DD.MM.YYYY',
+                            initial_visible_month=datetime.now()
+                        ),
                     ]),
-                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
-                    dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}),
-                ],
-            ),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Maximalwert für Anzahl der Attribute"),
+                    dbc.CardBody([
+                        dbc.Input(id='max_attributes_input', type='number', value=100)
+                    ]),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Anzahl der Attribute (Slider 1)"),
+                    dbc.CardBody([
+                        dcc.RangeSlider(
+                            id='number_of_attributes_slider1',
+                            min=0, max=100, step=1, value=[0, 100],
+                            marks={i: str(i) for i in range(0, 101, 10)}
+                        ),
+                    ]),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Anzahl der Features (Slider 2)"),
+                    dbc.CardBody([
+                        dcc.RangeSlider(
+                            id='number_of_attributes_slider2',
+                            min=0, max=100, step=1, value=[0, 100],
+                            marks={i: str(i) for i in range(0, 101, 10)}
+                        ),
+                    ]),
+                ]),
+                dbc.Card([
+                    dbc.CardHeader("Max Datensätze"),
+                    dbc.CardBody([
+                        dbc.Input(id='limit_input', type='number', value=10)
+                    ]),
+                ]),
+            ]),
+            dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
+            dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}),
         ])
     ]),
-    dbc.Card([
-        dbc.CardHeader("Statistik aller Datensätze"),
-        dbc.CardBody([
-            dcc.Graph(figure=create_statistics_figure())  # Platzhalter-Grafik
-        ])
-    ], className="mt-4"),  # Hinzufügen eines Abstands zum oberen Element
-
-    dcc.Interval(id='interval-component', interval=1 * 1000, n_intervals=0),  # 1 Sekunde Intervall
-
+    dcc.Graph(id='statistics_figure', style={'display': 'none'}),  # Statistikgrafik
+    dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
+    dcc.Interval(id='interval-component', interval=1 * 1000, n_intervals=0),
 ], fluid=True)
-
-#TODO Grafik über alle Datensets -> Wie viele Features etc drinne sind, als Histogramm
 
 if __name__ == '__main__':
     app.run_server(debug=False)
