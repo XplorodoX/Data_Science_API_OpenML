@@ -55,8 +55,12 @@ def create_placeholder_figure():
     return fig
 
 # Callback für das Aktualisieren der Datensatzliste
+# Callback für das Aktualisieren der Datensatzliste
 @app.callback(
-    Output('list_group', 'children'),
+    [Output('list_group', 'children'),
+     Output('progress_bar', 'value'),
+     Output('progress_bar', 'children'),
+     Output('progress_bar', 'style')],  # Hinzufügen von Output für den Stil der Fortschrittsleiste
     [Input('search_button', 'n_clicks')],
     [State('date_range', 'start_date'),
      State('date_range', 'end_date'),
@@ -64,9 +68,14 @@ def create_placeholder_figure():
      State('number_of_attributes_slider2', 'value'),
      State('limit_input', 'value')]
 )
+
 def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit):
     if n_clicks is None:
-        return []
+        return [], 0, None, {"height": "20px", "visibility": "visible"}
+
+    progress_value = 10
+    progress_label = f"Fortschritt: {progress_value}%"
+    progress_style = {"height": "20px", "visibility": "visible"}
 
     time.sleep(2)
 
@@ -113,7 +122,35 @@ def update_dataset_list(n_clicks, start_date, end_date, num_attributes_range, nu
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
 
-    return list_group_items
+    progress_value = 100
+    progress_label = "Fertig!"
+
+    # Wenn der Fortschritt 100% erreicht, wird die Fortschrittsleiste ausgeblendet
+    if progress_value >= 100:
+        progress_style = {"height": "20px", "display": "none"}
+
+    return list_group_items, progress_value, progress_label, progress_style
+
+# Funktion zum Erstellen einer Platzhalter-Grafik für die Statistik über alle Datensätze
+def create_statistics_figure():
+    # Create a simple bar chart as a placeholder for the statistics
+    fig = go.Figure(data=[
+        go.Bar(x=['Dataset 1', 'Dataset 2', 'Dataset 3'], y=[50, 30, 70], name='Anzahl der Features')
+    ])
+
+    # Add layout details
+    fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
+
+    return fig
+
+# Callback für das regelmäßige Aktualisieren der Fortschrittsleiste
+@app.callback(
+    [Output('progress_bar', 'value'), Output('progress_bar', 'children')],
+    [Input('interval-component', 'n_intervals')]
+)
+def update_progress(n):
+    progress = min(n * 10, 100)  # Erhöht den Fortschritt um 10% pro Sekunde
+    return progress, f"{progress}%"  # Aktualisiert den Wert und das Label der Fortschrittsleiste
 
 
 # Callback für das Umschalten der Collapse-Komponenten
@@ -141,7 +178,7 @@ def toggle_collapse(n_clicks, is_open):
 
 # Hinzufügen der Filter- und Listenkomponenten zum Layout
 app.layout = dbc.Container([
-    html.Img(src='logo.png', height=50),
+    #html.Img(src='logo.png', height=50),
     html.H1("OpenML Datensatzsuche"),
     dbc.Card([
         dbc.CardHeader("Filter"),
@@ -212,22 +249,24 @@ app.layout = dbc.Container([
                             ]),
                         ]),
                     ]),
-                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3")
+                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
+                    dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}),
                 ],
             ),
         ])
     ]),
-    dbc.Row([
-        dcc.Loading(  # Hier wird der Ladebalken für die List Group hinzugefügt
-            id="loading_list",
-            type="default",
-            children=[
-                dbc.Col(id='list_group', width=12)
-            ],
-        )
-    ]),
+    dbc.Card([
+        dbc.CardHeader("Statistik aller Datensätze"),
+        dbc.CardBody([
+            dcc.Graph(figure=create_statistics_figure())  # Platzhalter-Grafik
+        ])
+    ], className="mt-4"),  # Hinzufügen eines Abstands zum oberen Element
+
+    dcc.Interval(id='interval-component', interval=1 * 1000, n_intervals=0),  # 1 Sekunde Intervall
+
 ], fluid=True)
 
+#TODO Grafik über alle Datensets -> Wie viele Features etc drinne sind, als Histogramm
 
 if __name__ == '__main__':
     app.run_server(debug=False)
