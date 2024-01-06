@@ -1,4 +1,5 @@
 import logging
+import os
 import openml
 
 class OpenML_API:
@@ -9,14 +10,24 @@ class OpenML_API:
     def list_datasets(output_format='dataframe'):
         return openml.datasets.list_datasets(output_format=output_format)
 
-    def get_dataset(self, dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True):
+    def get_dataset(self, dataset_id, preferred_format='csv', dataset_name="", save_directory='.'):
         try:
-            return openml.datasets.get_dataset(
-                dataset_id,
-                download_data=download_data,
-                download_qualities=download_qualities,
-                download_features_meta_data=download_features_meta_data
-            )
+            openml_dataset = openml.datasets.get_dataset(dataset_id)
+            name = openml_dataset.name
+
+            X, y, _, _ = openml_dataset.get_data(dataset_format="dataframe")
+
+            # Überprüfen, ob das bevorzugte Format verfügbar ist
+            if preferred_format == 'csv':
+                dataset_file_extension = 'csv'
+                dataset_file_path = os.path.join(save_directory, f"{name}.{dataset_file_extension}")
+                X.to_csv(dataset_file_path, index=False, encoding='utf-8')
+            else:
+                # Fallback auf ein anderes Format, z.B. ARFF oder andere
+                # Hier können Sie Ihre Fallback-Logik hinzufügen
+                pass
+
+            return dataset_file_path
         except Exception as e:
             self.logger.error(f"Fehler beim Abrufen des Datensatzes {dataset_id}: {e}")
             raise
@@ -48,24 +59,6 @@ class OpenML_API:
 
         except Exception as e:
             self.logger.error(f"Error retrieving dimensions of dataset {dataset_id}: {e}")
-            raise
-
-    def download_dataset(self, dataset_id, preferred_format='parquet'):
-        try:
-            dataset = openml.datasets.get_dataset(dataset_id, download_data=True)
-
-            # Überprüfen, ob das bevorzugte Format verfügbar ist
-            if preferred_format in dataset.format:
-                # Logik zum Herunterladen im bevorzugten Format
-                pass
-            else:
-                # Fallback auf ein anderes Format, z.B. ARFF
-                pass
-
-        except Exception as e:
-            self.logger.error(
-                f"Fehler beim Herunterladen des Datensatzes {dataset_id} im Format {preferred_format}: {e}")
-            # Implementieren Sie hier einen Fallback-Mechanismus oder geben Sie eine Fehlermeldung aus
             raise
 
     def filter_datasets_by_attribute_types(self, start_date=None, end_date=None, num_attributes_range=None,
@@ -101,6 +94,7 @@ class OpenML_API:
                         (not num_features_range or num_features_range[0] <= num_columns <= num_features_range[1])):
 
                     filtered_datasets.append((dataset_id, dataset.name, num_rows, num_columns))
+                    self.get_dataset(dataset_id, dataset.name)
 
                     if limit is not None:
                         limit -= 1

@@ -1,5 +1,7 @@
+import os
 import time
 import dash
+import openml
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
@@ -14,10 +16,8 @@ def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, nu
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must be before end date.")
 
-    api_instance = OpenML_API()
-
     try:
-        datasets = api_instance.filter_datasets_by_attribute_types(
+        datasets = filter_datasets_by_attribute_types(
             start_date, end_date, num_attributes_range, num_features_range, limit
         )
         return datasets
@@ -57,8 +57,16 @@ def create_statistics_figure():
      State('interval-component', 'n_intervals')]
 )
 def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit, n_intervals):
+    # Initialize variables at the start of the function
+    list_group_items = []
+    statistics_figure = go.Figure()  # Default empty figure
+    statistics_style = {'display': 'none'}  # Default style
+    progress_value = 0  # Default progress value
+    progress_style = {'visibility': 'hidden'}  # Default progress style
+
+    # Check if the button was clicked
     if n_clicks is None:
-        return [], go.Figure(), {'display': 'none'}, 0, {'visibility': 'hidden'}
+        return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
 
     datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
 
@@ -97,15 +105,87 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attri
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
 
-    statistics_figure = create_statistics_figure() if datasets else go.Figure()
-    statistics_style = {'display': 'block'} if datasets else {'display': 'none'}
+        # Update statistics_figure only if datasets are available
+        if datasets:
+            statistics_figure = create_statistics_figure()
 
-    remaining_time = (20 - n_intervals) * 0.1  # Annahme, dass ein Intervall 0,1 Sekunden dauert
-    progress_value = max(100 - int((remaining_time / 2) * 100), 0)
+        statistics_style = {'display': 'block'} if datasets else {'display': 'none'}
 
-    progress_style = {'visibility': 'visible'} if n_intervals < 20 else {'visibility': 'hidden'}
+        progress_value = int((idx / limit) * 100) if limit > 0 else 100
+
+        progress_style = {'visibility': 'visible'} if n_intervals < 1 else {'visibility': 'hidden'}
 
     return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
+
+@staticmethod
+def list_datasets(output_format='dataframe'):
+    return openml.datasets.list_datasets(output_format=output_format)
+
+def get_dataset(self, dataset_id, preferred_format='csv', save_directory='.'):
+    try:
+        openml_dataset = openml.datasets.get_dataset(dataset_id)
+        name = openml_dataset.name
+
+        X, y, _, _ = openml_dataset.get_data(dataset_format="dataframe")
+
+        # Überprüfen, ob das bevorzugte Format verfügbar ist
+        if preferred_format == 'csv':
+            dataset_file_extension = 'csv'
+            dataset_file_path = os.path.join(save_directory, f"{name}.{dataset_file_extension}")
+            print(dataset_file_path)
+            #X.to_csv(dataset_file_path, index=False, encoding='utf-8')
+        else:
+            # Fallback auf ein anderes Format, z.B. ARFF oder andere
+            # Hier können Sie Ihre Fallback-Logik hinzufügen
+            pass
+
+        return dataset_file_path
+    except Exception as e:
+        self.logger.error(f"Fehler beim Abrufen des Datensatzes {dataset_id}: {e}")
+        raise
+
+def filter_datasets_by_attribute_types(self, start_date=None, end_date=None, num_attributes_range=None,
+                                           num_features_range=None, limit=None):
+    """
+                Filters datasets based on upload dates and number of features.
+
+                :param start_date: Minimum upload date for the datasets.
+                :param end_date: Maximum upload date for the datasets.
+                :param num_features_range: Tuple or list with two elements specifying the range of number of features.
+                :param limit: Maximum number of datasets to return.
+                :return: A list of filtered datasets.
+            """
+
+    datasets_list = self.list_datasets()
+    dataset_ids = datasets_list['did'].tolist()
+    filtered_datasets = []
+
+    if start_date and end_date and start_date > end_date:
+        raise ValueError("Startdatum muss vor dem Enddatum liegen.")
+
+    for dataset_id in dataset_ids:
+        if limit is not None and limit <= 0:
+            break
+
+        try:
+            dataset = self.get_dataset(dataset_id)
+            dataset_date = dataset.upload_date
+            num_columns, num_rows = self.dimension(dataset_id)
+
+            if ((not start_date or start_date <= dataset_date) and
+                    (not end_date or end_date >= dataset_date) and
+                    (not num_features_range or num_features_range[0] <= num_columns <= num_features_range[1])):
+
+                filtered_datasets.append((dataset_id, dataset.name, num_rows, num_columns))
+                OpenML_API.get_dataset()
+
+                if limit is not None:
+                    limit -= 1
+
+        except Exception as e:
+            print(f"Fehler bei der Verarbeitung des Datensatzes {dataset_id}: {e}")
+
+    return filtered_datasets
 
 @app.callback(
     Output('interval-component', 'disabled'),
@@ -187,7 +267,7 @@ app.layout = dbc.Container([
                 ]),
             ]),
             dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
-            dbc.Progress(id='progress_bar', value=0, style={"visibility": "hidden", "height": "20px", "margin-top": "15px"}),
+            dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
         ])
     ]),
     dcc.Graph(id='statistics_figure', style={'display': 'none'}),

@@ -1,0 +1,16 @@
+@app.callback(
+    Output({"type": "collapse", "index": dash.ALL}, "is_open"),
+    [Input({"type": "toggle", "index": dash.ALL}, "n_clicks")],
+    [State({"type": "collapse", "index": dash.ALL}, "is_open")],
+)
+def toggle_collapse(n_clicks, is_open):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return is_open
+
+    button_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])
+    idx = button_id["index"] - 1
+
+    new_is_open = is_open[:]
+    new_is_open[idx] = not is_open[idx]
+    return new_is_open
