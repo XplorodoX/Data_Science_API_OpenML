@@ -25,7 +25,7 @@ logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 cache = Cache(app.server, config={
-    'CACHE_TYPE': 'simple',  # Sie können auch andere Cachetypen wie 'simple', 'redis' usw. verwenden
+    'CACHE_TYPE': 'simple',
     'CACHE_DEFAULT_TIMEOUT': 86400
 })
 
@@ -315,6 +315,8 @@ def toggle_collapse(n_clicks, is_open):
     new_is_open = is_open[:]
     new_is_open[idx] = not is_open[idx]
     return new_is_open
+
+
 
 # App-Layout
 app.layout = dbc.Container([
