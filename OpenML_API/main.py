@@ -1,5 +1,6 @@
 import os
 import time
+import warnings
 import dash
 import openml
 from dash import html, dcc
@@ -11,18 +12,55 @@ from datetime import datetime, timedelta
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+import requests
+
+def is_dataset_downloadable(download_url):
+    """
+    Checks if the dataset is downloadable by accessing its download URL.
+
+    :param download_url: The URL to check.
+    :return: True if the dataset is downloadable, False otherwise.
+    """
+    try:
+        response = requests.head(download_url, allow_redirects=True, timeout=5)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
+
+
 def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=10):
+    """
+    Fetches datasets based on specified criteria.
+
+    :param start_date: The minimum upload date for the datasets.
+    :param end_date: The maximum upload date for the datasets.
+    :param num_attributes_range: Range for the number of attributes (min, max).
+    :param num_features_range: Range for the number of features (min, max).
+    :param limit: Maximum number of datasets to return.
+    :return: A list of filtered datasets.
+    """
+    # Validate the date range
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must be before end date.")
 
     try:
-        datasets = filter_datasets_by_attribute_types(
-            start_date, end_date, num_attributes_range, num_features_range, limit
-        )
-        return datasets
+        # Suppress specific OpenML warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            warnings.filterwarnings("ignore", message="Could not download file")
+            warnings.filterwarnings("ignore", message="Failed to download parquet, fallback on ARFF")
+
+            # Filter datasets based on provided criteria
+            datasets = filter_datasets_by_attribute_types(
+                start_date, end_date, num_attributes_range, num_features_range, limit
+            )
+            return datasets
+
     except Exception as e:
+        # Handle exceptions and provide a more user-friendly error message
         print(f"Error fetching datasets: {e}")
         return []
+
 
 def create_placeholder_figure():
     fig = go.Figure(data=[
@@ -60,8 +98,9 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attri
     list_group_items = []
     statistics_figure = go.Figure()  # Default empty figure
     statistics_style = {'display': 'none'}  # Default style
+
     progress_value = 0  # Default progress value
-    progress_style = {'visibility': 'hidden'}  # Default progress style
+    progress_style = {'visibility': 'visible'}  # Default progress style
 
     # Check if the button was clicked
     if n_clicks is None:
@@ -69,11 +108,11 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attri
 
     datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
 
-    list_group_items = []
     for idx, dataset in enumerate(datasets, start=1):
         dataset_name = dataset[1]
         rows, columns = int(dataset[2]), int(dataset[3])
         data_dimensions = f"{rows}x{columns}"
+        total_datasets = len(datasets)
 
         list_group_item = dbc.ListGroupItem(
             [
@@ -104,15 +143,15 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attri
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
 
-        # Update statistics_figure only if datasets are available
-        if datasets:
-            statistics_figure = create_statistics_figure()
-
-        statistics_style = {'display': 'block'} if datasets else {'display': 'none'}
-
-        progress_value = int((idx / limit) * 100) if limit > 0 else 100
+        progress_value = int((idx / total_datasets) * 100)
 
         progress_style = {'visibility': 'visible'} if n_intervals < 1 else {'visibility': 'hidden'}
+
+    # Update statistics_figure only if datasets are available
+    if datasets:
+        statistics_figure = create_statistics_figure()
+
+    statistics_style = {'display': 'block'}
 
     return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
 
@@ -154,6 +193,11 @@ def getInformationDataset(dataset_id):
     try:
         openml_dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
 
+        download_url = openml_dataset.url
+        if not is_dataset_downloadable(download_url):
+            print(f"Dataset {dataset_id} is not downloadable.")
+            return None
+
         info = {
             'Name': openml_dataset.name,
             'Version': openml_dataset.version,
@@ -180,12 +224,16 @@ def parse_date(date_str):
     :return: A datetime object or None if date_str is None.
     """
     if date_str:
-        # Adjust the format to match the format of your date strings (including time)
         try:
-            return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S')
-        except ValueError as e:
-            print(f"Error parsing date '{date_str}': {e}")
-            return None
+            # Try parsing with fractional seconds
+            return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%f')
+        except ValueError:
+            try:
+                # Try parsing without fractional seconds
+                return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S')
+            except ValueError as e:
+                print(f"Error parsing date '{date_str}': {e}")
+                return None
     else:
         return None
 
@@ -218,6 +266,9 @@ def filter_datasets_by_attribute_types(start_date=None, end_date=None, num_attri
 
         try:
             datasetInformation = getInformationDataset(dataset_id)
+            if datasetInformation is None:
+                continue  # Skip this dataset
+
             dataset_date = parse_date(datasetInformation['Upload Date'])
 
             num_features = datasetInformation['Number of Features']
@@ -316,7 +367,7 @@ app.layout = dbc.Container([
                     ]),
                 ]),
             ]),
-            dbc.Button('Suchen', id='search_button', color="primary", className="mt-3"),
+            dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3"),
             dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
         ])
     ]),
