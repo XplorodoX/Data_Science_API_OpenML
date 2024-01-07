@@ -12,6 +12,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from flask_caching import Cache
+import requests
 
 # Global variable for download folder
 DOWNLOAD_FOLDER = '/Users/merluee/Documents/VSC/Data_Science_Projekt/OpenML_API/DownloadedFiles'
@@ -24,15 +25,15 @@ logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 cache = Cache(app.server, config={
-    'CACHE_TYPE': 'filesystem',  # Sie können auch andere Cachetypen wie 'simple', 'redis' usw. verwenden
-    'CACHE_DIR': 'cache-directory'
+    'CACHE_TYPE': 'simple',  # Sie können auch andere Cachetypen wie 'simple', 'redis' usw. verwenden
+    'CACHE_DEFAULT_TIMEOUT': 86400
 })
 
 # Function to fetch datasets based on criteria
 @cache.memoize(timeout=300)
 def fetch_datasets(start_date=None, end_date=None, count_data_points=None, number_features=None,
                    number_numerical_features=None, number_categorical_features=None,
-                   number_ordinal_features=None, limit=10):
+                   number_ordinal_features=None, limit=None):
     """
     Fetches datasets based on specified criteria.
 
@@ -106,7 +107,7 @@ def create_statistics_figure():
 
 def update_dataset_list_and_statistics(n_clicks, start_date, end_date, count_data_points, number_features,
                                        number_numerical_features, number_categorical_features,
-                                       number_ordinal_features, limit, n_intervals):
+                                       number_ordinal_features, limit_input, n_intervals):
     # Initialize variables at the start of the function
     list_group_items = []
     statistics_figure = go.Figure()  # Default empty figure
@@ -119,7 +120,7 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, count_dat
     if n_clicks is None:
         return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
 
-    datasets = fetch_datasets(start_date, end_date, number_numerical_features, number_features, limit)
+    datasets = fetch_datasets(start_date, end_date, number_numerical_features, number_features,10,10, 20, limit_input)
 
     for idx, dataset in enumerate(datasets, start=1):
         dataset_name = dataset[1]
@@ -173,32 +174,6 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, count_dat
 def list_datasets(output_format='dataframe'):
     return openml.datasets.list_datasets(output_format=output_format)
 
-# Function to get dataset information and file
-@cache.memoize(timeout=60)
-def get_dataset(dataset_id, preferred_format='csv', save_directory='.'):
-    try:
-        openml_dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
-        name = openml_dataset.name
-
-        X, y, _, _ = openml_dataset.get_data(dataset_format="dataframe")
-
-        # Überprüfen, ob das bevorzugte Format verfügbar ist
-        if preferred_format == 'csv':
-            dataset_file_extension = 'csv'
-            dataset_file_path = os.path.join(save_directory, f"{name}.{dataset_file_extension}")
-            print(dataset_file_path)
-            #X.to_csv(dataset_file_path, index=False, encoding='utf-8')
-        else:
-            # Fallback auf ein anderes Format, z.B. ARFF oder andere
-            # Hier können Sie Ihre Fallback-Logik hinzufügen
-            pass
-
-        return dataset_file_path
-    except Exception as e:
-        #logger.error(f"Fehler beim Abrufen des Datensatzes {dataset_id}: {e}")
-        print(f"Fehler beim Aufrufen des Datensatzes {dataset_id}: {e}")
-        raise
-
 def parse_date(date_str):
     """
     Converts a date string to a datetime object.
@@ -230,14 +205,18 @@ def suppress_openml_warnings():
 
 # Function to check if dataset can be downloaded
 def is_dataset_downloadable(download_url):
-    import requests
     try:
-        response = requests.head(download_url, allow_redirects=True, timeout=5)
+        response = requests.head(download_url, allow_redirects=True, timeout=60)
+        if response.status_code != 200:
+            logging.warning(f"Dataset URL {download_url} returned status code {response.status_code}.")
         return response.status_code == 200
-    except requests.RequestException:
+    except requests.RequestException as e:
+        logging.error(f"Failed to check dataset URL {download_url}: {e}")
         return False
 
+
 # Function to get dataset information and file
+@cache.memoize(timeout=60)
 def get_dataset_info_and_file(dataset_id, preferred_format='csv', save_directory='.'):
     """
         Gets dataset information and file.
@@ -248,7 +227,7 @@ def get_dataset_info_and_file(dataset_id, preferred_format='csv', save_directory
 
             download_url = dataset.url
             if not is_dataset_downloadable(download_url):
-                print(f"Dataset {dataset_id} is not downloadable.")
+                logging.warning(f"Dataset {dataset_id} is not downloadable.")
                 return None, None
 
             X, y, _, _ = dataset.get_data(dataset_format="dataframe")
@@ -364,7 +343,7 @@ app.layout = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader("Anzahl Datenpunkte"),
                         dbc.CardBody([
-                            dbc.Input(id='countDataPoints', type='number', value=50)
+                            dbc.Input(id='countDataPoints', type='number', value=5)
                         ]),
                     ]),
                 ], md=6),
@@ -375,7 +354,7 @@ app.layout = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Features"),
                         dbc.CardBody([
-                            dbc.Input(id='numberFeatures', type='number', value=50)
+                            dbc.Input(id='numberFeatures', type='number', value=5)
                         ]),
                     ]),
                 ], md=4),
@@ -383,7 +362,7 @@ app.layout = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Numerischen Features"),
                         dbc.CardBody([
-                            dbc.Input(id='numberNumericalFeatures', type='number', value=50)
+                            dbc.Input(id='numberNumericalFeatures', type='number', value=5)
                         ]),
                     ]),
                 ], md=4),
@@ -391,7 +370,7 @@ app.layout = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Kategorialen Features"),
                         dbc.CardBody([
-                            dbc.Input(id='numberCategoricalFeatures', type='number', value=50)
+                            dbc.Input(id='numberCategoricalFeatures', type='number', value=5)
                         ]),
                     ]),
                 ], md=4),
@@ -402,7 +381,7 @@ app.layout = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Ordinal Features"),
                         dbc.CardBody([
-                            dbc.Input(id='numberOrdinalFeatures', type='number', value=50)
+                            dbc.Input(id='numberOrdinalFeatures', type='number', value=5)
                         ]),
                     ]),
                 ], md=6),
