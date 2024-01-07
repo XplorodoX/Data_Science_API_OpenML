@@ -14,6 +14,12 @@ from datetime import datetime, timedelta
 # Global variable for download folder
 DOWNLOAD_FOLDER = '/Users/merluee/Documents/VSC/Data_Science_Projekt/OpenML_API/DownloadedFiles'
 
+import logging
+
+# Set up logging
+logging.basicConfig(filename='app.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -31,6 +37,7 @@ def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, nu
     """
     # Validate the date range
     if start_date and end_date and start_date > end_date:
+        logging.error("Start date must be before end date.")
         raise ValueError("Start date must be before end date.")
 
     try:
@@ -48,6 +55,7 @@ def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, nu
 
     except Exception as e:
         # Handle exceptions and provide a more user-friendly error message
+        logging.exception(f"Error fetching datasets: {e}")
         print(f"Error fetching datasets: {e}")
         return []
 
@@ -251,7 +259,7 @@ def get_dataset_info_and_file(dataset_id, preferred_format='csv', save_directory
             return info, dataset_file_path
 
         except Exception as e:
-            print(f"Error processing dataset {dataset_id}: {e}")
+            logging.exception(f"Error processing dataset {dataset_id}: {e}")
             return None, None
 
 # Function to filter datasets by attribute types
@@ -377,4 +385,4 @@ app.layout = dbc.Container([
 
 # Running the app
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
