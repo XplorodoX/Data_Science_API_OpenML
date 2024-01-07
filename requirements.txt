@@ -6,3 +6,5 @@ plotly
 pandas
 openml
 requests
+pyinstaller
+Flask-Caching

@@ -55,3 +55,5 @@ Thumbs.db
 
 DownloadedFiles/
 site-packages/
+
+app.log

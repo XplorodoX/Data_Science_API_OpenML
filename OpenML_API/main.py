@@ -9,29 +9,40 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import json
+import logging
 from datetime import datetime, timedelta
+from flask_caching import Cache
 
 # Global variable for download folder
 DOWNLOAD_FOLDER = '/Users/merluee/Documents/VSC/Data_Science_Projekt/OpenML_API/DownloadedFiles'
 
-import logging
+# Dash app setup
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # Set up logging
 logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
-# Dash app setup
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+cache = Cache(app.server, config={
+    'CACHE_TYPE': 'filesystem',  # Sie können auch andere Cachetypen wie 'simple', 'redis' usw. verwenden
+    'CACHE_DIR': 'cache-directory'
+})
 
 # Function to fetch datasets based on criteria
-def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=10):
+@cache.memoize(timeout=300)
+def fetch_datasets(start_date=None, end_date=None, count_data_points=None, number_features=None,
+                   number_numerical_features=None, number_categorical_features=None,
+                   number_ordinal_features=None, limit=10):
     """
     Fetches datasets based on specified criteria.
 
     :param start_date: The minimum upload date for the datasets.
     :param end_date: The maximum upload date for the datasets.
-    :param num_attributes_range: Range for the number of attributes (min, max).
-    :param num_features_range: Range for the number of features (min, max).
+    :param count_data_points: Filter for the number of data points.
+    :param number_features: Filter for the number of features.
+    :param number_numerical_features: Filter for the number of numerical features.
+    :param number_categorical_features: Filter for the number of categorical features.
+    :param number_ordinal_features: Filter for the number of ordinal features.
     :param limit: Maximum number of datasets to return.
     :return: A list of filtered datasets.
     """
@@ -41,17 +52,11 @@ def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, nu
         raise ValueError("Start date must be before end date.")
 
     try:
-        # Suppress specific OpenML warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            warnings.filterwarnings("ignore", message="Could not download file")
-            warnings.filterwarnings("ignore", message="Failed to download parquet, fallback on ARFF")
-
-            # Filter datasets based on provided criteria
-            datasets = filter_datasets_by_attribute_types(
-                start_date, end_date, num_attributes_range, num_features_range, limit
-            )
-            return datasets
+        # Filter datasets based on provided criteria
+        datasets = filter_datasets_by_attribute_types(
+            start_date, end_date, number_numerical_features, number_features, limit
+        )
+        return datasets
 
     except Exception as e:
         # Handle exceptions and provide a more user-friendly error message
@@ -86,14 +91,22 @@ def create_statistics_figure():
         Output('progress_bar', 'style')
     ],
     [Input('search_button', 'n_clicks')],
-    [State('date_range', 'start_date'),
-     State('date_range', 'end_date'),
-     State('number_of_attributes_slider1', 'value'),
-     State('number_of_attributes_slider2', 'value'),
-     State('limit_input', 'value'),
-     State('interval-component', 'n_intervals')]
+    [
+        State('date_range', 'start_date'),
+        State('date_range', 'end_date'),
+        State('countDataPoints', 'value'),  # Anzahl Datenpunkte
+        State('numberFeatures', 'value'),   # Anzahl der Features
+        State('numberNumericalFeatures', 'value'),  # Anzahl der Numerischen Features
+        State('numberCategoricalFeatures', 'value'),  # Anzahl der Kategorialen Features
+        State('numberOrdinalFeatures', 'value'),  # Anzahl der Ordinal Features
+        State('limit_input', 'value'),  # Limit
+        State('interval-component', 'n_intervals')
+    ]
 )
-def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attributes_range, num_features_range, limit, n_intervals):
+
+def update_dataset_list_and_statistics(n_clicks, start_date, end_date, count_data_points, number_features,
+                                       number_numerical_features, number_categorical_features,
+                                       number_ordinal_features, limit, n_intervals):
     # Initialize variables at the start of the function
     list_group_items = []
     statistics_figure = go.Figure()  # Default empty figure
@@ -106,7 +119,7 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attri
     if n_clicks is None:
         return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
 
-    datasets = fetch_datasets(start_date, end_date, num_attributes_range, num_features_range, limit)
+    datasets = fetch_datasets(start_date, end_date, number_numerical_features, number_features, limit)
 
     for idx, dataset in enumerate(datasets, start=1):
         dataset_name = dataset[1]
@@ -161,6 +174,7 @@ def list_datasets(output_format='dataframe'):
     return openml.datasets.list_datasets(output_format=output_format)
 
 # Function to get dataset information and file
+@cache.memoize(timeout=60)
 def get_dataset(dataset_id, preferred_format='csv', save_directory='.'):
     try:
         openml_dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
@@ -283,10 +297,12 @@ def filter_datasets_by_attribute_types(start_date=None, end_date=None, num_attri
             continue
 
         dataset_date = parse_date(dataset_info['Upload Date'])
+        # Assuming num_features_range is a single integer value representing the minimum number of features
         if ((not start_date or start_date <= dataset_date) and
                 (not end_date or end_date >= dataset_date) and
-                (not num_features_range or num_features_range[0] <= dataset_info['Number of Features'] <= num_features_range[1])):
-            filtered_datasets.append((dataset_id, dataset_info['Name'], dataset_info['Number of Instances'], dataset_info['Number of Features']))
+                (num_features_range is None or dataset_info['Number of Features'] >= num_features_range)):
+            filtered_datasets.append((dataset_id, dataset_info['Name'], dataset_info['Number of Instances'],
+                                      dataset_info['Number of Features']))
 
             if limit is not None:
                 limit -= 1
@@ -321,63 +337,95 @@ def toggle_collapse(n_clicks, is_open):
     new_is_open[idx] = not is_open[idx]
     return new_is_open
 
-# App layout setup
+# App-Layout
 app.layout = dbc.Container([
     dbc.Card([
         dbc.CardHeader("Filter"),
         dbc.CardBody([
-            dbc.CardGroup([
-                dbc.Card([
-                    dbc.CardHeader("Datum"),
-                    dbc.CardBody([
-                        dcc.DatePickerRange(
-                            id='date_range',
-                            start_date=datetime.now() - timedelta(10000),
-                            end_date=datetime.now(),
-                            min_date_allowed=datetime(2000, 1, 1),
-                            max_date_allowed=datetime.now(),
-                            display_format='DD.MM.YYYY',
-                            initial_visible_month=datetime.now()
-                        ),
+            # Reihe für Datum und Anzahl der Datenpunkte
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Datum"),
+                        dbc.CardBody([
+                            dcc.DatePickerRange(
+                                id='date_range',
+                                start_date=datetime.now() - timedelta(10000),
+                                end_date=datetime.now(),
+                                min_date_allowed=datetime(2000, 1, 1),
+                                max_date_allowed=datetime.now(),
+                                display_format='DD.MM.YYYY',
+                                initial_visible_month=datetime.now()
+                            ),
+                        ]),
                     ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Maximalwert für Anzahl der Attribute"),
-                    dbc.CardBody([
-                        dbc.Input(id='max_attributes_input', type='number', value=100)
+                ], md=6),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Anzahl Datenpunkte"),
+                        dbc.CardBody([
+                            dbc.Input(id='countDataPoints', type='number', value=50)
+                        ]),
                     ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Anzahl der Attribute (Slider 1)"),
-                    dbc.CardBody([
-                        dcc.RangeSlider(
-                            id='number_of_attributes_slider1',
-                            min=0, max=100, step=1, value=[0, 100],
-                            marks={i: str(i) for i in range(0, 101, 10)}
-                        ),
-                    ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Anzahl der Features (Slider 2)"),
-                    dbc.CardBody([
-                        dcc.RangeSlider(
-                            id='number_of_attributes_slider2',
-                            min=0, max=100, step=1, value=[0, 100],
-                            marks={i: str(i) for i in range(0, 101, 10)}
-                        ),
-                    ]),
-                ]),
-                dbc.Card([
-                    dbc.CardHeader("Max Datensätze"),
-                    dbc.CardBody([
-                        dbc.Input(id='limit_input', type='number', value=10)
-                    ]),
-                ]),
+                ], md=6),
             ]),
-            dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3"),
+            # Reihe für Anzahl der Features und numerische Features
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Anzahl der Features"),
+                        dbc.CardBody([
+                            dbc.Input(id='numberFeatures', type='number', value=50)
+                        ]),
+                    ]),
+                ], md=4),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Anzahl der Numerischen Features"),
+                        dbc.CardBody([
+                            dbc.Input(id='numberNumericalFeatures', type='number', value=50)
+                        ]),
+                    ]),
+                ], md=4),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Anzahl der Kategorialen Features"),
+                        dbc.CardBody([
+                            dbc.Input(id='numberCategoricalFeatures', type='number', value=50)
+                        ]),
+                    ]),
+                ], md=4),
+            ]),
+            # Reihe für Ordinal Features und Limit
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Anzahl der Ordinal Features"),
+                        dbc.CardBody([
+                            dbc.Input(id='numberOrdinalFeatures', type='number', value=50)
+                        ]),
+                    ]),
+                ], md=6),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Anzahl Datensätze"),
+                        dbc.CardBody([
+                            dbc.Input(id='limit_input', type='number', value=10)
+                        ]),
+                    ]),
+                ], md=6),
+            ]),
+            # Suchbutton
+            dbc.Row([
+                dbc.Col([
+                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'})
+                ], md=12),
+            ]),
+            # Fortschrittsbalken
             dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
         ])
     ]),
+    # Graph und Listengruppe
     dcc.Graph(id='statistics_figure', style={'display': 'none'}),
     dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
     dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
@@ -385,4 +433,4 @@ app.layout = dbc.Container([
 
 # Running the app
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
