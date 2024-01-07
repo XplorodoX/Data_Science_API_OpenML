@@ -1,6 +1,7 @@
 import os
 import time
 import warnings
+from contextlib import contextmanager
 import dash
 import openml
 from dash import html, dcc
@@ -10,24 +11,13 @@ import plotly.graph_objs as go
 import json
 from datetime import datetime, timedelta
 
+# Global variable for download folder
+DOWNLOAD_FOLDER = '/Users/merluee/Documents/VSC/Data_Science_Projekt/OpenML_API/DownloadedFiles'
+
+# Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-import requests
-
-def is_dataset_downloadable(download_url):
-    """
-    Checks if the dataset is downloadable by accessing its download URL.
-
-    :param download_url: The URL to check.
-    :return: True if the dataset is downloadable, False otherwise.
-    """
-    try:
-        response = requests.head(download_url, allow_redirects=True, timeout=5)
-        return response.status_code == 200
-    except requests.RequestException:
-        return False
-
-
+# Function to fetch datasets based on criteria
 def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=10):
     """
     Fetches datasets based on specified criteria.
@@ -61,7 +51,7 @@ def fetch_datasets(start_date=None, end_date=None, num_attributes_range=None, nu
         print(f"Error fetching datasets: {e}")
         return []
 
-
+# Function to create a placeholder graph
 def create_placeholder_figure():
     fig = go.Figure(data=[
         go.Scatter(x=[1, 2, 3], y=[4, 1, 2], mode='markers', marker=dict(color='LightSkyBlue'), name='Placeholder Data'),
@@ -70,6 +60,7 @@ def create_placeholder_figure():
     fig.update_layout(title='Placeholder Figure', xaxis_title='X Axis', yaxis_title='Y Axis')
     return fig
 
+# Function to create a statistics graph
 def create_statistics_figure():
     fig = go.Figure(data=[
         go.Bar(x=['Dataset 1', 'Dataset 2', 'Dataset 3'], y=[50, 30, 70], name='Anzahl der Features')
@@ -77,6 +68,7 @@ def create_statistics_figure():
     fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
     return fig
 
+# Callback for updating dataset list and statistics
 @app.callback(
     [
         Output('list_group', 'children'),
@@ -155,10 +147,12 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, num_attri
 
     return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
 
+# Static method to list datasets
 @staticmethod
 def list_datasets(output_format='dataframe'):
     return openml.datasets.list_datasets(output_format=output_format)
 
+# Function to get dataset information and file
 def get_dataset(dataset_id, preferred_format='csv', save_directory='.'):
     try:
         openml_dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
@@ -183,39 +177,6 @@ def get_dataset(dataset_id, preferred_format='csv', save_directory='.'):
         print(f"Fehler beim Aufrufen des Datensatzes {dataset_id}: {e}")
         raise
 
-def getInformationDataset(dataset_id):
-    """
-    Extracts and returns information from a dataset object on OpenML.
-
-    :param dataset_id: The ID of the dataset to fetch and extract information from.
-    :return: A dictionary containing various pieces of information about the dataset.
-    """
-    try:
-        openml_dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
-
-        download_url = openml_dataset.url
-        if not is_dataset_downloadable(download_url):
-            print(f"Dataset {dataset_id} is not downloadable.")
-            return None
-
-        info = {
-            'Name': openml_dataset.name,
-            'Version': openml_dataset.version,
-            'Format': openml_dataset.format,
-            'Upload Date': openml_dataset.upload_date,
-            'Licence': openml_dataset.licence,
-            'Download URL': openml_dataset.url,
-            'OpenML URL': f"https://www.openml.org/d/{dataset_id}",
-            'Number of Features': len(openml_dataset.features),
-            'Number of Instances': openml_dataset.qualities['NumberOfInstances']
-        }
-
-        return info
-
-    except Exception as e:
-        # Handle exceptions that might occur during dataset retrieval or processing
-        return {"error": str(e)}
-
 def parse_date(date_str):
     """
     Converts a date string to a datetime object.
@@ -237,20 +198,65 @@ def parse_date(date_str):
     else:
         return None
 
+@contextmanager
+def suppress_openml_warnings():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        warnings.filterwarnings("ignore", message="Could not download file")
+        warnings.filterwarnings("ignore", message="Failed to download parquet, fallback on ARFF")
+        yield
 
-def filter_datasets_by_attribute_types(start_date=None, end_date=None, num_attributes_range=None,
-                                           num_features_range=None, limit=None):
+# Function to check if dataset can be downloaded
+def is_dataset_downloadable(download_url):
+    import requests
+    try:
+        response = requests.head(download_url, allow_redirects=True, timeout=5)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
+
+# Function to get dataset information and file
+def get_dataset_info_and_file(dataset_id, preferred_format='csv', save_directory='.'):
     """
-                Filters datasets based on upload dates and number of features.
+        Gets dataset information and file.
+    """
+    with suppress_openml_warnings():
+        try:
+            dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
 
-                :param start_date: Minimum upload date for the datasets.
-                :param end_date: Maximum upload date for the datasets.
-                :param num_features_range: Tuple or list with two elements specifying the range of number of features.
-                :param limit: Maximum number of datasets to return.
-                :return: A list of filtered datasets.
-            """
+            download_url = dataset.url
+            if not is_dataset_downloadable(download_url):
+                print(f"Dataset {dataset_id} is not downloadable.")
+                return None, None
 
-    datasets_list = list_datasets()
+            X, y, _, _ = dataset.get_data(dataset_format="dataframe")
+            dataset_file_path = None
+            if preferred_format == 'csv':
+                dataset_file_extension = 'csv'
+                dataset_file_path = os.path.join(DOWNLOAD_FOLDER, f"{dataset.name}.{dataset_file_extension}")
+                X.to_csv(dataset_file_path, index=False, encoding='utf-8')
+
+            info = {
+                'Name': dataset.name,
+                'Version': dataset.version,
+                'Format': dataset.format,
+                'Upload Date': dataset.upload_date,
+                'Licence': dataset.licence,
+                'Download URL': dataset.url,
+                'OpenML URL': f"https://www.openml.org/d/{dataset_id}",
+                'Number of Features': len(dataset.features),
+                'Number of Instances': dataset.qualities['NumberOfInstances']
+            }
+
+            return info, dataset_file_path
+
+        except Exception as e:
+            print(f"Error processing dataset {dataset_id}: {e}")
+            return None, None
+
+# Function to filter datasets by attribute types
+def filter_datasets_by_attribute_types(start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=None):
+    datasets_list = openml.datasets.list_datasets(output_format='dataframe')
     dataset_ids = datasets_list['did'].tolist()
     filtered_datasets = []
 
@@ -258,36 +264,28 @@ def filter_datasets_by_attribute_types(start_date=None, end_date=None, num_attri
     end_date = parse_date(end_date) if end_date else None
 
     if start_date and end_date and start_date > end_date:
-        raise ValueError("Startdatum muss vor dem Enddatum liegen.")
+        raise ValueError("Start date must be before end date.")
 
     for dataset_id in dataset_ids:
         if limit is not None and limit <= 0:
             break
 
-        try:
-            datasetInformation = getInformationDataset(dataset_id)
-            if datasetInformation is None:
-                continue  # Skip this dataset
+        dataset_info, _ = get_dataset_info_and_file(dataset_id)
+        if dataset_info is None:
+            continue
 
-            dataset_date = parse_date(datasetInformation['Upload Date'])
+        dataset_date = parse_date(dataset_info['Upload Date'])
+        if ((not start_date or start_date <= dataset_date) and
+                (not end_date or end_date >= dataset_date) and
+                (not num_features_range or num_features_range[0] <= dataset_info['Number of Features'] <= num_features_range[1])):
+            filtered_datasets.append((dataset_id, dataset_info['Name'], dataset_info['Number of Instances'], dataset_info['Number of Features']))
 
-            num_features = datasetInformation['Number of Features']
-            num_instances = datasetInformation['Number of Instances']
-
-            if ((not start_date or start_date <= dataset_date) and
-                    (not end_date or end_date >= dataset_date) and
-                    (not num_features_range or num_features_range[0] <= num_features <= num_features_range[1])):
-
-                filtered_datasets.append((dataset_id, datasetInformation['Name'], num_instances, num_features))
-
-                if limit is not None:
-                    limit -= 1
-
-        except Exception as e:
-            print(f"Fehler bei der Verarbeitung des Datensatzes {dataset_id}: {e}")
+            if limit is not None:
+                limit -= 1
 
     return filtered_datasets
 
+# Callbacks for toggling intervals and collapsing items
 @app.callback(
     Output('interval-component', 'disabled'),
     [Input('search_button', 'n_clicks')],
@@ -315,6 +313,7 @@ def toggle_collapse(n_clicks, is_open):
     new_is_open[idx] = not is_open[idx]
     return new_is_open
 
+# App layout setup
 app.layout = dbc.Container([
     dbc.Card([
         dbc.CardHeader("Filter"),
@@ -376,5 +375,6 @@ app.layout = dbc.Container([
     dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
 ], fluid=True)
 
+# Running the app
 if __name__ == '__main__':
     app.run_server(debug=False)
