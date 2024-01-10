@@ -5,17 +5,38 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 import numpy as np
+import os
 
 app = dash.Dash(__name__)
-
-dataset_id = 0 # Platzhalter
+# https://www.openml.org/search?type=data&status=active&id=53
+# heart-statlog
+dataset_id = 53 # Platzhalter
 
 def download_dataset(dataset_id):
-    dataset = openml.datasets.get_dataset(dataset_id)
-    X, y, _, attribute_names = dataset.get_data(target=dataset.default_target_attribute)
-    df = pd.DataFrame(X, columns=attribute_names)
-    df['target'] = y
-    return df
+    try:
+        dataset = openml.datasets.get_dataset(dataset_id)
+        X, y, _, attribute_names = dataset.get_data(target=dataset.default_target_attribute)
+        df = pd.DataFrame(X, columns=attribute_names)
+        if y is not None:
+            df['target'] = y
+
+        # Name des Datensatzes für die Dateinamenbildung verwenden
+        dataset_name = dataset.name
+        filename = f"{dataset_name.replace(' ', '_')}.csv"
+
+        # Speichern im spezifizierten Verzeichnis
+        
+        # current_path = os.getcwd()
+        # print("TEST PRINT CURRENT PATH ", current_path)
+        file_path = os.path.join('\Data_Science_API_OpenML\Downloads', filename)
+        # print("TEST PRINT FILE PATH ", file_path)
+        df.to_csv(file_path, index=False)
+
+        return df
+    except Exception as e:
+        print(f"Fehler beim Herunterladen des Datensatzes: {e}")
+        return None
+
 
 def analyze_dataset(df):
     stats_output = ""
@@ -56,6 +77,7 @@ def update_output(n_clicks, dataset_id):
         return dash.no_update, 'Bitte geben Sie eine gültige Dataset-ID ein.'
 
     df = download_dataset(int(dataset_id))
+
     stats, graphs = analyze_dataset(df)
     
     # Nehmen Sie an, dass das erste Diagramm angezeigt wird
