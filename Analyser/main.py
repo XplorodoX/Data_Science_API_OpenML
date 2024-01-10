@@ -62,11 +62,14 @@ def analyze_dataset(df):
 
     return stats_output, graphs
 
+initial_df = download_dataset(dataset_id)
+initial_stats, initial_graphs = analyze_dataset(initial_df)
+
 app.layout = html.Div([
-    dcc.Input(id='dataset-id-input', type='text', placeholder='Dataset ID eingeben'),
+    dcc.Input(id='dataset-id-input', type='text', value=str(dataset_id), placeholder='Dataset ID eingeben'),
     html.Button('Analyse starten', id='analyze-button'),
-    dcc.Graph(id='data-visualization'),
-    html.Div(id='stats-output')
+    dcc.Graph(id='data-visualization', figure=initial_graphs[0] if initial_graphs else {}),
+    html.Div(id='stats-output', children=initial_stats)
 ])
 
 @app.callback(
