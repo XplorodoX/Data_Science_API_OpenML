@@ -13,9 +13,12 @@ import logging
 from datetime import datetime, timedelta
 from flask_caching import Cache
 import requests
+import threading
 
 # Global variable for download folder
 DOWNLOAD_FOLDER = '/Users/merluee/Documents/VSC/Data_Science_Projekt/OpenML_API/DownloadedFiles'
+
+#data_queue = queue.Queue()
 
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -24,46 +27,31 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
-cache = Cache(app.server, config={
-    'CACHE_TYPE': 'simple',
-    'CACHE_DEFAULT_TIMEOUT': 86400
-})
+#cache = Cache(app.server, config={
+#    'CACHE_TYPE': 'simple',
+#    'CACHE_DEFAULT_TIMEOUT': 86400
+#})
 
-# Function to fetch datasets based on criteria
-@cache.memoize(timeout=300)
-def fetch_datasets(start_date=None, end_date=None, count_data_points=None, number_features=None,
-                   number_numerical_features=None, number_categorical_features=None,
-                   number_ordinal_features=None, limit=None):
-    """
-    Fetches datasets based on specified criteria.
+def getDataOpenML():
+    while True:
+        datasets_list = openml.datasets.list_datasets(output_format='dataframe')
+        data_queue.put(datasets_list)
+        time.sleep(86400)
 
-    :param start_date: The minimum upload date for the datasets.
-    :param end_date: The maximum upload date for the datasets.
-    :param count_data_points: Filter for the number of data points.
-    :param number_features: Filter for the number of features.
-    :param number_numerical_features: Filter for the number of numerical features.
-    :param number_categorical_features: Filter for the number of categorical features.
-    :param number_ordinal_features: Filter for the number of ordinal features.
-    :param limit: Maximum number of datasets to return.
-    :return: A list of filtered datasets.
-    """
-    # Validate the date range
-    if start_date and end_date and start_date > end_date:
-        logging.error("Start date must be before end date.")
-        raise ValueError("Start date must be before end date.")
+# Starten des Background-Threads beim Start der App
+data_thread = threading.Thread(target=background_data_processing, daemon=True)
+data_thread.start()
 
+# Function to check if dataset can be downloaded
+def is_dataset_downloadable(download_url):
     try:
-        # Filter datasets based on provided criteria
-        datasets = filter_datasets_by_attribute_types(
-            start_date, end_date, number_numerical_features, number_features, limit
-        )
-        return datasets
-
-    except Exception as e:
-        # Handle exceptions and provide a more user-friendly error message
-        logging.exception(f"Error fetching datasets: {e}")
-        print(f"Error fetching datasets: {e}")
-        return []
+        response = requests.head(download_url, allow_redirects=True, timeout=60)
+        if response.status_code != 200:
+            logging.warning(f"Dataset URL {download_url} returned status code {response.status_code}.")
+        return response.status_code == 200
+    except requests.RequestException as e:
+        logging.error(f"Failed to check dataset URL {download_url}: {e}")
+        return False
 
 # Function to create a placeholder graph
 def create_placeholder_figure():
@@ -88,39 +76,32 @@ def create_statistics_figure():
         Output('list_group', 'children'),
         Output('statistics_figure', 'figure'),
         Output('statistics_figure', 'style'),
-        Output('progress_bar', 'value'),
-        Output('progress_bar', 'style')
+        Output('progress', 'value')
     ],
     [Input('search_button', 'n_clicks')],
     [
         State('date_range', 'start_date'),
         State('date_range', 'end_date'),
-        State('countDataPoints', 'value'),  # Anzahl Datenpunkte
-        State('numberFeatures', 'value'),   # Anzahl der Features
-        State('numberNumericalFeatures', 'value'),  # Anzahl der Numerischen Features
-        State('numberCategoricalFeatures', 'value'),  # Anzahl der Kategorialen Features
-        State('numberOrdinalFeatures', 'value'),  # Anzahl der Ordinal Features
-        State('limit_input', 'value'),  # Limit
-        State('interval-component', 'n_intervals')
+        State('numberFeatures', 'value'),
+        State('numberNumericalFeatures', 'value'),
+        State('numberCategoricalFeatures', 'value'),
+        State('limit_input', 'value')
     ]
 )
-
-def update_dataset_list_and_statistics(n_clicks, start_date, end_date, count_data_points, number_features,
-                                       number_numerical_features, number_categorical_features,
-                                       number_ordinal_features, limit_input, n_intervals):
+def update_dataset_list_and_statistics(n_clicks, start_date, end_date, number_features,
+                                       number_numerical_features, number_categorical_features, limit_input):
     # Initialize variables at the start of the function
     list_group_items = []
     statistics_figure = go.Figure()  # Default empty figure
     statistics_style = {'display': 'none'}  # Default style
 
     progress_value = 0  # Default progress value
-    progress_style = {'visibility': 'visible'}  # Default progress style
+    progress_label = ""  # Initialize progress label
 
-    # Check if the button was clicked
     if n_clicks is None:
-        return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
+        return dash.no_update
 
-    datasets = fetch_datasets(start_date, end_date, number_numerical_features, number_features,10,10, 20, limit_input)
+    datasets = filter_datasets_by_attribute_types(start_date, end_date, number_features, number_numerical_features, number_categorical_features, limit_input)
 
     for idx, dataset in enumerate(datasets, start=1):
         dataset_name = dataset[1]
@@ -157,17 +138,13 @@ def update_dataset_list_and_statistics(n_clicks, start_date, end_date, count_dat
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
 
-        progress_value = int((idx / total_datasets) * 100)
-
-        progress_style = {'visibility': 'visible'} if n_intervals < 1 else {'visibility': 'hidden'}
-
     # Update statistics_figure only if datasets are available
     if datasets:
         statistics_figure = create_statistics_figure()
 
     statistics_style = {'display': 'block'}
 
-    return list_group_items, statistics_figure, statistics_style, progress_value, progress_style
+    return list_group_items, statistics_figure, {'display': 'block'}, progress_data['current']
 
 # Static method to list datasets
 @staticmethod
@@ -195,96 +172,87 @@ def parse_date(date_str):
     else:
         return None
 
-@contextmanager
-def suppress_openml_warnings():
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        warnings.filterwarnings("ignore", message="Could not download file")
-        warnings.filterwarnings("ignore", message="Failed to download parquet, fallback on ARFF")
-        yield
-
-# Function to check if dataset can be downloaded
-def is_dataset_downloadable(download_url):
-    try:
-        response = requests.head(download_url, allow_redirects=True, timeout=60)
-        if response.status_code != 200:
-            logging.warning(f"Dataset URL {download_url} returned status code {response.status_code}.")
-        return response.status_code == 200
-    except requests.RequestException as e:
-        logging.error(f"Failed to check dataset URL {download_url}: {e}")
-        return False
-
-
 # Function to get dataset information and file
-@cache.memoize(timeout=60)
-def get_dataset_info_and_file(dataset_id, preferred_format='csv', save_directory='.'):
+#@cache.memoize(timeout=60)
+def get_dataset_info_and_file(dataset_id, output_format='dataframe', save_directory='.', current_progress=0, total_datasets=1):
     """
-        Gets dataset information and file.
+    Gets dataset information and file.
+
+    Parameters:
+    dataset_id (int): The ID of the dataset.
+    output_format (str): The format in which to return the dataset. Options are 'csv' or 'dataframe'.
+    save_directory (str): The directory to save the dataset file if output_format is 'csv'.
+
+    Returns:
+    tuple: A tuple containing dataset information and either the path to the dataset file (if output_format is 'csv')
+           or the DataFrame itself (if output_format is 'dataframe').
     """
-    with suppress_openml_warnings():
-        try:
-            dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
 
-            download_url = dataset.url
-            if not is_dataset_downloadable(download_url):
-                logging.warning(f"Dataset {dataset_id} is not downloadable.")
-                return None, None
-
-            X, y, _, _ = dataset.get_data(dataset_format="dataframe")
-            dataset_file_path = None
-            if preferred_format == 'csv':
-                dataset_file_extension = 'csv'
-                dataset_file_path = os.path.join(DOWNLOAD_FOLDER, f"{dataset.name}.{dataset_file_extension}")
-                X.to_csv(dataset_file_path, index=False, encoding='utf-8')
-
-            info = {
-                'Name': dataset.name,
-                'Version': dataset.version,
-                'Format': dataset.format,
-                'Upload Date': dataset.upload_date,
-                'Licence': dataset.licence,
-                'Download URL': dataset.url,
-                'OpenML URL': f"https://www.openml.org/d/{dataset_id}",
-                'Number of Features': len(dataset.features),
-                'Number of Instances': dataset.qualities['NumberOfInstances']
-            }
-
-            return info, dataset_file_path
-
-        except Exception as e:
-            logging.exception(f"Error processing dataset {dataset_id}: {e}")
+    try:
+        dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True,
+                                              download_features_meta_data=True)
+        download_url = dataset.url
+        if not is_dataset_downloadable(download_url):
+            logging.warning(f"Dataset {dataset_id} is not downloadable.")
             return None, None
+        X, y, _, _ = dataset.get_data(dataset_format="dataframe")
+        info = {
+            'Name': dataset.name,
+            'Version': dataset.version,
+            'Format': dataset.format,
+            'Upload Date': dataset.upload_date,
+            'Licence': dataset.licence,
+            'Download URL': dataset.url,
+            'OpenML URL': f"https://www.openml.org/d/{dataset_id}",
+            'Number of Features': len(dataset.features),
+            'Number of Instances': dataset.qualities['NumberOfInstances']
+        }
+        return info
+        #if output_format == 'csv':
+            #dataset_file_extension = 'csv'
+            #dataset_file_path = os.path.join(save_directory, f"{dataset.name}.{dataset_file_extension}")
+            #X.to_csv(dataset_file_path, index=False, encoding='utf-8')
+            #return info, dataset_file_path
+        #elif output_format == 'dataframe':
+            #return info, X
+    except Exception as e:
+        logging.exception(f"Error processing dataset {dataset_id}: {e}")
+        return None, None
+
 
 # Function to filter datasets by attribute types
-def filter_datasets_by_attribute_types(start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=None):
-    datasets_list = openml.datasets.list_datasets(output_format='dataframe')
+def filter_datasets_by_attribute_types(start_date=None, end_date=None,
+                                       num_features_range=None, num_numerical_features=None,
+                                       num_categorical_features=None, limit=None):
+
     dataset_ids = datasets_list['did'].tolist()
+
+    # Total datasets for progress calculation
+    total_datasets = limit if limit is not None else max(limit, len(dataset_ids))
+
+    # List to hold filtered datasets
     filtered_datasets = []
 
-    start_date = parse_date(start_date) if start_date else None
-    end_date = parse_date(end_date) if end_date else None
+    # Set initial progress
+    progress_data = {'current_progress': 0, 'total': total_datasets}
 
-    if start_date and end_date and start_date > end_date:
-        raise ValueError("Start date must be before end date.")
-
-    for dataset_id in dataset_ids:
-        if limit is not None and limit <= 0:
+    for idx, dataset_id in enumerate(dataset_ids):
+        if limit is not None and len(filtered_datasets) >= limit:
             break
 
-        dataset_info, _ = get_dataset_info_and_file(dataset_id)
+        dataset_info, _, _ = get_dataset_info_and_file(dataset_id)
         if dataset_info is None:
             continue
 
         dataset_date = parse_date(dataset_info['Upload Date'])
-        # Assuming num_features_range is a single integer value representing the minimum number of features
         if ((not start_date or start_date <= dataset_date) and
-                (not end_date or end_date >= dataset_date) and
-                (num_features_range is None or dataset_info['Number of Features'] >= num_features_range)):
+            (not end_date or end_date >= dataset_date) and
+            (num_features_range is None or dataset_info['Number of Features'] >= num_features_range)):
             filtered_datasets.append((dataset_id, dataset_info['Name'], dataset_info['Number of Instances'],
                                       dataset_info['Number of Features']))
 
-            if limit is not None:
-                limit -= 1
+        # Update progress
+        progress_data['current_progress'] = idx + 1
 
     return filtered_datasets
 
@@ -293,6 +261,7 @@ def filter_datasets_by_attribute_types(start_date=None, end_date=None, num_attri
     Output('interval-component', 'disabled'),
     [Input('search_button', 'n_clicks')],
     [State('interval-component', 'disabled')]
+
 )
 def toggle_interval(n_clicks, disabled):
     if n_clicks:
@@ -317,6 +286,17 @@ def toggle_collapse(n_clicks, is_open):
     return new_is_open
 
 
+
+@app.callback(
+    [Output("progress", "value"), Output("progress", "label")],
+    [Input("progress-interval", "n_intervals")],
+)
+def update_progress(n):
+    # check progress of some background process, in this example we'll just
+    # use n_intervals constrained to be in 0-100
+    progress = min(n % 110, 100)
+    # only add text after 5% progress to ensure text isn't squashed too much
+    return progress, f"{progress} %" if progress >= 5 else ""
 
 # App-Layout
 app.layout = dbc.Container([
@@ -377,16 +357,8 @@ app.layout = dbc.Container([
                     ]),
                 ], md=4),
             ]),
-            # Reihe für Ordinal Features und Limit
+            # Reihe für Limit
             dbc.Row([
-                dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Anzahl der Ordinal Features"),
-                        dbc.CardBody([
-                            dbc.Input(id='numberOrdinalFeatures', type='number', value=5)
-                        ]),
-                    ]),
-                ], md=6),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Anzahl Datensätze"),
@@ -394,7 +366,7 @@ app.layout = dbc.Container([
                             dbc.Input(id='limit_input', type='number', value=10)
                         ]),
                     ]),
-                ], md=6),
+                ], md=12),  # Angepasst auf md=12, um den gesamten Platz zu nutzen
             ]),
             # Suchbutton
             dbc.Row([
@@ -402,8 +374,8 @@ app.layout = dbc.Container([
                     dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'})
                 ], md=12),
             ]),
-            # Fortschrittsbalken
-            dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
+            dcc.Interval(id="progress-interval", n_intervals=0, interval=500),
+            dbc.Progress(id="progress", value=0, striped=True, animated=True),
         ])
     ]),
     # Graph und Listengruppe
