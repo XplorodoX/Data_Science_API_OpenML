@@ -26,10 +26,10 @@ def download_dataset(dataset_id):
 
         # Speichern im spezifizierten Verzeichnis
         
-        # current_path = os.getcwd()
-        # print("TEST PRINT CURRENT PATH ", current_path)
-        file_path = os.path.join('\Data_Science_API_OpenML\Downloads', filename)
-        # print("TEST PRINT FILE PATH ", file_path)
+        current_path = os.getcwd()
+        print("TEST PRINT CURRENT PATH ", current_path)
+        file_path = os.path.join('Data_Science_API_OpenML\Downloads', filename)
+        print("TEST PRINT FILE PATH ", file_path)
         df.to_csv(file_path, index=False)
 
         return df
@@ -39,6 +39,9 @@ def download_dataset(dataset_id):
 
 
 def analyze_dataset(df):
+    if df is None:
+        return "Keine Daten zum Analysieren vorhanden.", []
+
     stats_output = ""
     graphs = []
     
@@ -74,13 +77,13 @@ app.layout = html.Div([
 )
 def update_output(n_clicks, dataset_id):
     if n_clicks is None or not dataset_id.isdigit():
-        return dash.no_update, 'Bitte geben Sie eine gültige Dataset-ID ein.'
+        return {}, 'Bitte geben Sie eine gültige Dataset-ID ein.'
 
     df = download_dataset(int(dataset_id))
+    if df is None:
+        return {}, 'Fehler beim Herunterladen des Datensatzes.'
 
     stats, graphs = analyze_dataset(df)
-    
-    # Nehmen Sie an, dass das erste Diagramm angezeigt wird
     return graphs[0] if graphs else {}, stats
 
 if __name__ == '__main__':
