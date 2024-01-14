@@ -17,8 +17,6 @@ import requests
 import Helper as helper
 from tqdm import tqdm
 
-#TODO: Progressbar weiter implementieren  -> nur Meta Daten werden geladen von mir und die Datenset id wird weiter gegeben
-#TODO: Schieberegler wieder einbauen und dynamisch anpassen lassen die features die Werte am Regler
 #TODO: Vielleicht caching aber nicht in eine Datenbank speichern!
 #TODO: Caching mit OpenML api??? -> Ansatz
 
@@ -31,8 +29,8 @@ logging.basicConfig(filename='app.log', level=logging.INFO,
 
 global_max_number_of_instances = 0
 global_max_number_of_features = 0
-global_max_number_of_numeric_features = 100
-global_max_number_of_symbolic_features = 222
+global_max_number_of_numeric_features = 0
+global_max_number_of_symbolic_features = 0
 
 def updateGlobalMaxValues(ranges):
     global global_max_number_of_instances
@@ -84,7 +82,6 @@ def test_button_click(n_clicks):
         return "Button wurde geklickt!"
     return "Button wurde noch nicht geklickt."
 
-
 @app.callback(
     [
         Output('list_group', 'children'),
@@ -116,11 +113,13 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range)
 
     # Anzeigen der Datensätze in Liste und Graph
-    for idx, dataset in enumerate(datasets, start=1):
-        dataset_name = dataset[1]
-        rows, columns = int(dataset[2]), int(dataset[3])
-        data_dimensions = f"{rows}x{columns}"
-        total_datasets = len(datasets)
+    for idx, dataset in enumerate(filtered_data, start=1):
+        dataset_name = dataset['name']
+        num_instances = dataset['instances']
+        num_features = dataset['features']
+        num_numeric_features = dataset['numeric_features']
+        num_categorical_features = dataset['categorical_features']
+        data_dimensions = f"{num_instances} x {num_features}"
 
         list_group_item = dbc.ListGroupItem(
             [
@@ -182,82 +181,57 @@ def parse_date(date_str):
     else:
         return None
 
-# Function to get dataset information and file
-def get_dataset_info_and_file(dataset_id, save_directory='.', dataset_List=None):
-    """
-        Gets dataset information and file.
-    """
-    try:
-        dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
-
-        X, y, _, _ = dataset.get_data(dataset_format="dataframe")
-
-        info = {
-            'Name': dataset.name,
-            'Version': dataset.version,
-            'Format': dataset.format,
-            'Upload Date': dataset.upload_date,
-            'Licence': dataset.licence,
-            'Download URL': dataset.url,
-            'OpenML URL': f"https://www.openml.org/d/{dataset_id}",
-            'Number of Features': len(dataset.features),
-            'Number of Instances': dataset.qualities['NumberOfInstances']
-        }
-        return info, dataset_file_path
-    except Exception as e:
-        logging.exception(f"Error processing dataset {dataset_id}: {e}")
-        return None, None
-
 def getUploadDate(dataset_id):
-    dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
-    return dataset.upload_date
+    try:
+        dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
+        return dataset.upload_date
+    except Exception as e:
+        print(f"Fehler beim Abrufen des Upload-Datums für Dataset {dataset_id}: {e}")
+        return None
 
 # Function to filter datasets by attribute types
-def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None, categorical_features_range=None, data_points_range=None):
+def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
+                categorical_features_range=None, data_points_range=None, limit=10):
     dataset_ids = datasets['did'].tolist()
-    dataset_number_features = datasets['NumberOfFeatures'].tolist()
-    dataset_number_numeric_features = datasets['NumberOfNumericFeatures'].tolist()
-    dataset_number_categorical_features = datasets['NumberOfSymbolicFeatures'].tolist()
-    dataset_number_instances = datasets['NumberOfInstances'].tolist()
-    dataset_name = datasets['name'].tolist()
-
-    dataset_upload_date = for dataset_id in dataset_ids:
-        getUploadDate(dataset_id)
-
-    filtered_datasets = []
+    dataset_upload_dates = {did: getUploadDate(did) for did in dataset_ids}
 
     # Umwandlung der Datumsstrings in datetime Objekte
     start_date = parse_date(start_date) if start_date else None
     end_date = parse_date(end_date) if end_date else None
 
-
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must be before end date.")
 
-    for dataset_id in dataset_ids:
+    count = 0
+    filtered_datasets = []
+    for dataset_id in tqdm(dataset_ids):
+        if count >= limit:
+            break
 
-        dataset_info, _ = get_dataset_info_and_file(dataset_id)
-        if dataset_info is None:
-            continue
+        upload_date = dataset_upload_dates.get(dataset_id)
+        if upload_date:
+            dataset_date = parse_date(upload_date)
+            num_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfFeatures'].iloc[0]
+            num_numeric_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfNumericFeatures'].iloc[0]
+            num_categorical_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfSymbolicFeatures'].iloc[0]
+            num_instances = datasets.loc[datasets['did'] == dataset_id, 'NumberOfInstances'].iloc[0]
+            name = datasets.loc[datasets['did'] == dataset_id, 'name'].iloc[0]
 
-        dataset_date = parse_date(dataset_info['Upload Date'])
-        num_features = dataset_info['Number of Features']
-        num_attributes = None  # Hier sollten Sie die Anzahl der Attribute bestimmen
-
-        # Filterlogik für Datumsbereich, Anzahl der Features und Anzahl der Attribute
-        if (not start_date or start_date <= dataset_date) and \
-           (not end_date or end_date >= dataset_date) and \
-           (num_features_range is None or num_features >= num_features_range) and \
-           (num_attributes_range is None or (num_attributes and num_attributes >= num_attributes_range)):
-            filtered_datasets.append({
-                'id': dataset_id,
-                'name': dataset_info['Name'],
-                'instances': dataset_info['Number of Instances'],
-                'features': num_features
-            })
-
-            if limit is not None:
-                limit -= 1
+            if ((not start_date or start_date <= dataset_date) and
+                    (not end_date or end_date >= dataset_date) and
+                    (not features_range or (features_range[0] <= num_features <= features_range[1])) and
+                    (not numerical_features_range or (numerical_features_range[0] <= num_numeric_features <= numerical_features_range[1])) and
+                    (not categorical_features_range or (categorical_features_range[0] <= num_categorical_features <= categorical_features_range[1])) and
+                    (not data_points_range or (data_points_range[0] <= num_instances <= data_points_range[1]))):
+                filtered_datasets.append({
+                    'id': dataset_id,
+                    'name': name,
+                    'instances': num_instances,
+                    'features': num_features,
+                    'numeric_features': num_numeric_features,
+                    'categorical_features': num_categorical_features
+                })
+                count += 1
 
     return filtered_datasets
 
