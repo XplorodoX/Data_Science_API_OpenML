@@ -53,6 +53,9 @@ Thumbs.db
 *.mov
 *.wmv
 
+auslagern
+playground.py
+
 DownloadedFiles/
 site-packages/
 
