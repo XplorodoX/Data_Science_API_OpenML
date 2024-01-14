@@ -1,47 +1,48 @@
+import openml
 import pandas as pd
-import numpy as np
 
-# Beispiel-DataFrame
-df = pd.DataFrame({
-    'Alter': [25, 30, 35],
-    'Geschlecht': ['männlich', 'weiblich', 'divers'],
-    'Bildung': ['Hochschule', 'Mittelschule', 'Grundschule'],
-    'Noten':['sehr niedrig', 'niedrig', 'mittel'],
-    'Nummer':[10, 23, 12]
-})
+def calcRangeDatasets(df):
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("df muss ein Pandas DataFrame sein")
 
-# Identifizieren Sie numerische und kategorische Spalten
-numeric_cols = df.select_dtypes(include=[np.number]).columns
-categorical_cols = df.select_dtypes(exclude=[np.number]).columns
-
-def is_ordinal(column):
-    # Beispiele für bekannte ordinale Skalen
-    ordinal_scales_examples = [
-        ['Grundschule', 'Mittelschule', 'Hochschule'],
-        ['niedrig', 'mittel', 'hoch'],
-        ['schlecht', 'ausreichend', 'befriedigend', 'gut', 'sehr gut'],  # Bewertungsskala
-        ['gering', 'moderat', 'stark'],  # Intensitätsskala
-        ['nie', 'selten', 'manchmal', 'oft', 'immer'],  # Häufigkeitsskala
-
-        # Englische Beispiele
-        ['low', 'medium', 'high'],
-        ['poor', 'fair', 'good', 'very good', 'excellent'],  # Leistungsbewertung
-        ['none', 'mild', 'moderate', 'severe'],  # Schweregrad-Skala
-        ['strongly disagree', 'disagree', 'neutral', 'agree', 'strongly agree'],  # Likert-Skala
-        ['beginner', 'intermediate', 'advanced', 'expert']  # Kompetenzniveaus
+    # Liste der Spalten, für die Minima und Maxima berechnet werden sollen
+    columns_to_calculate = [
+        'NumberOfInstances', 'NumberOfFeatures', 'NumberOfClasses',
+        'NumberOfMissingValues', 'NumberOfInstancesWithMissingValues',
+        'NumberOfNumericFeatures', 'NumberOfSymbolicFeatures'
     ]
 
-    unique_values = column.dropna().unique()
+    # Überprüfen, ob alle benötigten Spalten vorhanden sind
+    for col in columns_to_calculate:
+        if col not in df.columns:
+            raise ValueError(f"Benötigte Spalte '{col}' fehlt im DataFrame")
 
-    # Überprüfen, ob die Spalte einer bekannten ordinalen Skala entspricht
-    for scale in ordinal_scales_examples:
-        if set(unique_values) <= set(scale):
-            return True
-    return False
+    # Berechnen der Maxima und Minima für die relevanten Spalten
+    ranges = {}
+    for col in columns_to_calculate:
+        ranges[col] = [df[col].min(), df[col].max()]
 
-# Überprüfen der kategorischen Spalten
-for col in categorical_cols:
-    if is_ordinal(df[col]):
-        print(f"Spalte '{col}' ist ordinal")
-    else:
-        print(f"Spalte '{col}' ist nominal")
+    return ranges
+
+def findDatasetNameWithMostFeatures(df, feature_column):
+    if feature_column not in df.columns or 'name' not in df.columns:
+        raise ValueError(f"Benötigte Spalten '{feature_column}' oder 'name' fehlen im DataFrame")
+
+    # Finden des Namens des Datensatzes mit den meisten Features der angegebenen Art
+    max_features = df[feature_column].max()
+    dataset_name = df[df[feature_column] == max_features]['name'].iloc[0]
+
+    return dataset_name
+
+def fetchDataList():
+    datasets_list = openml.datasets.list_datasets(output_format='dataframe')
+    return datasets_list
+
+if __name__ == '__main__':
+    datasets_list = fetchDataList()
+    ranges = calcRangeDatasets(datasets_list)
+    dataset_name_most_categorical = findDatasetNameWithMostFeatures(datasets_list, 'NumberOfSymbolicFeatures')
+    print("Name des Datensatzes mit den meisten kategorialen Features:", dataset_name_most_categorical)
+
+    dataset_name_most_numeric = findDatasetNameWithMostFeatures(datasets_list, 'NumberOfNumericFeatures')
+    print("Name des Datensatzes mit den meisten numerischen Features:", dataset_name_most_numeric)
