@@ -21,7 +21,12 @@ from tqdm import tqdm
 #TODO: Caching mit OpenML api??? -> Ansatz
 
 # Dash app setup
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+#app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+# Cache-Verzeichnis einrichten
+cache = diskcache.Cache("./cache-directory")
+app = Dash(__name__)
+app.long_callback_manager = dash.DiskcacheManager(cache)
 
 # Set up logging
 logging.basicConfig(filename='app.log', level=logging.INFO,
@@ -150,9 +155,7 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
 
-    # Update statistics_figure only if datasets are available
-    if datasets:
-        statistics_figure = create_statistics_figure()
+    statistics_figure = create_statistics_figure()
 
     statistics_style = {'display': 'block'}
 
@@ -189,6 +192,13 @@ def getUploadDate(dataset_id):
         print(f"Fehler beim Abrufen des Upload-Datums für Dataset {dataset_id}: {e}")
         return None
 
+def Fortschritt(dataset_ids, limit):
+    total = min(len(dataset_ids), limit)
+    for i, dataset_id in enumerate(dataset_ids):
+        if i >= limit:
+            break
+        yield i, dataset_id, int((i / total) * 100)
+
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=10):
@@ -204,7 +214,7 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
 
     count = 0
     filtered_datasets = []
-    for dataset_id in tqdm(dataset_ids):
+    for i, dataset_id, progress in Fortschritt(dataset_ids, limit):
         if count >= limit:
             break
 
@@ -262,6 +272,7 @@ def toggle_collapse(n_clicks, is_open):
     new_is_open = is_open[:]
     new_is_open[idx] = not is_open[idx]
     return new_is_open
+
 
 # Erstellen des Dash-Layouts
 app.layout = dbc.Container([
