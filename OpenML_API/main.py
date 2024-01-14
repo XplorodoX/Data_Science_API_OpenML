@@ -208,21 +208,33 @@ def get_dataset_info_and_file(dataset_id, save_directory='.', dataset_List=None)
         logging.exception(f"Error processing dataset {dataset_id}: {e}")
         return None, None
 
+def getUploadDate(dataset_id):
+    dataset = openml.datasets.get_dataset(dataset_id, download_data=True, download_qualities=True, download_features_meta_data=True)
+    return dataset.upload_date
+
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None, categorical_features_range=None, data_points_range=None):
     dataset_ids = datasets['did'].tolist()
+    dataset_number_features = datasets['NumberOfFeatures'].tolist()
+    dataset_number_numeric_features = datasets['NumberOfNumericFeatures'].tolist()
+    dataset_number_categorical_features = datasets['NumberOfSymbolicFeatures'].tolist()
+    dataset_number_instances = datasets['NumberOfInstances'].tolist()
+    dataset_name = datasets['name'].tolist()
+
+    dataset_upload_date = for dataset_id in dataset_ids:
+        getUploadDate(dataset_id)
+
     filtered_datasets = []
 
     # Umwandlung der Datumsstrings in datetime Objekte
     start_date = parse_date(start_date) if start_date else None
     end_date = parse_date(end_date) if end_date else None
 
+
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must be before end date.")
 
     for dataset_id in dataset_ids:
-        if limit is not None and limit <= 0:
-            break
 
         dataset_info, _ = get_dataset_info_and_file(dataset_id)
         if dataset_info is None:
