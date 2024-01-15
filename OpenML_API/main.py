@@ -95,10 +95,11 @@ def test_button_click(n_clicks):
         State('range_data_points', 'value'),
         State('range_features', 'value'),
         State('range_numerical_features', 'value'),
-        State('range_categorical_features', 'value')
+        State('range_categorical_features', 'value'),
+        State('input_max_datasets', 'value')
     ]
 )
-def on_search_button_click(n_clicks, start_date, end_date, data_points_range, features_range, numerical_features_range, categorical_features_range):
+def on_search_button_click(n_clicks, start_date, end_date, data_points_range, features_range, numerical_features_range, categorical_features_range, limit):
     # Initialize variables at the start of the function
     list_group_items = []
     statistics_figure = go.Figure()  # Default empty figure
@@ -110,7 +111,7 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
 
     # start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=None, datasets_list
     # Datenabrufen und Verarbeitung
-    filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range)
+    filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
 
     # Anzeigen der Datensätze in Liste und Graph
     for idx, dataset in enumerate(filtered_data, start=1):
@@ -119,14 +120,13 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
         num_features = dataset['features']
         num_numeric_features = dataset['numeric_features']
         num_categorical_features = dataset['categorical_features']
-        data_dimensions = f"{num_instances} x {num_features}"
-
+        data_dimensions = f"{int(num_instances)} x {int(num_features)}"
         list_group_item = dbc.ListGroupItem(
             [
                 html.Div(
                     [
                         html.H5(f"{idx}. {dataset_name}", className="mb-1"),  # Added numbering here
-                        html.Small(f"Downloads: 1000", className="text-secondary"),
+                        html.Small(f"Zeilenanzahl: {num_instances}", className="text-secondary"),
                         html.Small(f"Dimension: {data_dimensions}", className="text-secondary"),
                     ],
                     className="d-flex flex-column",
@@ -160,24 +160,18 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
 # Formatiere Datum
 def parse_date(date_str):
     """
-    Converts a date string to a datetime object.
+    Konvertiert einen Datumsstring in ein datetime-Objekt, wobei nur Jahr, Monat und Tag berücksichtigt werden.
 
-    :param date_str: The date string to convert.
-    :return: A datetime object or None if date_str is None.
+    :param date_str: Der zu konvertierende Datumsstring.
+    :return: Ein datetime-Objekt oder None, wenn date_str None ist.
     """
     if date_str:
         try:
-            # Try parsing with fractional seconds
-            return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%f')
-        except ValueError:
-            try:
-                # Try parsing without fractional seconds
-                return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S')
-            except ValueError as e:
-                print(f"Error parsing date '{date_str}': {e}")
-                return None
-    else:
-        return None
+            # Extrahiert nur das Jahr, den Monat und den Tag
+            return datetime.strptime(date_str.split('T')[0], '%Y-%m-%d')
+        except ValueError as e:
+            print(f"Fehler beim Parsen des Datums '{date_str}': {e}")
+    return None
 
 def getUploadDate(dataset_id):
     try:
@@ -190,17 +184,19 @@ def getUploadDate(dataset_id):
 def Fortschritt(dataset_ids, limit):
     total = min(len(dataset_ids), limit)
     for i, dataset_id in enumerate(dataset_ids):
-        if i >= limit:
-            break
         yield i, dataset_id, int((i / total) * 100)
 
+#TODO Problem Fixen mit Datum
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
-                categorical_features_range=None, data_points_range=None, limit=10):
+                categorical_features_range=None, data_points_range=None, limit=None):
+
+    if limit is None:
+        limit = float('inf')
+
     dataset_ids = datasets['did'].tolist()
     dataset_upload_dates = {did: getUploadDate(did) for did in dataset_ids}
 
-    # Umwandlung der Datumsstrings in datetime Objekte
     start_date = parse_date(start_date) if start_date else None
     end_date = parse_date(end_date) if end_date else None
 
@@ -209,13 +205,21 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
 
     count = 0
     filtered_datasets = []
-    for i, dataset_id, progress in Fortschritt(dataset_ids, limit):
+    for dataset_id in dataset_ids:
+
         if count >= limit:
+            print("Limit erreicht")
             break
 
         upload_date = dataset_upload_dates.get(dataset_id)
         if upload_date:
             dataset_date = parse_date(upload_date)
+
+            if start_date and dataset_date < start_date:
+                continue
+            if end_date and dataset_date > end_date:
+                continue
+
             num_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfFeatures'].iloc[0]
             num_numeric_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfNumericFeatures'].iloc[0]
             num_categorical_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfSymbolicFeatures'].iloc[0]
@@ -239,6 +243,7 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
                 count += 1
 
     return filtered_datasets
+
 
 # Callbacks for toggling intervals and collapsing items
 @app.callback(
@@ -313,7 +318,7 @@ app.layout = dbc.Container([
                         dbc.CardBody([
                             dcc.DatePickerRange(
                                 id='date_range',
-                                start_date=datetime.now() - timedelta(days=10000),
+                                start_date=datetime.now() - timedelta(days=200),
                                 end_date=datetime.now(),
                                 min_date_allowed=datetime(2000, 1, 1),
                                 max_date_allowed=datetime.now(),
@@ -359,7 +364,7 @@ app.layout = dbc.Container([
                                         id='input_max_datasets',
                                         type='number',
                                         min=0,
-                                        max=maxDataset,
+                                        max=100000,
                                         step=1,
                                         value=20
                                     ),

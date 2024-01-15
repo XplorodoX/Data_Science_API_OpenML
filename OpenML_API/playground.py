@@ -35,14 +35,9 @@ def findDatasetNameWithMostFeatures(df, feature_column):
     return dataset_name
 
 def fetchDataList():
+    print(openml.datasets.list_datasets(output_format='dataframe'))
     datasets_list = openml.datasets.list_datasets(output_format='dataframe')
     return datasets_list
 
 if __name__ == '__main__':
     datasets_list = fetchDataList()
-    ranges = calcRangeDatasets(datasets_list)
-    dataset_name_most_categorical = findDatasetNameWithMostFeatures(datasets_list, 'NumberOfSymbolicFeatures')
-    print("Name des Datensatzes mit den meisten kategorialen Features:", dataset_name_most_categorical)
-
-    dataset_name_most_numeric = findDatasetNameWithMostFeatures(datasets_list, 'NumberOfNumericFeatures')
-    print("Name des Datensatzes mit den meisten numerischen Features:", dataset_name_most_numeric)
