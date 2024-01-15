@@ -18,15 +18,9 @@ import Helper as helper
 from tqdm import tqdm
 
 #TODO: Vielleicht caching aber nicht in eine Datenbank speichern!
-#TODO: Caching mit OpenML api??? -> Ansatz
 
 # Dash app setup
-#app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-# Cache-Verzeichnis einrichten
-cache = diskcache.Cache("./cache-directory")
-app = Dash(__name__)
-app.long_callback_manager = dash.DiskcacheManager(cache)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # Set up logging
 logging.basicConfig(filename='app.log', level=logging.INFO,
@@ -60,6 +54,7 @@ max_features = int(global_max_number_of_features)
 max_numeric_features = int(global_max_number_of_numeric_features)
 max_categorical_features = int(global_max_number_of_symbolic_features)
 max_instances = int(global_max_number_of_instances)
+maxDataset = 12
 
 # Function to create a placeholder graph
 def create_placeholder_figure():
@@ -273,6 +268,37 @@ def toggle_collapse(n_clicks, is_open):
     new_is_open[idx] = not is_open[idx]
     return new_is_open
 
+# Callback-Funktion
+@app.callback(
+    Output('output_numerical_features', 'children'),
+    [Input('range_numerical_features', 'value')]
+)
+def update_output(value):
+    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
+
+# Callback-Funktion für Anzahl der Features
+@app.callback(
+    Output('output_features', 'children'),
+    [Input('range_features', 'value')]
+)
+def update_output_features(value):
+    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
+
+# Callback-Funktion für Anzahl der Kategorialen Features
+@app.callback(
+    Output('output_categorical_features', 'children'),
+    [Input('range_categorical_features', 'value')]
+)
+def update_output_categorical_features(value):
+    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
+
+# Callback-Funktion für Anzahl Datenpunkte
+@app.callback(
+    Output('output_data_points', 'children'),
+    [Input('range_data_points', 'value')]
+)
+def update_output_data_points(value):
+    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
 
 # Erstellen des Dash-Layouts
 app.layout = dbc.Container([
@@ -296,7 +322,8 @@ app.layout = dbc.Container([
                             ),
                         ]),
                     ]),
-                ], md=6),
+                ], md=5),
+                # Im Dash-Layout
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Anzahl Datenpunkte"),
@@ -309,12 +336,48 @@ app.layout = dbc.Container([
                                 value=[0, max_instances],
                                 marks={i: str(i) for i in range(0, max_instances + 1, max(1, max_instances // 10))}
                             ),
+                            html.Div(
+                                id='output_data_points',
+                                style={
+                                    'margin-top': '10px',
+                                    'text-align': 'center',
+                                    'font-weight': 'bold',
+                                    'color': '#007bff'
+                                }
+                            )  # Div für die Anzeige des aktuellen Werts
                         ]),
                     ]),
-                ], md=6),
-            ]),
+                ], md=5),
+
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Maximale Datensatzanzahl"),
+                        dbc.CardBody([
+                            dbc.Row([
+                                dbc.Col(
+                                    dbc.Input(
+                                        id='input_max_datasets',
+                                        type='number',
+                                        min=0,
+                                        max=maxDataset,
+                                        step=1,
+                                        value=20
+                                    ),
+                                    width=10,
+                                ),
+                            ]),
+                            dbc.Tooltip(
+                                "Geben Sie die maximale Anzahl der Datensätze ein, die berücksichtigt werden sollen.",
+                                target="input_max_datasets",
+                            ),
+                        ]),
+                    ]),
+                ], md=2),
+
+            ], className="mb-4"),
             # Reihe für Anzahl der Features und numerische Features
             dbc.Row([
+                # Im Dash-Layout
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Features"),
@@ -327,6 +390,15 @@ app.layout = dbc.Container([
                                 value=[0, max_features],
                                 marks={i: str(i) for i in range(0, max_features + 1, max(1, max_features // 10))}
                             ),
+                            html.Div(
+                                id='output_features',
+                                style={
+                                    'margin-top': '10px',
+                                    'text-align': 'center',
+                                    'font-weight': 'bold',
+                                    'color': '#007bff'
+                                }
+                            )  # Div für die Anzeige des aktuellen Werts
                         ]),
                     ]),
                 ], md=4),
@@ -340,8 +412,18 @@ app.layout = dbc.Container([
                                 max=max_numeric_features,
                                 step=1,
                                 value=[0, max_numeric_features],
-                                marks={i: str(i) for i in range(0, max_numeric_features + 1, max(1, max_numeric_features // 10))}
+                                marks={i: str(i) for i in
+                                       range(0, max_numeric_features + 1, max(1, max_numeric_features // 10))}
                             ),
+                            html.Div(
+                                id='output_numerical_features',
+                                style={
+                                    'margin-top': '10px',
+                                    'text-align': 'center',  # Zentriert den Text
+                                    'font-weight': 'bold',  # Macht den Text fett
+                                    'color': '#007bff'  # Blaue Schriftfarbe, passend zu den Bootstrap-Primärfarben
+                                }
+                            )
                         ]),
                     ]),
                 ], md=4),
@@ -355,12 +437,23 @@ app.layout = dbc.Container([
                                 max=max_categorical_features,
                                 step=1,
                                 value=[0, max_categorical_features],
-                                marks={i: str(i) for i in range(0, max_categorical_features + 1, max(1, max_categorical_features // 10))}
+                                marks={i: str(i) for i in
+                                       range(0, max_categorical_features + 1, max(1, max_categorical_features // 10))}
                             ),
+                            html.Div(
+                                id='output_categorical_features',
+                                style={
+                                    'margin-top': '10px',
+                                    'text-align': 'center',
+                                    'font-weight': 'bold',
+                                    'color': '#007bff'
+                                }
+                            )  # Div für die Anzeige des aktuellen Werts
                         ]),
                     ]),
                 ], md=4),
-            ]),
+            ], className="mb-4"),
+
             # Suchbutton
             dbc.Row([
                 dbc.Col([
