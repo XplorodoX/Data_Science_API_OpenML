@@ -15,9 +15,7 @@ from datetime import datetime, timedelta
 from flask_caching import Cache
 import requests
 import Helper as helper
-from tqdm import tqdm
-
-#TODO: Vielleicht caching aber nicht in eine Datenbank speichern!
+import hashlib
 
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -30,6 +28,10 @@ global_max_number_of_instances = 0
 global_max_number_of_features = 0
 global_max_number_of_numeric_features = 0
 global_max_number_of_symbolic_features = 0
+
+def hash_dataset(dataset):
+    dataset_string = str(dataset)
+    return hashlib.sha256(dataset_string.encode()).hexdigest()
 
 def updateGlobalMaxValues(ranges):
     global global_max_number_of_instances
@@ -121,6 +123,7 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
         num_numeric_features = dataset['numeric_features']
         num_categorical_features = dataset['categorical_features']
         data_dimensions = f"{int(num_instances)} x {int(num_features)}"
+
         list_group_item = dbc.ListGroupItem(
             [
                 html.Div(
@@ -186,7 +189,6 @@ def Fortschritt(dataset_ids, limit):
     for i, dataset_id in enumerate(dataset_ids):
         yield i, dataset_id, int((i / total) * 100)
 
-#TODO Problem Fixen mit Datum
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
