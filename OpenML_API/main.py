@@ -1,7 +1,3 @@
-import os
-import time
-import warnings
-from contextlib import contextmanager
 import dash
 import pandas as pd
 import openml
@@ -12,8 +8,6 @@ import plotly.graph_objs as go
 import json
 import logging
 from datetime import datetime, timedelta
-from flask_caching import Cache
-import requests
 import Helper as helper
 import hashlib
 
