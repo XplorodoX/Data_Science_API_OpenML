@@ -9,8 +9,6 @@ from dash import dcc, html, Input, Output, dash_table
 import plotly.express as px
 from datetime import datetime
 
-print(f"Current working directory: {os.getcwd()}")
-
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
 # Versuch, die dataset_id aus einer externen Konfigurationsdatei zu importieren
@@ -94,9 +92,9 @@ app.layout = html.Div([
             html.H4("Datensatzinformationen"),
             html.P(f"Name des Datensets: {dataset_info.get('name', 'Nicht verfügbar')}"),
             html.P(f"Anzahl der Features: {dataset_info.get('features_count', 'Nicht verfügbar')}"),
-            html.P(f"Anzahl der Instanzen: {dataset_info.get('instances_count', 'Nicht verfügbar')}"), # Anzahl der Datenpunkte -> Instanzen
+            html.P(f"Anzahl der Datenpunkte: {dataset_info.get('instances_count', 'Nicht verfügbar')}"), # Datenpunkte = Instanzen
             html.P(f"Uploaddatum: {dataset_info.get('upload_date', 'Nicht verfügbar')}"),
-        ], style={'width': '30%', 'display': 'inline-block', 'vertical-align': 'top', 'margin-left': '20px', 'padding-top': '30px'}),  # Margin links und Padding oben hinzugefügt
+        ], style={'width': '30%', 'display': 'inline-block', 'vertical-align': 'top', 'margin-left': '20px', 'padding-top': '17px'}),  # Margin links und Padding oben hinzugefügt
 
         # Kuchendiagramm rechts von den Datensatzinformationen
         html.Div([
