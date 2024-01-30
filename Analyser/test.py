@@ -10,7 +10,6 @@ import plotly.express as px
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
-
 # Versuch, die dataset_id aus einer externen Konfigurationsdatei zu importieren
 try:
     from config import dataset_id
