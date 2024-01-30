@@ -27,9 +27,9 @@ def download_dataset(dataset_id):
         # Speichern im spezifizierten Verzeichnis
         
         current_path = os.getcwd()
-        print("TEST PRINT CURRENT PATH ", current_path)
+        # print("TEST PRINT CURRENT PATH ", current_path)
         file_path = os.path.join('Data_Science_API_OpenML\Downloads', filename)
-        print("TEST PRINT FILE PATH ", file_path)
+        # print("TEST PRINT FILE PATH ", file_path)
         df.to_csv(file_path, index=False)
 
         return df

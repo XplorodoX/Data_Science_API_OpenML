@@ -1,103 +1,80 @@
 import openml
 import pandas as pd
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc, html, dash_table
 import plotly.graph_objs as go
-import plotly.express as px
 import numpy as np
 import os
 
 app = dash.Dash(__name__)
-# https://www.openml.org/search?type=data&status=active&id=53
-# heart-statlog
-dataset_id = 53 
 
-def download_dataset(dataset_id):
+# Versuch, die dataset_id aus einer externen Konfigurationsdatei zu importieren
+try:
+    from config import dataset_id
+except ImportError:
+    dataset_id = None  # Keine dataset_id definiert
+
+# Definition der test_file (kann überschrieben werden, wenn eine dataset_id vorhanden ist)
+test_file = 'Data_Science_API_OpenML/Downloads/heart-statlog-gaps.csv'  # Beispiel: 'test.csv'
+
+def load_dataset_from_file(file_path):
     try:
-        dataset = openml.datasets.get_dataset(dataset_id)
-        X, y, _, attribute_names = dataset.get_data(target=dataset.default_target_attribute)
-        df = pd.DataFrame(X, columns=attribute_names)
-        if y is not None:
-            df['target'] = y
-
-        # Name des Datensatzes für die Dateinamenbildung verwenden
-        dataset_name = dataset.name
-        filename = f"{dataset_name.replace(' ', '_')}.csv"
-
-        # Speichern im spezifizierten Verzeichnis
-        
-        current_path = os.getcwd()
-        print("TEST PRINT CURRENT PATH ", current_path)
-        file_path = os.path.join('Data_Science_API_OpenML\Downloads', filename)
-        print("TEST PRINT FILE PATH ", file_path)
-        df.to_csv(file_path, index=False)
-
+        df = pd.read_csv(file_path)
+        print(f"Datei erfolgreich geladen: {file_path}")
         return df
     except Exception as e:
-        print(f"Fehler beim Herunterladen des Datensatzes: {e}")
+        print(f"Fehler beim Laden der Datei {file_path}: {e}")
         return None
 
-def create_summary_graphs(df):
-    graphs = []
-    for column in df.select_dtypes(include=[np.number]).columns:
-        data = [
-            go.Bar(
-                x=['Mittelwert', 'Minimum', 'Maximum'],
-                y=[df[column].mean(), df[column].min(), df[column].max()],
-                name=column
-            )
-        ]
-        layout = go.Layout(title=f'Statistiken für {column}')
-        fig = go.Figure(data=data, layout=layout)
-        graphs.append(fig)
-    return graphs
+def download_dataset(dataset_id=None):
+    # Priorisiere dataset_id über test_file, wenn vorhanden
+    if dataset_id:
+        try:
+            dataset = openml.datasets.get_dataset(dataset_id)
+            X, y, _, attribute_names = dataset.get_data(target=dataset.default_target_attribute)
+            df = pd.DataFrame(X, columns=attribute_names)
+            if y is not None:
+                df['target'] = y
+            return df
+        except Exception as e:
+            print(f"Fehler beim Herunterladen des Datensatzes: {e}")
+            return None
+    elif test_file:
+        return load_dataset_from_file(test_file)
+    else:
+        print("Keine Datenquelle angegeben.")
+        return None
 
-def create_boxplots(df):
-    boxplots = []
-    for column in df.select_dtypes(include=[np.number]).columns:
-        fig = px.box(df, y=column, title=f'Boxplot für {column}')
-        boxplots.append(fig)
-    return boxplots
-
-
-def analyze_dataset(df):
-    if df is None:
-        return []
-
-    bar_charts = create_summary_graphs(df)
-    box_plots = create_boxplots(df)
-    
-    # Kombiniere alle erstellten Graphen
-    all_graphs = bar_charts + box_plots
-
-    return all_graphs
-
+# Entscheide, welche Datenquelle verwendet wird basierend auf der Verfügbarkeit der dataset_id
 initial_df = download_dataset(dataset_id)
-# initial_stats, initial_graphs = analyze_dataset(initial_df)
-initial_graphs = analyze_dataset(initial_df)
+
+def create_data_completeness_graph(df):
+    total_values = np.product(df.shape)
+    missing_values = df.isnull().sum().sum()
+    complete_values = total_values - missing_values
+    fig = go.Figure(data=[go.Pie(labels=['Vollständige Daten', 'Fehlende Datenfelder'], values=[complete_values, missing_values], hole=.3)])
+    fig.update_layout(title_text="Vollständigkeit des Datensets")
+    return fig
+
+def create_feature_summary_table(df):
+    summary = df.describe().transpose().reset_index()
+    summary.rename(columns={'index': 'Feature'}, inplace=True)
+    return summary.to_dict('records'), [{"name": i, "id": i} for i in summary.columns]
+
+
+completeness_graph = create_data_completeness_graph(initial_df)
+summary_records, columns = create_feature_summary_table(initial_df)
 
 app.layout = html.Div([
-    dcc.Input(id='dataset-id-input', type='text', value=str(dataset_id), placeholder='Dataset ID eingeben'),
-    html.Button('Analyse starten', id='analyze-button'),
-    html.Div([dcc.Graph(figure=fig) for fig in initial_graphs])
+    dcc.Graph(figure=completeness_graph),
+    dash_table.DataTable(
+        columns=columns,
+        data=summary_records,
+        style_table={'overflowX': 'auto'},
+        style_cell={'textAlign': 'left', 'padding': '5px'},
+        style_header={'fontWeight': 'bold'}
+    )
 ])
-
-@app.callback(
-    [dash.dependencies.Output('data-visualization-container', 'children')],
-    [dash.dependencies.Input('analyze-button', 'n_clicks')],
-    [dash.dependencies.State('dataset-id-input', 'value')]
-)
-def update_output(n_clicks, dataset_id):
-    if n_clicks is None or not dataset_id.isdigit():
-        return [html.P('Bitte geben Sie eine gültige Dataset-ID ein.')]
-
-    df = download_dataset(int(dataset_id))
-    if df is None:
-        return [html.P('Fehler beim Herunterladen des Datensatzes.')]
-
-    graphs = analyze_dataset(df)
-    return [dcc.Graph(figure=fig) for fig in graphs]
 
 if __name__ == '__main__':
     app.run_server(debug=True)
