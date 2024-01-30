@@ -1,94 +1,113 @@
 import openml
 import pandas as pd
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
-import plotly.express as px
+from dash import dcc, html, dash_table
+import plotly.graph_objs as go
 import numpy as np
 import os
+from dash import dcc, html, Input, Output, dash_table
+import plotly.express as px
 
-app = dash.Dash(__name__)
-# https://www.openml.org/search?type=data&status=active&id=53
-# heart-statlog
-dataset_id = 53 
+app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
-def download_dataset(dataset_id):
+# Versuch, die dataset_id aus einer externen Konfigurationsdatei zu importieren
+try:
+    from config import dataset_id
+except ImportError:
+    dataset_id = None  # Keine dataset_id definiert
+
+# Definition der test_file (kann überschrieben werden, wenn eine dataset_id vorhanden ist)
+test_file = 'Data_Science_API_OpenML/Downloads/heart-statlog-gaps.csv'  # Beispiel: 'test.csv'
+
+# Testfunktion zum Laden einer lokalen Datei (wird nur verwendet, wenn keine dataset_id vorhanden ist)
+def load_dataset_from_file(file_path):
     try:
-        dataset = openml.datasets.get_dataset(dataset_id)
-        X, y, _, attribute_names = dataset.get_data(target=dataset.default_target_attribute)
-        df = pd.DataFrame(X, columns=attribute_names)
-        if y is not None:
-            df['target'] = y
-
-        # Name des Datensatzes für die Dateinamenbildung verwenden
-        dataset_name = dataset.name
-        filename = f"{dataset_name.replace(' ', '_')}.csv"
-
-        # Speichern im spezifizierten Verzeichnis
-        
-        current_path = os.getcwd()
-        # print("TEST PRINT CURRENT PATH ", current_path)
-        file_path = os.path.join('Data_Science_API_OpenML\Downloads', filename)
-        # print("TEST PRINT FILE PATH ", file_path)
-        df.to_csv(file_path, index=False)
-
+        df = pd.read_csv(file_path)
+        print(f"Lokale Datei erfolgreich geladen: {file_path}")
         return df
     except Exception as e:
-        print(f"Fehler beim Herunterladen des Datensatzes: {e}")
+        print(f"Fehler beim Laden der lokalen Datei {file_path}: {e}")
         return None
 
+def download_dataset(dataset_id=None):
+    # Priorisiere dataset_id über test_file, wenn vorhanden
+    if dataset_id:
+        try:
+            dataset = openml.datasets.get_dataset(dataset_id)
+            X, y, _, attribute_names = dataset.get_data(target=dataset.default_target_attribute)
+            df = pd.DataFrame(X, columns=attribute_names)
+            if y is not None:
+                df['target'] = y
+            return df
+        except Exception as e:
+            print(f"Fehler beim Herunterladen des Datensatzes: {e}")
+            return None
+    elif test_file:
+        return load_dataset_from_file(test_file)
+    else:
+        print("Keine Datenquelle angegeben.")
+        return None
 
-def analyze_dataset(df):
-    if df is None:
-        return "Keine Daten zum Analysieren vorhanden.", []
-
-    stats_output = ""
-    graphs = []
-    
-    # Statistische Zusammenfassung
-    # summary = df.describe()
-
-
-    # Mittelwert, Minimum, Maximum berechnen
-    for column in df.columns:
-        if df[column].dtype in [np.int64, np.float64]:
-            mean_value = df[column].mean()
-            min_value = df[column].min()
-            max_value = df[column].max()
-            stats_output += f"Statistiken für {column}: Mittelwert: {mean_value}, Minimum: {min_value}, Maximum: {max_value}\n"
-
-            # Plotly-Grafik erstellen
-            fig = px.histogram(df, x=column, title=f"Verteilung von {column}")
-            graphs.append(fig)
-
-    return stats_output, graphs
-
+# Entscheide, welche Datenquelle verwendet wird basierend auf der Verfügbarkeit der dataset_id
 initial_df = download_dataset(dataset_id)
-initial_stats, initial_graphs = analyze_dataset(initial_df)
+
+def create_data_completeness_graph(df):
+    total_values = np.product(df.shape)
+    missing_values = df.isnull().sum().sum()
+    complete_values = total_values - missing_values
+    fig = go.Figure(data=[go.Pie(labels=['Vollständige Daten', 'Fehlende Datenfelder'],
+                                 values=[complete_values, missing_values], hole=.6,
+                                 domain={'x': [0.75, 1.0]}  # Anpassung hier, verschiebt das Diagramm nach rechts
+                                 )])
+    fig.update_layout(title_text="Vollständigkeit des Datensets",
+                      # Anpassung für eine bessere Positionierung und Sichtbarkeit des Titels
+                      title_x=0.75,  # Zentriert den Titel über dem Diagramm
+                      margin=dict(t=50, b=50, l=50, r=50),  # Optional: Anpassen der Ränder für mehr Platz
+                      )
+    return fig
+
+
+def create_feature_summary_table(df):
+    summary = df.describe().transpose().reset_index()
+    summary.rename(columns={'index': 'Feature'}, inplace=True)
+    return summary.to_dict('records'), [{"name": i, "id": i} for i in summary.columns]
+
+
+completeness_graph = create_data_completeness_graph(initial_df)
+summary_records, columns = create_feature_summary_table(initial_df)
 
 app.layout = html.Div([
-    dcc.Input(id='dataset-id-input', type='text', value=str(dataset_id), placeholder='Dataset ID eingeben'),
-    html.Button('Analyse starten', id='analyze-button'),
-    dcc.Graph(id='data-visualization', figure=initial_graphs[0] if initial_graphs else {}),
-    html.Div(id='stats-output', children=initial_stats)
+    dcc.Graph(figure=completeness_graph),
+    dash_table.DataTable(
+        id='feature-summary-table',
+        columns=columns,
+        data=summary_records,
+        style_table={'overflowX': 'auto'},
+        style_cell={'textAlign': 'left', 'padding': '6px'},
+        style_header={'fontWeight': 'bold'},
+        # row_selectable='single',  # Ermöglicht die Auswahl einzelner Zeilen
+    ),
+    html.Div(id='feature-histogram')  # Korrigierte ID, die mit dem Callback übereinstimmt
 ])
 
 @app.callback(
-    [dash.dependencies.Output('data-visualization', 'figure'),
-     dash.dependencies.Output('stats-output', 'children')],
-    [dash.dependencies.Input('analyze-button', 'n_clicks')],
-    [dash.dependencies.State('dataset-id-input', 'value')]
+    Output('feature-histogram', 'children'),
+    [Input('feature-summary-table', 'active_cell')]
 )
-def update_output(n_clicks, dataset_id):
-    if n_clicks is None or not dataset_id.isdigit():
-        return {}, 'Bitte geben Sie eine gültige Dataset-ID ein.'
+def update_histogram(active_cell):
+    if not active_cell:
+        return "Bitte wählen Sie für die Darstellung eines Histogrammes ein Feature aus der obigen Tabelle."
 
-    df = download_dataset(int(dataset_id))
-    if df is None:
-        return {}, 'Fehler beim Herunterladen des Datensatzes.'
+    selected_row = active_cell['row']
+    selected_feature = summary_records[selected_row]["Feature"]
 
-    stats, graphs = analyze_dataset(df)
-    return graphs[0] if graphs else {}, stats
+    # Stellen Sie sicher, dass das ausgewählte Feature existiert
+    if selected_feature not in initial_df:
+        return f"Feature {selected_feature} nicht im DataFrame gefunden."
+
+    fig = px.histogram(initial_df, x=selected_feature, title=f'Histogramm von {selected_feature}')
+    return dcc.Graph(figure=fig)
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
