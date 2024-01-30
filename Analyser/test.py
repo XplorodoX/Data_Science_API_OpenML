@@ -52,9 +52,17 @@ def create_data_completeness_graph(df):
     total_values = np.product(df.shape)
     missing_values = df.isnull().sum().sum()
     complete_values = total_values - missing_values
-    fig = go.Figure(data=[go.Pie(labels=['Vollständige Daten', 'Fehlende Datenfelder'], values=[complete_values, missing_values], hole=.3)])
-    fig.update_layout(title_text="Vollständigkeit des Datensets")
+    fig = go.Figure(data=[go.Pie(labels=['Vollständige Daten', 'Fehlende Datenfelder'],
+                                 values=[complete_values, missing_values], hole=.6,
+                                 domain={'x': [0.75, 1.0]}  # Anpassung hier, verschiebt das Diagramm nach rechts
+                                 )])
+    fig.update_layout(title_text="Vollständigkeit des Datensets",
+                      # Anpassung für eine bessere Positionierung und Sichtbarkeit des Titels
+                      title_x=0.75,  # Zentriert den Titel über dem Diagramm
+                      margin=dict(t=50, b=50, l=50, r=50),  # Optional: Anpassen der Ränder für mehr Platz
+                      )
     return fig
+
 
 def create_feature_summary_table(df):
     summary = df.describe().transpose().reset_index()
