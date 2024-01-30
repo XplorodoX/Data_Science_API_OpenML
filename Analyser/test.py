@@ -5,6 +5,8 @@ from dash import dcc, html, dash_table
 import plotly.graph_objs as go
 import numpy as np
 import os
+from dash import dcc, html, Input, Output, dash_table
+import plotly.express as px
 
 app = dash.Dash(__name__)
 
@@ -76,13 +78,30 @@ summary_records, columns = create_feature_summary_table(initial_df)
 app.layout = html.Div([
     dcc.Graph(figure=completeness_graph),
     dash_table.DataTable(
+        id='feature-summary-table',
         columns=columns,
         data=summary_records,
         style_table={'overflowX': 'auto'},
         style_cell={'textAlign': 'left', 'padding': '5px'},
-        style_header={'fontWeight': 'bold'}
-    )
+        style_header={'fontWeight': 'bold'},
+        row_selectable='single',  # Ermöglicht die Auswahl einzelner Zeilen
+    ),
+    html.Div(id='graph-container')  # Container für dynamische Grafiken basierend auf der Auswahl
 ])
+
+@app.callback(
+    Output('graph-container', 'children'),
+    [Input('feature-summary-table', 'selected_rows')]
+)
+def update_graph(selected_rows):
+    if not selected_rows:
+        return "Bitte wählen Sie ein Feature aus der obigen Tabelle."
+    selected_row = selected_rows[0]
+    feature_name = summary_records[selected_row]['Feature']
+    
+    # Erstellen eines Histogramms für das ausgewählte Feature
+    fig = px.histogram(initial_df, x=feature_name, title=f'Verteilung von {feature_name}')
+    return dcc.Graph(figure=fig)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
