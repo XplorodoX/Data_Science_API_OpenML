@@ -8,7 +8,8 @@ import os
 from dash import dcc, html, Input, Output, dash_table
 import plotly.express as px
 
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, suppress_callback_exceptions=True)
+
 
 # Versuch, die dataset_id aus einer externen Konfigurationsdatei zu importieren
 try:
@@ -84,24 +85,29 @@ app.layout = html.Div([
         style_table={'overflowX': 'auto'},
         style_cell={'textAlign': 'left', 'padding': '5px'},
         style_header={'fontWeight': 'bold'},
-        row_selectable='single',  # Ermöglicht die Auswahl einzelner Zeilen
+        # row_selectable='single',  # Ermöglicht die Auswahl einzelner Zeilen
     ),
-    html.Div(id='graph-container')  # Container für dynamische Grafiken basierend auf der Auswahl
+    html.Div(id='feature-histogram')  # Korrigierte ID, die mit dem Callback übereinstimmt
 ])
 
 @app.callback(
-    Output('graph-container', 'children'),
-    [Input('feature-summary-table', 'selected_rows')]
+    Output('feature-histogram', 'children'),
+    [Input('feature-summary-table', 'active_cell')]
 )
-def update_graph(selected_rows):
-    if not selected_rows:
-        return "Bitte wählen Sie ein Feature aus der obigen Tabelle."
-    selected_row = selected_rows[0]
-    feature_name = summary_records[selected_row]['Feature']
-    
-    # Erstellen eines Histogramms für das ausgewählte Feature
-    fig = px.histogram(initial_df, x=feature_name, title=f'Verteilung von {feature_name}')
+def update_histogram(active_cell):
+    if not active_cell:
+        return "Bitte wählen Sie ein Feature aus der Tabelle."
+
+    selected_row = active_cell['row']
+    selected_feature = summary_records[selected_row]["Feature"]
+
+    # Stellen Sie sicher, dass das ausgewählte Feature existiert
+    if selected_feature not in initial_df:
+        return f"Feature {selected_feature} nicht im DataFrame gefunden."
+
+    fig = px.histogram(initial_df, x=selected_feature, title=f'Histogramm von {selected_feature}')
     return dcc.Graph(figure=fig)
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
