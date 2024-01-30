@@ -108,6 +108,7 @@ app.layout = html.Div([
         id='feature-summary-table',
         columns=columns,
         data=summary_records,
+        page_size=12,
         style_table={'overflowX': 'auto'},
         style_cell={'textAlign': 'left', 'padding': '6px'},
         style_header={'fontWeight': 'bold'},
