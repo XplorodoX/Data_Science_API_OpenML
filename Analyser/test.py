@@ -23,6 +23,8 @@ test_file = 'Data_Science_API_OpenML/Downloads/heart-statlog-gaps.csv'
 
 def download_dataset(dataset_id=None):
     dataset_info = {}
+    df = pd.DataFrame()  # Initialisieren Sie df hier, um sicherzustellen, dass es immer definiert ist
+    
     if dataset_id:
         try:
             dataset = openml.datasets.get_dataset(dataset_id)
@@ -31,12 +33,10 @@ def download_dataset(dataset_id=None):
             if y is not None:
                 df['target'] = y
             
-            # Versuch, das Uploaddatum in ein datetime-Objekt umzuwandeln und zu formatieren
             try:
                 upload_date_obj = datetime.strptime(dataset.upload_date, '%Y-%m-%d')
                 formatted_date = upload_date_obj.strftime('%Y-%m-%d')
             except ValueError:
-                # Fallback, wenn die Umwandlung fehlschlägt
                 formatted_date = dataset.upload_date
             
             dataset_info = {
@@ -48,9 +48,20 @@ def download_dataset(dataset_id=None):
         except Exception as e:
             print(f"Fehler beim Herunterladen des Datensatzes: {e}")
     else:
-        # Behandlung für den Fall, dass keine dataset_id angegeben ist
-        print("Keine dataset_id angegeben.")
+        print("Keine dataset_id angegeben. Versuche, Testfile zu laden...")
+        try:
+            df = pd.read_csv(test_file)
+            dataset_info = {
+                'name': 'Lokale Testdatei',
+                'features_count': len(df.columns),
+                'instances_count': len(df),
+                'upload_date': 'Nicht verfügbar'  # Da es sich um ein lokales Testfile handelt, haben wir kein Uploaddatum
+            }
+        except Exception as e:
+            print(f"Fehler beim Laden der Testdatei {test_file}: {e}")
+
     return df, dataset_info
+
 
 initial_df, dataset_info = download_dataset(dataset_id)
 
@@ -78,20 +89,21 @@ summary_records, columns = create_feature_summary_table(initial_df)
 app.layout = html.Div([
     # Flex-Container für Datensatzinformationen und Kuchendiagramm nebeneinander
     html.Div([
-        # Datensatzinformationen links
+        # Datensatzinformationen links mit Einrückung
         html.Div([
             html.H4("Datensatzinformationen"),
             html.P(f"Name des Datensets: {dataset_info.get('name', 'Nicht verfügbar')}"),
             html.P(f"Anzahl der Features: {dataset_info.get('features_count', 'Nicht verfügbar')}"),
-            html.P(f"Anzahl der Instanzen: {dataset_info.get('instances_count', 'Nicht verfügbar')}"),
+            html.P(f"Anzahl der Instanzen: {dataset_info.get('instances_count', 'Nicht verfügbar')}"), # Anzahl der Datenpunkte -> Instanzen
             html.P(f"Uploaddatum: {dataset_info.get('upload_date', 'Nicht verfügbar')}"),
-        ], style={'width': '30%', 'display': 'inline-block', 'vertical-align': 'top'}),
+        ], style={'width': '30%', 'display': 'inline-block', 'vertical-align': 'top', 'margin-left': '20px', 'padding-top': '30px'}),  # Margin links und Padding oben hinzugefügt
 
         # Kuchendiagramm rechts von den Datensatzinformationen
         html.Div([
             dcc.Graph(figure=completeness_graph),
-        ], style={'width': '70%', 'display': 'inline-block'}),
+        ], style={'width': '75%', 'display': 'inline-block'}),
     ], style={'display': 'flex', 'flex-direction': 'row'}),
+
 
     # DataTable und Histogramm unter dem Flex-Container
     dash_table.DataTable(
@@ -112,7 +124,7 @@ app.layout = html.Div([
 )
 def update_histogram(active_cell):
     if not active_cell or initial_df.empty:
-        return "Bitte wählen Sie für die Darstellung eines Histogrammes ein Feature aus der obigen Tabelle."
+        return "Bitte wählen Sie für die Darstellung eines Histogrammes ein Feature aus der Tabelle."
     selected_row = active_cell['row']
     selected_feature = summary_records[selected_row]["Feature"]
     if selected_feature not in initial_df.columns:
