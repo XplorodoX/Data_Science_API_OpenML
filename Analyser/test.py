@@ -20,13 +20,14 @@ except ImportError:
 # Definition der test_file (kann überschrieben werden, wenn eine dataset_id vorhanden ist)
 test_file = 'Data_Science_API_OpenML/Downloads/heart-statlog-gaps.csv'  # Beispiel: 'test.csv'
 
+# Testfunktion zum Laden einer lokalen Datei (wird nur verwendet, wenn keine dataset_id vorhanden ist)
 def load_dataset_from_file(file_path):
     try:
         df = pd.read_csv(file_path)
-        print(f"Datei erfolgreich geladen: {file_path}")
+        print(f"Lokale Datei erfolgreich geladen: {file_path}")
         return df
     except Exception as e:
-        print(f"Fehler beim Laden der Datei {file_path}: {e}")
+        print(f"Fehler beim Laden der lokalen Datei {file_path}: {e}")
         return None
 
 def download_dataset(dataset_id=None):
@@ -83,7 +84,7 @@ app.layout = html.Div([
         columns=columns,
         data=summary_records,
         style_table={'overflowX': 'auto'},
-        style_cell={'textAlign': 'left', 'padding': '5px'},
+        style_cell={'textAlign': 'left', 'padding': '6px'},
         style_header={'fontWeight': 'bold'},
         # row_selectable='single',  # Ermöglicht die Auswahl einzelner Zeilen
     ),
@@ -96,7 +97,7 @@ app.layout = html.Div([
 )
 def update_histogram(active_cell):
     if not active_cell:
-        return "Bitte wählen Sie ein Feature aus der Tabelle."
+        return "Bitte wählen Sie für die Darstellung eines Histogrammes ein Feature aus der obigen Tabelle."
 
     selected_row = active_cell['row']
     selected_feature = summary_records[selected_row]["Feature"]
