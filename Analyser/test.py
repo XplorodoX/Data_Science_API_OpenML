@@ -6,6 +6,7 @@ import plotly.graph_objs as go
 import numpy as np
 import os
 from dash import dcc, html, Input, Output, dash_table
+from dash_table.Format import Format, Scheme
 import plotly.express as px
 from datetime import datetime
 
@@ -74,12 +75,38 @@ def create_data_completeness_graph(df):
     fig.update_layout(title_text="Vollständigkeit des Datensets", title_x=0.5)
     return fig
 
+def format_number(value):
+    """Formatiert eine Zahl mit bis zu zwei Nachkommastellen, entfernt jedoch nachfolgende Nullen."""
+    if pd.isnull(value):
+        return None  # Umgang mit NaN-Werten
+    if isinstance(value, int) or (isinstance(value, float) and value.is_integer()):
+        return f"{int(value)}"  # Konvertiert den Wert in eine Ganzzahl und dann in einen String, wenn es eine ganze Zahl ist
+    else:
+        formatted_value = f"{value:.4f}"  # Formatieren mit zwei Nachkommastellen
+        return formatted_value.rstrip('0').rstrip('.')  # Entfernt nachfolgende Nullen und den Dezimalpunkt, falls keine Nachkommastellen vorhanden sind
+
 def create_feature_summary_table(df):
     if df.empty:
         return [], []  # Gibt leere Werte zurück, wenn df leer ist
-    summary = df.describe().transpose().reset_index()
+    
+    summary = df.describe(percentiles=[.25, .5, .75, .97, .997]).transpose()
+    
+    # Modus berechnen und zur Zusammenfassung hinzufügen
+    modes = df.mode().iloc[0]
+    summary['mode'] = [modes[col] if col in modes else np.nan for col in summary.index]
+
+    summary.reset_index(inplace=True)
     summary.rename(columns={'index': 'Feature'}, inplace=True)
-    return summary.to_dict('records'), [{"name": i, "id": i} for i in summary.columns]
+
+    # Formatieren der numerischen Werte als Strings mit bedingter Nachkommastellen-Anzeige
+    for col in summary.columns[1:]:  # Überspringe die 'Feature'-Spalte
+        summary[col] = summary[col].apply(format_number)
+
+    summary_records = summary.to_dict('records')
+    columns = [{"name": i, "id": i} for i in summary.columns]
+
+    return summary_records, columns
+
 
 completeness_graph = create_data_completeness_graph(initial_df)
 summary_records, columns = create_feature_summary_table(initial_df)
