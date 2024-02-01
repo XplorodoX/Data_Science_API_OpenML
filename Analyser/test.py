@@ -45,19 +45,19 @@ def download_dataset(dataset_id=None):
                 'upload_date': formatted_date
             }
         except Exception as e:
-            print(f"Fehler beim Herunterladen des Datensatzes: {e}")
+            print(f"Error downloading the data set: {e}")
     else:
-        print("Keine dataset_id angegeben. Versuche, Testfile zu laden...")
+        print("No dataset_id specified. Attempts to load test file...")
         try:
             df = pd.read_csv(test_file)
             dataset_info = {
-                'name': 'Lokale Testdatei',
+                'name': 'local testfile',
                 'features_count': len(df.columns),
                 'instances_count': len(df),
-                'upload_date': 'Nicht verfügbar'  # Da es sich um ein lokales Testfile handelt, haben wir kein Uploaddatum
+                'upload_date': 'Not available'  # Da es sich um ein lokales Testfile handelt, haben wir kein Uploaddatum
             }
         except Exception as e:
-            print(f"Fehler beim Laden der Testdatei {test_file}: {e}")
+            print(f"Error loading the test file {test_file}: {e}")
 
     return df, dataset_info
 
@@ -70,9 +70,9 @@ def create_data_completeness_graph(df):
     total_values = np.product(df.shape)
     missing_values = df.isnull().sum().sum()
     complete_values = total_values - missing_values
-    fig = go.Figure(data=[go.Pie(labels=['Vollständige Daten', 'Fehlende Datenfelder'],
+    fig = go.Figure(data=[go.Pie(labels=['Complete data', 'Missing data fields'],
                                  values=[complete_values, missing_values], hole=.6)])
-    fig.update_layout(title_text="Vollständigkeit des Datensets", title_x=0.5)
+    fig.update_layout(title_text="Completeness of the dataset", title_x=0.5)
     return fig
 
 def format_number(value):
@@ -116,11 +116,11 @@ app.layout = html.Div([
     html.Div([
         # Datensatzinformationen links mit Einrückung
         html.Div([
-            html.H4("Datensatzinformationen"),
-            html.P(f"Name des Datensets: {dataset_info.get('name', 'Nicht verfügbar')}"),
-            html.P(f"Anzahl der Features: {dataset_info.get('features_count', 'Nicht verfügbar')}"),
-            html.P(f"Anzahl der Datenpunkte: {dataset_info.get('instances_count', 'Nicht verfügbar')}"), # Datenpunkte = Instanzen
-            html.P(f"Uploaddatum: {dataset_info.get('upload_date', 'Nicht verfügbar')}"),
+            html.H4("Datasetinformation"),
+            html.P(f"Name of Dataset: {dataset_info.get('name', 'Not available')}"),
+            html.P(f"Number of Features: {dataset_info.get('features_count', 'Not available')}"),
+            html.P(f"Number of Instances: {dataset_info.get('instances_count', 'Not available')}"), # Datenpunkte = Instanzen
+            html.P(f"Upload date: {dataset_info.get('upload_date', 'Not available')}"),
         ], style={'width': '30%', 'display': 'inline-block', 'vertical-align': 'top', 'margin-left': '20px', 'padding-top': '17px'}),  # Margin links und Padding oben hinzugefügt
 
         # Kuchendiagramm rechts von den Datensatzinformationen
@@ -149,13 +149,31 @@ app.layout = html.Div([
 )
 def update_histogram(active_cell):
     if not active_cell or initial_df.empty:
-        return "Bitte wählen Sie für die Darstellung eines Histogrammes ein Feature aus der Tabelle."
+        return "Please select a feature from the table to display a histogram."
     selected_row = active_cell['row']
     selected_feature = summary_records[selected_row]["Feature"]
     if selected_feature not in initial_df.columns:
-        return f"Feature {selected_feature} nicht im DataFrame gefunden."
-    fig = px.histogram(initial_df, x=selected_feature, title=f'Histogramm von {selected_feature}')
+        return f"Feature {selected_feature} not found in dataframe."
+
+    # Erstellung des Histogramms für das ausgewählte Feature
+    fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
+
+    # Berechnung der Quantile für das ausgewählte Feature
+    quantiles = initial_df[selected_feature].quantile([0.25, 0.5, 0.75, 0.97, 0.997]).to_dict()
+
+    # Hinzufügen von vertikalen Linien für jedes Quantil
+    for quantile, value in quantiles.items():
+        fig.add_vline(x=value, line_dash="solid", line_color="blue",
+                      annotation_text=f"{quantile * 100}th: {value:.2f}", 
+                      annotation_position="top right",
+                      annotation=dict(font_size=10, font_color="green", showarrow=False))
+
+    # Verbesserung der Hover-Funktionalität
+    fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram'))
+    
     return dcc.Graph(figure=fig)
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
