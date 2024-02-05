@@ -1,0 +1,35 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>312</oml:id>
+  <oml:name>scene</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: Matthew R. Boutell, Jiebo Luo, Xipeng Shen, and Christopher M. Brown.  
+**Source**: [Mulan](http://mulan.sourceforge.net/datasets-mlc.html)     
+**Please cite**: 
+
+### Description
+
+Scene recognition dataset - It contains characteristics about images and their classes. 
+The original dataset is a multi-label classification problem with 6 different labels: {Beach, Sunset, FallFoliage, Field, Mountain, Urban}.
+The current dataset is a binary classification problem considering just the 'Urban' label.
+
+### Sources
+
+Matthew R. Boutell, Jiebo Luo, Xipeng Shen, and Christopher M. Brown.
+Learning multi-label scene classification.
+Pattern Recognition, 37(9):1757-1771, 2004. 
+
+### Dataset Information
+
+Multi-label classification problem, based on real-world images.   
+Instances: 2407    
+Features: 294 numerical features with values between [0,1]   
+Classes/Labels: 2 {Urban, Nor Urban}   
+No missing values   
+</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Matthew R. Boutell</oml:creator><oml:creator> Jiebo Luo</oml:creator><oml:creator> Xipeng Shen</oml:creator><oml:creator> and Christopher M. Brown</oml:creator>  <oml:contributor></oml:contributor>   <oml:collection_date>2004 </oml:collection_date>  <oml:upload_date>2014-08-25T11:43:22</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/1390080/scene.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0312/dataset_312.pq</oml:parquet_url>  <oml:file_id>1390080</oml:file_id>  <oml:default_target_attribute>Urban</oml:default_target_attribute>        <oml:citation>M.R. Boutell, J. Luo, X. Shen, and C.M. Brown. Learning multi-labelscene classiffication. Pattern Recognition, 37(9):1757-1771, 2004</oml:citation>  <oml:tag>Images</oml:tag><oml:tag>Machine Learning</oml:tag><oml:tag>multi_label</oml:tag><oml:tag>mythbusting_1</oml:tag><oml:tag>OpenML100</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_123</oml:tag><oml:tag>study_14</oml:tag><oml:tag>study_15</oml:tag><oml:tag>study_20</oml:tag><oml:tag>study_34</oml:tag><oml:tag>study_7</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://mulan.sourceforge.net/datasets-mlc.html</oml:original_data_url>  <oml:paper_url>https://www.sciencedirect.com/science/article/pii/S0031320304001074</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0312/dataset_312.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 21:31:26</oml:processing_date>      <oml:md5_checksum>8ceccf81e895a6520a78bf6f756dde17</oml:md5_checksum>
+</oml:data_set_description>

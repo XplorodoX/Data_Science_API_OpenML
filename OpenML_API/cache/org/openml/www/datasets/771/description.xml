@@ -1,0 +1,16 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>771</oml:id>
+  <oml:name>analcatdata_michiganacc</oml:name>
+  <oml:version>2</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+Binarized version of the original data set (see version 1). It converts the numeric target feature to a two-class nominal target feature by computing the mean and classifying all instances with a lower target value as positive ('P') and all others as negative ('N').</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-10-04T14:33:03</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/53305/analcatdata_michiganacc.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0771/dataset_771.pq</oml:parquet_url>  <oml:file_id>53305</oml:file_id>  <oml:default_target_attribute>binaryClass</oml:default_target_attribute>  <oml:row_id_attribute>Time_index</oml:row_id_attribute>        <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>mythbusting_1</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_127</oml:tag><oml:tag>study_15</oml:tag><oml:tag>study_20</oml:tag><oml:tag>study_7</oml:tag><oml:tag>study_88</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0771/dataset_771.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:09:17</oml:processing_date>      <oml:md5_checksum>6f4f9838af7da3aaa66fdad5e9ddd164</oml:md5_checksum>
+</oml:data_set_description>

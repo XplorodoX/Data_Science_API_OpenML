@@ -1,0 +1,34 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>711</oml:id>
+  <oml:name>visualizing_ethanol</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+This S dump contains 22 data sets from the
+book Visualizing Data published by
+Hobart Press (books@hobart.com).
+The dump was created by data.dump()
+and can be read back into S by data.restore().
+The name of each S data set is the name of
+the data set used in the book. To find the
+description of the data set in the book look
+under the entry - data, name - in the index.
+For example, one data set is barley.
+To find the description of barley, look
+in the index under the entry - data, barley.
+
+File: ../data/visualizing/ethanol.csv
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Hobart Press</oml:creator>      <oml:upload_date>2014-10-04T13:55:08</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/53011/visualizing_ethanol.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0711/dataset_711.pq</oml:parquet_url>  <oml:file_id>53011</oml:file_id>  <oml:default_target_attribute>E</oml:default_target_attribute>          <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>StatLib</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://lib.stat.cmu.edu/datasets/</oml:original_data_url>    <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0711/dataset_711.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:09:47</oml:processing_date>      <oml:md5_checksum>e4a79933f322efe38c3b402e72bbd8f0</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,16 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>296</oml:id>
+  <oml:name>Ailerons</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: Luis Torgo&quot;,&quot;Rui Camacho  
+**Source**: Unknown - 2014-08-18  
+**Please cite**:   
+
+This data set addresses a control problem, namely flying a F16 aircraft. The attributes describe the status of the aeroplane, while the goal is to predict the control action on the ailerons of the aircraft.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Luis Torgo</oml:creator><oml:creator> Rui Camacho  </oml:creator>     <oml:collection_date>2014-08-18</oml:collection_date>  <oml:upload_date>2014-08-19T08:59:30</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52060/Ailerons.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0296/dataset_296.pq</oml:parquet_url>  <oml:file_id>52060</oml:file_id>  <oml:default_target_attribute>goal</oml:default_target_attribute>          <oml:tag>Machine Learning</oml:tag><oml:tag>Manufacturing</oml:tag><oml:tag>OpenML-Reg19</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://www.dcc.fc.up.pt/~ltorgo/Regression/DataSets.html</oml:original_data_url>    <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0296/dataset_296.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:20:48</oml:processing_date>      <oml:md5_checksum>6439bf514b12cb1db5441788b78d4c03</oml:md5_checksum>
+</oml:data_set_description>

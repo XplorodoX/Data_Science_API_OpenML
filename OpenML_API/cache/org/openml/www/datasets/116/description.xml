@@ -1,0 +1,12 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>116</oml:id>
+  <oml:name>BNG(bridges_version1,nominal,1000000)</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description></oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Geoffrey Holmes</oml:creator><oml:creator>Bernhard Pfahringer</oml:creator><oml:creator>Jan van Rijn</oml:creator><oml:creator>Joaquin Vanschoren</oml:creator>     <oml:collection_date>2014-04-08 22:44:17</oml:collection_date>  <oml:upload_date>2014-04-08T12:41:40</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/1836/BNG(bridges_version1,nominal,1000000).arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0116/dataset_116.pq</oml:parquet_url>  <oml:file_id>1836</oml:file_id>  <oml:default_target_attribute>TYPE</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>    <oml:tag>artificial</oml:tag><oml:tag>BNG</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0116/dataset_116.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:32:04</oml:processing_date>      <oml:md5_checksum>4f85e225cc521f03a5ff9ccd49ae37d6</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,28 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>659</oml:id>
+  <oml:name>sleuth_ex1714</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+Contains 110 data sets from the book 'The Statistical Sleuth'
+by Fred Ramsey and Dan Schafer; Duxbury Press, 1997.
+(schafer@stat.orst.edu) [14/Oct/97] (172k)
+
+Note: description taken from this web site:
+http://lib.stat.cmu.edu/datasets/
+
+File: ../data/sleuth/ex1714.asc
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Fred Ramsey</oml:creator><oml:creator> Dan Schafer</oml:creator>     <oml:collection_date>1997</oml:collection_date>  <oml:upload_date>2014-10-04T13:53:44</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52959/sleuth_ex1714.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0659/dataset_659.pq</oml:parquet_url>  <oml:file_id>52959</oml:file_id>  <oml:default_target_attribute>income</oml:default_target_attribute>          <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>StatLib</oml:tag>  <oml:visibility>public</oml:visibility>    <oml:paper_url>https://books.google.nl/books?hl=en&amp;lr=&amp;id=jfoKAAAAQBAJ&amp;oi=fnd&amp;pg=PP1&amp;dq=The+Statistical+Sleuth&amp;ots=a3RcwzG-1r&amp;sig=4ucNPyVppxdgDfB_-kAMIYdt8JQ&amp;redir_esc=y#v=onepage&amp;q=The%20Statistical%20Sleuth&amp;f=false</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0659/dataset_659.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:45:11</oml:processing_date>      <oml:md5_checksum>ddc2af2440209b64ebb60a3236f09652</oml:md5_checksum>
+</oml:data_set_description>

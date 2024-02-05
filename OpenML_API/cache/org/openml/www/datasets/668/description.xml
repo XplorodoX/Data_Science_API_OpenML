@@ -1,0 +1,29 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>668</oml:id>
+  <oml:name>witmer_census_1980</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+A shar archive of data from the book Data Analysis: An
+Introduction(1992) Prentice Hall bu Jeff Witmer. Submitted by
+Jeff Witmer (fwitmer@ocvaxa.cc.oberlin.edu) [28/Jun/94] (29
+kbytes)
+
+Note: description taken from this web site:
+http://lib.stat.cmu.edu/datasets/
+
+File: ../data/witmer/DATA_FILES/Census_1980
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Jeff Witmer</oml:creator>     <oml:collection_date>1980</oml:collection_date>  <oml:upload_date>2014-10-04T13:53:57</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52968/witmer_census_1980.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0668/dataset_668.pq</oml:parquet_url>  <oml:file_id>52968</oml:file_id>  <oml:default_target_attribute>HSPerc</oml:default_target_attribute>    <oml:ignore_attribute>STATE</oml:ignore_attribute>      <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>StatLib</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0668/dataset_668.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:03:32</oml:processing_date>      <oml:md5_checksum>92215941e2dfda928ca9ebe484bdee37</oml:md5_checksum>
+</oml:data_set_description>

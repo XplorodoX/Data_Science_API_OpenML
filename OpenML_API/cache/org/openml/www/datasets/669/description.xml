@@ -1,0 +1,63 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>669</oml:id>
+  <oml:name>chscase_adopt</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+File README
+-----------
+
+chscase  A collection of the data sets used in the book
+&quot;A Casebook for a First Course in Statistics and Data Analysis,&quot;
+by Samprit Chatterjee, Mark S. Handcock and Jeffrey S. Simonoff,
+John Wiley and Sons, New York, 1995. Submitted by
+Samprit Chatterjee (schatterjee@stern.nyu.edu),
+Mark Handcock (mhandcock@stern.nyu.edu) and
+Jeff Simonoff (jsimonoff@stern.nyu.edu)
+
+This submission consists of 38 files, plus this README file.
+Each file represents a data set analyzed in the book. The names
+of the files correspond to the names used in the book. The data
+files are written in plain ASCII (character) text. Missing
+values are represented by &quot;M&quot; in all data files.
+
+More information about the data sets and the book can be
+obtained via gopher at the address
+swis.stern.nyu.edu
+
+The information is filed under
+---&gt; Academic Departments &amp; Research Centers
+---&gt; Statistics and Operations Research
+---&gt; Publications
+---&gt; A Casebook for a First Course in Statistics and Data Analysis
+---&gt; Welcome!
+
+It can also be accessed from the World Wide Web (WWW) using a
+WWW browser (e.g., netscape) starting from the URL address
+http://www.stern.nyu.edu/SOR/Casebook
+
+
+
+NOTICE: These datasets may be used freely for scientific,
+educational and/or non-commercial purposes, provided suitable
+acknowledgment is given (by citing the Chatterjee, Handcock and
+Simonoff reference above).
+
+File: adopt.dat
+
+Note: attribute names were generated automatically since there was no
+information in the data itself.
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-10-04T13:53:59</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52969/chscase_adopt.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0669/dataset_669.pq</oml:parquet_url>  <oml:file_id>52969</oml:file_id>  <oml:default_target_attribute>col_4</oml:default_target_attribute>    <oml:ignore_attribute>col_1</oml:ignore_attribute>      <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>StatLib</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0669/dataset_669.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2021-09-16 17:35:02</oml:processing_date>      <oml:md5_checksum>da912980603acdcaae25d83886b8846b</oml:md5_checksum>
+</oml:data_set_description>

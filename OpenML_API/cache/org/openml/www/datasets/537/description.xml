@@ -1,0 +1,37 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>537</oml:id>
+  <oml:name>houses</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:  Kelley Pace
+
+**Source**: http://lib.stat.cmu.edu/datasets/
+
+**Please cite**:   
+
+If you use an algorithm, dataset, or other information from StatLib, please acknowledge both StatLib and the original contributor of the material. 
+
+Pace and Barry (1997), &quot;Sparse Spatial Autoregressions&quot;, Statistics and Probability Letters.
+
+@article{pace1997sparse,
+  title={Sparse spatial autoregressions},
+  author={Pace, R Kelley and Barry, Ronald},
+  journal={Statistics \&amp; Probability Letters},
+  volume={33},
+  number={3},
+  pages={291--297},
+  year={1997},
+  publisher={Elsevier}
+}
+
+**Data description**
+
+S&amp;P Letters Data
+We collected information on the variables using all the block groups in California from the 1990 Census. In this sample a block group on average includes 1425.5 individuals living in a geographically compact area. Naturally, the geographical area included varies inversely with the population density. We computed distances among the centroids of each block group as measured in latitude and longitude. We excluded all the block groups reporting zero entries for the independent and dependent variables. The final data contained 20,640 observations on 9 variables. The dependent variable is ln(median house value).
+</oml:description>
+  <oml:description_version>2</oml:description_version>
+  <oml:format>ARFF</oml:format>
+       <oml:collection_date>1990</oml:collection_date>  <oml:upload_date>2014-09-29T00:08:56</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52649/houses.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0537/dataset_537.pq</oml:parquet_url>  <oml:file_id>52649</oml:file_id>  <oml:default_target_attribute>median_house_value</oml:default_target_attribute>          <oml:tag>OpenML-Reg19</oml:tag><oml:tag>study_130</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://lib.stat.cmu.edu/datasets/</oml:original_data_url>  <oml:paper_url>https://www.sciencedirect.com/science/article/abs/pii/S016771529600140X</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0537/dataset_537.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 22:08:12</oml:processing_date>      <oml:md5_checksum>fcdfbbaed87326c1724ad400c4328a8e</oml:md5_checksum>
+</oml:data_set_description>

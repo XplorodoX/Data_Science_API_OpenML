@@ -1,0 +1,16 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>394</oml:id>
+  <oml:name>oh5.wc</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   [George Forman](https://scholar.google.com/citations?user=r0a222QAAAAJ)
+**Source**: http://tunedit.org/repo/Data/Text-wc/oh5.wc.arff
+**Please cite**:  
+
+</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>Sparse_ARFF</oml:format>
+        <oml:upload_date>2014-09-28T23:22:39</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52506/oh5.wc.sparse_arff</oml:url>
+    <oml:file_id>52506</oml:file_id>  <oml:default_target_attribute>CLASS_LABEL</oml:default_target_attribute>          <oml:tag>study_34</oml:tag><oml:tag>text-classification</oml:tag><oml:tag>word count</oml:tag>  <oml:visibility>public</oml:visibility>        <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:45:12</oml:processing_date>      <oml:md5_checksum>701d7c7b0634ee719d201cb4a3bcd013</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,19 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>559</oml:id>
+  <oml:name>schlvote</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+Dataset from Smoothing Methods in Statistics
+(ftp stat.cmu.edu/datasets)
+
+Simonoff, J.S. (1996). Smoothing Methods in Statistics. New York: Springer-Verlag.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-10-03T21:52:45</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52737/schlvote.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0559/dataset_559.pq</oml:parquet_url>  <oml:file_id>52737</oml:file_id>  <oml:default_target_attribute>wealth_per_student</oml:default_target_attribute>          <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0559/dataset_559.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2021-09-16 17:26:05</oml:processing_date>      <oml:md5_checksum>ddbfbce92eb61f1f951c77a69a2d1bd3</oml:md5_checksum>
+</oml:data_set_description>

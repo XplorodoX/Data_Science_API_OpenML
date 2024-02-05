@@ -1,0 +1,16 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>346</oml:id>
+  <oml:name>aids</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: Jeffrey S. Simonoff  
+**Source**: [original](http://www.stern.nyu.edu/~jsimonof/AnalCatData) -   
+**Please cite**: Jeffrey S. Simonoff. Analyzing Categorical Data, Springer-Verlag, New York, 2003  
+
+Data originating from the book &quot;Analyzing Categorical Data&quot; by Jeffrey S. Simonoff.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Jeffrey S. Simonoff</oml:creator>     <oml:collection_date>2003</oml:collection_date>  <oml:upload_date>2014-08-27T14:11:10</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>CC_BY-NC</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52249/aids.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0346/dataset_346.pq</oml:parquet_url>  <oml:file_id>52249</oml:file_id>  <oml:default_target_attribute>Sex</oml:default_target_attribute>        <oml:citation>Jeffrey S. Simonoff. Analyzing Categorical Data, Springer-Verlag, New York, 2003</oml:citation>  <oml:tag>Statistics</oml:tag><oml:tag>study_41</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://www.stern.nyu.edu/~jsimonof/AnalCatData</oml:original_data_url>  <oml:paper_url>https://books.google.nl/books?hl=en&amp;lr=&amp;id=OvvqBwAAQBAJ&amp;oi=fnd&amp;pg=PA1&amp;dq=Jeffrey+S.+Simonoff.+Analyzing+Categorical+Data,+Springer+Verlag&amp;ots=7YWQpjs0Pw&amp;sig=REZ4idfpDEP-QbpS9QWT563UrnY&amp;redir_esc=y#v=onepage&amp;q=Jeffrey%20S.%20Simonoff.%20Analyzing%20Categorical%20Data%2C%20Springer%20Verlag&amp;f=false</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0346/dataset_346.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:31:52</oml:processing_date>      <oml:md5_checksum>ed3333773ff0254e9e3d7d84d72474dd</oml:md5_checksum>
+</oml:data_set_description>

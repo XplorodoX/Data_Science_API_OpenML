@@ -1,0 +1,79 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>163</oml:id>
+  <oml:name>lung-cancer</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown -   
+**Please cite**:   
+
+1. Title: Lung Cancer Data
+ 
+ 2. Source Information:
+ 	- Data was published in : 
+ 	  Hong, Z.Q. and Yang, J.Y. &quot;Optimal Discriminant Plane for a Small
+ 	  Number of Samples and Design Method of Classifier on the Plane&quot;,
+ 	  Pattern Recognition, Vol. 24, No. 4, pp. 317-324, 1991.
+ 	- Donor: Stefan Aeberhard, stefan@coral.cs.jcu.edu.au
+ 	- Date : May, 1992
+ 
+ 3. Past Usage:
+ 	- Hong, Z.Q. and Yang, J.Y. &quot;Optimal Discriminant Plane for a Small
+           Number of Samples and Design Method of Classifier on the Plane&quot;,
+           Pattern Recognition, Vol. 24, No. 4, pp. 317-324, 1991.
+ 	- Aeberhard, S., Coomans, D, De Vel, O. &quot;Comparisons of 
+ 	  Classification Methods in High Dimensional Settings&quot;, 
+ 	  submitted to Technometrics.
+ 	- Aeberhard, S., Coomans, D, De Vel, O. &quot;The Dangers of 
+ 	  Bias in High Dimensional Settings&quot;, submitted to
+ 	  pattern Recognition.
+ 
+ 4. Relevant Information:
+ 	- This data was used by Hong and Young to illustrate the 
+ 	  power of the optimal discriminant plane even in ill-posed
+ 	  settings. Applying the KNN method in the resulting plane	
+ 	  gave 77% accuracy. However, these results are strongly
+ 	  biased (See Aeberhard's second ref. above, or email to
+ 	  stefan@coral.cs.jcu.edu.au). Results obtained by
+ 	  Aeberhard et al. are : 
+ 	  RDA : 62.5%, KNN 53.1%, Opt. Disc. Plane 59.4%
+ 
+ 	  The data described 3 types of pathological lung cancers.
+ 	  The Authors give no information on the individual
+ 	  variables nor on where the data was originally used.
+ 
+        -  In the original data 4 values for the fifth attribute were -1.
+           These values have been changed to ? (unknown). (*)
+        -  In the original data 1 value for the 39 attribute was 4.  This
+           value has been changed to ? (unknown). (*)
+     
+ 	  
+ 5. Number of Instances: 32
+ 
+ 6. Number of Attributes: 57 (1 class attribute, 56 predictive)
+ 
+ 7. Attribute Information:
+ 
+ 	attribute 1 is the class label.
+ 	
+ 	- All predictive attributes are nominal, taking on integer 
+ 	  values 0-3
+ 
+ 8. Missing Attribute Values: Attributes 5 and 39 (*)
+ 
+ 9. Class Distribution:
+ 	- 3 classes, 
+ 		1.)	9 observations
+ 		2.)	13     &quot;
+ 		3.)	10     &quot;
+ 
+
+ Information about the dataset
+ CLASSTYPE: nominal
+ CLASSINDEX: first</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+       <oml:collection_date>May, 1992</oml:collection_date>  <oml:upload_date>2014-04-23T13:11:37</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/3584/lung-cancer.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0163/dataset_163.pq</oml:parquet_url>  <oml:file_id>3584</oml:file_id>  <oml:default_target_attribute>class</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>    <oml:tag>Health</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>mythbusting_1</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_123</oml:tag><oml:tag>study_15</oml:tag><oml:tag>study_20</oml:tag><oml:tag>study_41</oml:tag><oml:tag>uci</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0163/dataset_163.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:33:41</oml:processing_date>      <oml:md5_checksum>4d161d2aee3aed992d2031846ae42b05</oml:md5_checksum>
+</oml:data_set_description>

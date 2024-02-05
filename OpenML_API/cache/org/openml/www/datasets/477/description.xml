@@ -1,0 +1,62 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>477</oml:id>
+  <oml:name>fl2000</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+County data from the 2000 Presidential Election in Florida.
+
+Compiled by Brett Presnell
+Department of Statistics, University of Florida
+
+These data are derived from three sources, described below.  As far
+as I am aware, you are free to use these data in any way that you
+see fit, though some acknowledgement is always nice.
+
+The candidate vote counts are the final certified counts reported
+by the Florida Division of Elections.  These were obtained from
+the NORC web site in the file Cert_results.csv.  Note that these
+do NOT inculde the federal absentee votes (so that Gore's total
+vote is actually higher here than Bush's).
+
+The undervote and overvote counts were extracted from the NORC
+ballot level data in the file aligned.txt.  Since aligned.txt is
+too large to work with in R (or almost any other program) I used
+cut (a standard UNIX program) to extract just the columns I needed:
+
+cut -f 2,9,10 -d&quot;|&quot; aligned.txt  &gt; tmp
+
+Then I read the results into R and processed them there.
+
+The technology and columns data were extracted from the Media
+Group data from the NORC web site.  &quot;Technology&quot; is simply the
+type of voting machine used, and &quot;columns&quot; is 1 if the ballot
+listed the presidential candidates in a single column on a single
+page, and 2 if the presidential candidates were spread over two
+columns or two pages of the ballot.
+
+These agree with some earlier data that I had obtained from the NY
+Times web site, except that in the media group data the PalmBeach
+county ballot (the famous butterfly ballot) was listed as having
+one column.  I would definitely call this a two-column ballot, so
+that is the designation recorded here.  At one time I thought that
+MiamiDade County also used a two-column ballot, but I was wrong
+(the ballot listed the candidates and parties in English and
+Spanish in opposing columns).  Images of most of the ballots can
+be found on the New York Times web site:
+www.nytimes.com/images/2001/11/12/politics/recount/index_BALLOT.html
+
+
+
+Information about the dataset
+CLASSTYPE: nominal
+CLASSINDEX: 2</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+    <oml:contributor>Brett Presnell</oml:contributor>   <oml:collection_date>2000</oml:collection_date>  <oml:upload_date>2014-09-28T23:51:41</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52589/fl2000.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0477/dataset_477.pq</oml:parquet_url>  <oml:file_id>52589</oml:file_id>  <oml:default_target_attribute>technology</oml:default_target_attribute>    <oml:ignore_attribute>county</oml:ignore_attribute>      <oml:tag>study_1</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0477/dataset_477.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:03:36</oml:processing_date>      <oml:md5_checksum>326a5e47068b71ae3448187c07d82b0f</oml:md5_checksum>
+</oml:data_set_description>

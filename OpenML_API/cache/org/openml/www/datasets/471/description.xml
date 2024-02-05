@@ -1,0 +1,38 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>471</oml:id>
+  <oml:name>analcatdata_draft</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+analcatdata    A collection of data sets used in the book &quot;Analyzing Categorical Data,&quot;
+by Jeffrey S. Simonoff, Springer-Verlag, New York, 2003. The submission
+consists of a zip file containing two versions of each of 84 data sets,
+plus this README file. Each data set is given in comma-delimited ASCII
+(.csv) form, and Microsoft Excel (.xls) form.
+
+NOTICE: These data sets may be used freely for scientific, educational and/or
+noncommercial purposes, provided suitable acknowledgment is given (by citing
+the above-named reference).
+
+Further details concerning the book, including information on statistical software
+(including sample S-PLUS/R and SAS code), are available at the web site
+
+http://www.stern.nyu.edu/~jsimonof/AnalCatData
+
+
+Information about the dataset
+CLASSTYPE: nominal
+CLASSINDEX: none specific
+
+
+Note: Quotes, Single-Quotes and Backslashes were removed, Blanks replaced
+with Underscores</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Jeffrey S. Simonoff</oml:creator>     <oml:collection_date>2003</oml:collection_date>  <oml:upload_date>2014-09-28T23:51:28</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52583/analcatdata_draft.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0471/dataset_471.pq</oml:parquet_url>  <oml:file_id>52583</oml:file_id>    <oml:row_id_attribute>Actual.date</oml:row_id_attribute>      <oml:citation>Jeffrey S. Simonoff, Springer-Verlag, New York, 2003</oml:citation>    <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://www.stern.nyu.edu/~jsimonof/AnalCatData</oml:original_data_url>    <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0471/dataset_471.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:16:14</oml:processing_date>      <oml:md5_checksum>3efd6de2265bcce087b84f102d777073</oml:md5_checksum>
+</oml:data_set_description>

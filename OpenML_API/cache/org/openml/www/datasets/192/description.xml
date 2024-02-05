@@ -1,0 +1,19 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>192</oml:id>
+  <oml:name>vineyard</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown -   
+**Please cite**:   
+
+Dataset from Smoothing Methods in Statistics 
+ (ftp stat.cmu.edu/datasets)
+
+ Simonoff, J.S. (1996). Smoothing Methods in Statistics. New York: Springer-Verlag.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-04-23T13:16:12</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/3629/vineyard.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0192/dataset_192.pq</oml:parquet_url>  <oml:file_id>3629</oml:file_id>  <oml:default_target_attribute>lugs_1991</oml:default_target_attribute>  <oml:row_id_attribute>row_number</oml:row_id_attribute>    <oml:version_label>1</oml:version_label>    <oml:tag>Statistics</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0192/dataset_192.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:08:13</oml:processing_date>      <oml:md5_checksum>b261b616bccee824fb531e85007f2f90</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,26 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>380</oml:id>
+  <oml:name>SyskillWebert-Bands</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: Michael Pazzani (pazzani@ics.uci.edu)  
+**Source**: [UCI](https://archive.ics.uci.edu/ml/datasets/Syskill+and+Webert+Web+Page+Ratings)- 1999  
+**Please cite**:   
+
+**Syskill and Webert Web Page Ratings**  
+This database contains the HTML source of web pages plus the ratings of a single user on these web pages. The web pages are on four separate subjects (Bands- recording artists; Goats; Sheep; and BioMedical)
+
+The HTML source of a web page is given. Users looked at each web page and indicated on a 3 point scale (hot medium cold) 50-100 pages per domain. However, this is realistic because we want to learn user profiles from as few examples as possible so that users have an incentive to rate pages.
+
+The problem is to predict user ratings for web pages (within a subject category). The accuracy of predicting ratings is reported in early publications. Later publications used the precision at top N or the F-measure.
+
+**Past Usage**  
+Pazzani M., Billsus, D. (1997). Learning and Revising User Profiles: The identification of interesting web sites. Machine Learning 27, 313-331
+
+Pazzani, M., Muramatsu J., Billsus, D. (1996). Syskill &amp; Webert: Identifying interesting web sites. Proceedings of the National Conference on Artificial Intelligence, Portland, OR.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Michael Pazzani</oml:creator>     <oml:collection_date>1998-10-20</oml:collection_date>  <oml:upload_date>2014-09-27T10:56:15</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/1663741/SyskillWebert-Bands.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0380/dataset_380.pq</oml:parquet_url>  <oml:file_id>1663741</oml:file_id>  <oml:default_target_attribute>class</oml:default_target_attribute>        <oml:citation>https://archive.ics.uci.edu/ml/citation_policy.html</oml:citation>  <oml:tag>Computer Systems</oml:tag><oml:tag>Machine Learning</oml:tag><oml:tag>uci</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://archive.ics.uci.edu/ml/datasets/Syskill+and+Webert+Web+Page+Ratings</oml:original_data_url>  <oml:paper_url>https://link.springer.com/article/10.1023/A:1007369909943</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0380/dataset_380.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2018-10-03 21:37:23</oml:processing_date>      <oml:md5_checksum>94b667ee520d5204252ff6e684eda084</oml:md5_checksum>
+</oml:data_set_description>

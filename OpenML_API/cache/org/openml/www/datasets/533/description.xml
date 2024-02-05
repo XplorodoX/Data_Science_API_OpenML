@@ -1,0 +1,18 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>533</oml:id>
+  <oml:name>arsenic-female-bladder</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: last</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-09-29T00:08:11</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52645/arsenic-female-bladder.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0533/dataset_533.pq</oml:parquet_url>  <oml:file_id>52645</oml:file_id>  <oml:default_target_attribute>events</oml:default_target_attribute>            <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0533/dataset_533.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:02:47</oml:processing_date>      <oml:md5_checksum>83ad7aad5902cb4c904513693d10135a</oml:md5_checksum>
+</oml:data_set_description>

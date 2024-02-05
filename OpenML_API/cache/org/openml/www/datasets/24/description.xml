@@ -1,0 +1,72 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>24</oml:id>
+  <oml:name>mushroom</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: [Jeff Schlimmer](Jeffrey.Schlimmer@a.gp.cs.cmu.edu)  
+**Source**: [UCI](https://archive.ics.uci.edu/ml/datasets/mushroom) - 1981     
+**Please cite**:  The Audubon Society Field Guide to North American Mushrooms (1981). G. H. Lincoff (Pres.), New York: Alfred A. Knopf 
+
+
+### Description
+
+This dataset describes mushrooms in terms of their physical characteristics. They are classified into: poisonous or edible.
+
+### Source
+```
+(a) Origin: 
+Mushroom records are drawn from The Audubon Society Field Guide to North American Mushrooms (1981). G. H. Lincoff (Pres.), New York: Alfred A. Knopf 
+
+(b) Donor: 
+Jeff Schlimmer (Jeffrey.Schlimmer '@' a.gp.cs.cmu.edu)
+```
+
+### Dataset description
+
+This dataset includes descriptions of hypothetical samples corresponding to 23 species of gilled mushrooms in the Agaricus and Lepiota Family. Each species is identified as definitely edible, definitely poisonous, or of unknown edibility and not recommended. This latter class was combined with the poisonous one. The Guide clearly states that there is no simple rule for determining the edibility of a mushroom; no rule like ``leaflets three, let it be'' for Poisonous Oak and Ivy.
+
+### Attributes Information
+```
+1. cap-shape: bell=b,conical=c,convex=x,flat=f, knobbed=k,sunken=s 
+2. cap-surface: fibrous=f,grooves=g,scaly=y,smooth=s 
+3. cap-color: brown=n,buff=b,cinnamon=c,gray=g,green=r, pink=p,purple=u,red=e,white=w,yellow=y 
+4. bruises?: bruises=t,no=f 
+5. odor: almond=a,anise=l,creosote=c,fishy=y,foul=f, musty=m,none=n,pungent=p,spicy=s 
+6. gill-attachment: attached=a,descending=d,free=f,notched=n 
+7. gill-spacing: close=c,crowded=w,distant=d 
+8. gill-size: broad=b,narrow=n 
+9. gill-color: black=k,brown=n,buff=b,chocolate=h,gray=g, green=r,orange=o,pink=p,purple=u,red=e, white=w,yellow=y 
+10. stalk-shape: enlarging=e,tapering=t 
+11. stalk-root: bulbous=b,club=c,cup=u,equal=e, rhizomorphs=z,rooted=r,missing=? 
+12. stalk-surface-above-ring: fibrous=f,scaly=y,silky=k,smooth=s 
+13. stalk-surface-below-ring: fibrous=f,scaly=y,silky=k,smooth=s 
+14. stalk-color-above-ring: brown=n,buff=b,cinnamon=c,gray=g,orange=o, pink=p,red=e,white=w,yellow=y 
+15. stalk-color-below-ring: brown=n,buff=b,cinnamon=c,gray=g,orange=o, pink=p,red=e,white=w,yellow=y 
+16. veil-type: partial=p,universal=u 
+17. veil-color: brown=n,orange=o,white=w,yellow=y 
+18. ring-number: none=n,one=o,two=t 
+19. ring-type: cobwebby=c,evanescent=e,flaring=f,large=l, none=n,pendant=p,sheathing=s,zone=z 
+20. spore-print-color: black=k,brown=n,buff=b,chocolate=h,green=r, orange=o,purple=u,white=w,yellow=y 
+21. population: abundant=a,clustered=c,numerous=n, scattered=s,several=v,solitary=y 
+22. habitat: grasses=g,leaves=l,meadows=m,paths=p, urban=u,waste=w,woods=d
+```
+
+### Relevant papers
+
+Schlimmer,J.S. (1987). Concept Acquisition Through Representational Adjustment (Technical Report 87-19). Doctoral disseration, Department of Information and Computer Science, University of California, Irvine. 
+
+Iba,W., Wogulis,J., &amp; Langley,P. (1988). Trading off Simplicity and Coverage in Incremental Concept Learning. In Proceedings of the 5th International Conference on Machine Learning, 73-79. Ann Arbor, Michigan: Morgan Kaufmann. 
+
+Duch W, Adamczak R, Grabczewski K (1996) Extraction of logical rules from training data using backpropagation networks, in: Proc. of the The 1st Online Workshop on Soft Computing, 19-30.Aug.1996, pp. 25-30, [Web Link] 
+
+Duch W, Adamczak R, Grabczewski K, Ishikawa M, Ueda H, Extraction of crisp logical rules using constrained backpropagation networks - comparison of two new approaches, in: Proc. of the European Symposium on Artificial Neural Networks (ESANN'97), Bruge, Belgium 16-18.4.1997. 
+
+
+
+</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Jeff Schlimmer</oml:creator>     <oml:collection_date>1987-04-27</oml:collection_date>  <oml:upload_date>2014-04-06T23:21:11</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/24/mushroom.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0024/dataset_24.pq</oml:parquet_url>  <oml:file_id>24</oml:file_id>  <oml:default_target_attribute>class</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>  <oml:citation>The Audubon Society Field Guide to North American Mushrooms (1981). G. H. Lincoff (Pres.), New York: Alfred A. Knopf</oml:citation>  <oml:tag>Life Science</oml:tag><oml:tag>Machine Learning</oml:tag><oml:tag>mythbusting_1</oml:tag><oml:tag>OpenML100</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_123</oml:tag><oml:tag>study_14</oml:tag><oml:tag>study_144</oml:tag><oml:tag>study_15</oml:tag><oml:tag>study_190</oml:tag><oml:tag>study_20</oml:tag><oml:tag>study_34</oml:tag><oml:tag>study_37</oml:tag><oml:tag>study_41</oml:tag><oml:tag>study_50</oml:tag><oml:tag>study_70</oml:tag><oml:tag>trivial</oml:tag><oml:tag>uci</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://archive.ics.uci.edu/ml/datasets/mushroom</oml:original_data_url>  <oml:paper_url>https://escholarship.org/uc/item/48r6d4z0</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0024/dataset_24.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:15:45</oml:processing_date>      <oml:md5_checksum>c8e898e453167e76d617eff67d198579</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,12 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>120</oml:id>
+  <oml:name>BNG(mushroom)</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description></oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Geoffrey Holmes</oml:creator><oml:creator>Bernhard Pfahringer</oml:creator><oml:creator>Jan van Rijn</oml:creator><oml:creator>Joaquin Vanschoren</oml:creator>     <oml:collection_date>2014-04-08 22:54:22</oml:collection_date>  <oml:upload_date>2014-04-08T12:52:04</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/1840/BNG(mushroom).arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0120/dataset_120.pq</oml:parquet_url>  <oml:file_id>1840</oml:file_id>  <oml:default_target_attribute>class</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>    <oml:tag>artificial</oml:tag><oml:tag>BNG</oml:tag><oml:tag>study_16</oml:tag><oml:tag>study_69</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0120/dataset_120.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 18:52:32</oml:processing_date>      <oml:md5_checksum>e7217deffa0bf1d6ea0124004bf956d5</oml:md5_checksum>
+</oml:data_set_description>

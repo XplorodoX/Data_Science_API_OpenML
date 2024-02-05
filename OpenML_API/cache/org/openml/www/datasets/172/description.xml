@@ -1,0 +1,59 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>172</oml:id>
+  <oml:name>shuttle-landing-control</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description># Space Shuttle Autolanding Domain
+ 
+NASA: Mr. Roger Burke's autolander design team
+
+##### Past Usage: (several, it appears)
+      Example: Michie,D. (1988).  The Fifth Generation's Unbridged Gap.
+               In Rolf Herken (Ed.) The Universal Turing Machine: A
+               Half-Century Survey, 466-489, Oxford University Press.
+ 
+##### Relevant Information:
+      This is a tiny database.  Michie reports that Burke's group used
+      RULEMASTER to generate comprehendable rules for determining
+      the conditions under which an autolanding would be preferable to
+      manual control of the spacecraft.
+ 
+##### Number of Instances:
+15
+ 
+##### Number of Attributes: 
+7 (including the class attribute)
+ 
+##### Attribute Information:
+     1. Class: noauto, auto
+        -- that is, advise using manual/automatic control
+     2. STABILITY: stab, xstab
+     3. ERROR: XL, LX, MM, SS
+     4. SIGN: pp, nn
+     5. WIND: head, tail
+     6. MAGNITUDE: Low, Medium, Strong, OutOfRange
+     7. VISIBILITY: yes, no
+ 
+##### Missing Attribute Values:
+    -- none
+    -- but several &quot;don't care&quot; values: (denoted by &quot;*&quot;)
+          Attribute Number:   Number of Don't Care Values:
+                         2:   2
+                         3:   3
+                         4:   8
+                         5:   8
+                         6:   5
+                         7:   0
+ 
+##### Class Distribution:
+     1. Use noauto control: 6
+     2. Use automatic control: 9%
+ Information about the dataset\
+ CLASSTYPE: nominal\
+ CLASSINDEX: first</oml:description>
+  <oml:description_version>2</oml:description_version>
+  <oml:format>ARFF</oml:format>
+    <oml:contributor>Bojan Cestnik Jozef Stefan Institute</oml:contributor>   <oml:collection_date>11-1998</oml:collection_date>  <oml:upload_date>2014-04-23T13:11:58</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/3595/shuttle-landing-control.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0172/dataset_172.pq</oml:parquet_url>  <oml:file_id>3595</oml:file_id>  <oml:default_target_attribute>Class</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>    <oml:tag>Astronomy</oml:tag><oml:tag>Computer Systems</oml:tag><oml:tag>mythbusting_1</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_123</oml:tag><oml:tag>study_15</oml:tag><oml:tag>study_20</oml:tag><oml:tag>study_41</oml:tag><oml:tag>uci</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0172/dataset_172.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:32:27</oml:processing_date>      <oml:md5_checksum>3d4b487b5f8862f1051af1757e8f3b52</oml:md5_checksum>
+</oml:data_set_description>

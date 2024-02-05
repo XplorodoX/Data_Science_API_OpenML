@@ -1,0 +1,35 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>545</oml:id>
+  <oml:name>lmpavw</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+-------------------------------------------------------------------------------
+
+TIME SERIES USED IN
+LONG-MEMORY PROCESSES, THE ALLAN VARIANCE AND WAVELETS
+BY D. B. PERCIVAL AND P. GUTTORP, A CHAPTER IN
+WAVELETS IN GEOPHYSICS
+EDITED BY E. FOUFOULA-GEORGIOU AND P. KUMAR, ACADEMIC PRESS, 1994.
+-------------------------------------------------------------------------------
+
+VERTICAL OCEAN SHEAR &quot;TIME&quot; SERIES (SHOWN IN FIGURE 1 OF CHAPTER)
+SOURCE: APPLIED PHYSICS LABORATORY, UNIVERSITY OF WASHINGTON (MIKE GREGG)
+SAMPLING INTERVAL (DELTA T):           0.1 METERS
+SAMPLE SIZE: 6875
+DEPTH (&quot;TIME&quot;) OF FIRST DATA POINT:  350.0 METERS
+DEPTH          OF  LAST DATA POINT: 1037.4 METERS
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: 1</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>D. B. Percival and P. Guttorp</oml:creator>  <oml:contributor>E. Foufoula-Heorgiou and P. Kumar</oml:contributor>   <oml:collection_date>1994</oml:collection_date>  <oml:upload_date>2014-09-29T00:09:13</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52657/lmpavw.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0545/dataset_545.pq</oml:parquet_url>  <oml:file_id>52657</oml:file_id>  <oml:default_target_attribute>vertical_ocean_shear</oml:default_target_attribute>            <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0545/dataset_545.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2018-10-03 21:21:49</oml:processing_date>      <oml:md5_checksum>295885d23b7b998d5b340eb00f2727ba</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,27 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>217</oml:id>
+  <oml:name>pyrim</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown -   
+**Please cite**:   
+
+The task consists of Learning Quantitative Structure Activity
+ Relationships (QSARs). The Inhibition of Dihydrofolate Reductase by
+ Pyrimidines.The data are described in: King, Ross .D., Muggleton,
+ Steven., Lewis, Richard. and Sternberg, Michael.J.E. Drug Design by
+ machine learning: the use of inductive logic programming to model the
+ structure-activity relationships of trimethoprim analogues binding to
+ dihydrofolate reductase.
+ 
+ Original source: ?. 
+ Source: collection of regression datasets by Luis Torgo (ltorgo@ncc.up.pt) at
+ http://www.ncc.up.pt/~ltorgo/Regression/DataSets.html
+ Characteristics: 74 cases; 28 continuous variables</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-04-23T13:18:13</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/3654/pyrim.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0217/dataset_217.pq</oml:parquet_url>  <oml:file_id>3654</oml:file_id>  <oml:default_target_attribute>activity</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>    <oml:tag>Chemistry</oml:tag><oml:tag>Machine Learning</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0217/dataset_217.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:55:08</oml:processing_date>      <oml:md5_checksum>fc25a974e30bf00fe1fd46fbf4af2d07</oml:md5_checksum>
+</oml:data_set_description>

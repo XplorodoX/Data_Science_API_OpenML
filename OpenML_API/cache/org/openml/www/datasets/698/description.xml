@@ -1,0 +1,32 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>698</oml:id>
+  <oml:name>rabe_176</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+This file contains data from Regression Analysis By Example, 2nd Edition,
+by Samprit Chatterjee and Bertram Price, John Wiley, 1991.
+Data sets have names of the form 'rabe.xxx' where xxx is the page number
+in the book where the data occurs.
+
+For additional information, Samprit Chatterjee can be reached using
+&quot;schatter@stern.nyu.edu&quot;.
+
+File: ../data/rabe/rabe.176
+
+Note: there were no information about the columns in the data set,
+hence automatically generated names
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Samprit Chatterjee</oml:creator><oml:creator> Bertram Price</oml:creator><oml:creator> John Wiley</oml:creator>     <oml:collection_date>1991</oml:collection_date>  <oml:upload_date>2014-10-04T13:54:47</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52998/rabe_176.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0698/dataset_698.pq</oml:parquet_url>  <oml:file_id>52998</oml:file_id>  <oml:default_target_attribute>col_5</oml:default_target_attribute>  <oml:row_id_attribute>col_1</oml:row_id_attribute>      <oml:citation>Chatterjee, Samprit, and Ali S. Hadi. Regression analysis by example. John Wiley &amp; Sons, 2015.</oml:citation>  <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>StatLib</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://lib.stat.cmu.edu/datasets/</oml:original_data_url>  <oml:paper_url>https://download.e-bookshelf.de/download/0003/4570/29/L-G-0003457029-0006417776.pdf</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0698/dataset_698.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:01:16</oml:processing_date>      <oml:md5_checksum>9a79d0984c8c9ed675c078f054aab247</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,79 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>510</oml:id>
+  <oml:name>sleep</oml:name>
+  <oml:version>2</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+This dataset contains 3 more features compared to version 1 of the same dataset.
+
+Data from which conclusions  were  drawn  in  the  article  &quot;Sleep  in
+Mammals: Ecological and Constitutional Correlates&quot; by Allison, T.  and
+Cicchetti, D. (1976), _Science_, November 12, vol. 194,  pp.  732-734.
+Includes brain and body  weight,  life  span,  gestation  time,  time
+sleeping, and predation and danger indices for 62 mammals.
+
+
+
+Variables below (from left to right) for Mammals Data Set:
+
+species of animal
+
+body weight in kg
+
+brain weight in g
+
+slow wave (&quot;nondreaming&quot;) sleep (hrs/day)
+
+paradoxical (&quot;dreaming&quot;) sleep (hrs/day)
+
+total sleep (hrs/day)  (sum of slow wave and paradoxical sleep)
+
+maximum life span (years)
+
+gestation time (days)
+
+predation index (1-5)
+1 = minimum (least likely to be preyed upon)
+5 = maximum (most likely to be preyed upon)
+
+sleep exposure index (1-5)
+1 = least exposed (e.g. animal sleeps in a
+well-protected den)
+5 = most exposed
+
+overall danger index (1-5)
+(based on the above two indices and other information)
+1 = least danger (from other animals)
+5 = most danger (from other animals)
+
+
+
+For more details, see
+
+Allison, Truett and Cicchetti, Domenic V. (1976), &quot;Sleep  in  Mammals:
+Ecological and Constitutional  Correlates&quot;,  _Science_,  November  12,
+vol. 194, pp. 732-734.
+
+
+
+The above data set can be freely used for non-commercial purposes  and
+can be freely distributed (permission in  writing  obtained  from  Dr.
+Truett Allison).
+
+Submitted by Roger Johnson
+rwjohnso@silver.sdsmt.edu
+
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Allison</oml:creator><oml:creator> T.  and Cicchetti</oml:creator><oml:creator> D.</oml:creator>     <oml:collection_date>1976</oml:collection_date>  <oml:upload_date>2014-09-29T00:07:26</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52622/sleep.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0510/dataset_510.pq</oml:parquet_url>  <oml:file_id>52622</oml:file_id>  <oml:default_target_attribute>overall_danger_index</oml:default_target_attribute>    <oml:ignore_attribute>species</oml:ignore_attribute>        <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0510/dataset_510.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:09:08</oml:processing_date>      <oml:md5_checksum>946b99c8db86ff19da38d6cdb1aa51fc</oml:md5_checksum>
+</oml:data_set_description>

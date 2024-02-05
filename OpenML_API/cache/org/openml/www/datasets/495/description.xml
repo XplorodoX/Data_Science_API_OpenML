@@ -1,0 +1,41 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>495</oml:id>
+  <oml:name>baseball-pitcher</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: Lorraine Denby    
+**Source**: [StatLib](http://lib.stat.cmu.edu/datasets/)  
+**Please cite**:   
+
+**Analysis of Baseball Salary Data: Pitchers**  
+This analysis describes and summarizes the relationships between 1987 salaries of major league baseball players and the player's performance. The salary data were taken from Sports Illustrated, April 20, 1987. The salary of any player not included in that article is listed as an NA. The 1986 and career statistics were taken from The 1987 Baseball Encyclopedia Update published by Collier  Books,  Macmillan  Publishing  Company, New York. The team attendance figures were obtained from the Elias Sports Bureau, personal conversation.  
+
+The data consist of data on the regular and leading substitute pitchers in 1986 of North American Major League Baseball players. 
+
+### Attribute information  
+There is one line per pitcher. The variables are:  
+pitcher's name,  
+player's team at the end of in 1986,  
+player's league at the end of 1986,  
+number of wins in 1986,  
+number of losses in 1986,  
+earned run average in 1986,  
+number of games in 1986,  
+number of innings pitched in 1986,  
+number of saves in 1986,  
+number of years in the major leagues,  
+number of wins during his career,  
+number of losses during his career,  
+earned run average during his career,  
+number of games during his career,  
+number of innings pitched during his career,  
+number of saves during his career,  
+1987 annual salary on opening day in thousands of  dollars,  
+player's league at the beginning of 1987,  
+player's team at the beginning of 1987.  </oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-09-29T00:06:46</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52607/baseball-pitcher.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0495/dataset_495.pq</oml:parquet_url>  <oml:file_id>52607</oml:file_id>  <oml:default_target_attribute>1987_annual_salary_on_opening_day_in_thousands_of_dollars</oml:default_target_attribute>    <oml:ignore_attribute>pitchers_name</oml:ignore_attribute>      <oml:tag>sport</oml:tag><oml:tag>SportsAnalytics</oml:tag><oml:tag>study_130</oml:tag><oml:tag>study_93</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0495/dataset_495.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2021-09-16 17:40:29</oml:processing_date>      <oml:md5_checksum>5c9ecbcc28ac94f97010ff8ba5b78172</oml:md5_checksum>
+</oml:data_set_description>

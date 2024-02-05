@@ -1,0 +1,28 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>549</oml:id>
+  <oml:name>strikes</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: Bruce Western (western@datacomm.iue.it)   
+**Source**: [StatLib](http://lib.stat.cmu.edu/datasets/) - 1999  
+**Please cite**:   
+
+The data consist of annual observations on the level of strike volume (days lost due to industrial disputes per 1000 wage salary earners), and their covariates in 18 OECD countries from 1951-1985. The average level and variance of strike volume varies across countries. The data distribution also features a long right tail and several large outliers. 
+
+The 7 data fields include the following variables:  
+&gt;
+(1) country code;  
+(2) year;  
+(3) strike volume;  
+(4) unemployment;  
+(5) inflation;  
+(6) parliamentary representation of social democratic and labor parties  
+(7) a time-invariant measure of union centralization.
+
+These data were analyzed in the forthcoming paper by Bruce Western, &quot;Vague Theory and Model Uncertainty in Macrosociology,&quot; which is to appear in Sociological Methodology. Permission is given by the author to freely use and redistribute these data.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Bruce Western</oml:creator>     <oml:collection_date>1951-1985</oml:collection_date>  <oml:upload_date>2014-09-29T00:09:22</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52661/strikes.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0549/dataset_549.pq</oml:parquet_url>  <oml:file_id>52661</oml:file_id>  <oml:default_target_attribute>strike_volume</oml:default_target_attribute>          <oml:tag>OpenML-Reg19</oml:tag><oml:tag>study_130</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://lib.stat.cmu.edu/datasets/</oml:original_data_url>    <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0549/dataset_549.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:12:29</oml:processing_date>      <oml:md5_checksum>cc14b99e4aecb4b55e97d1e3ebadb177</oml:md5_checksum>
+</oml:data_set_description>

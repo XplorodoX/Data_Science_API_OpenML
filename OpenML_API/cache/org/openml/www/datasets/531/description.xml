@@ -1,0 +1,40 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>531</oml:id>
+  <oml:name>boston</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+The Boston house-price data of Harrison, D. and Rubinfeld, D.L. 'Hedonic
+prices and the demand for clean air', J. Environ. Economics &amp; Management,
+vol.5, 81-102, 1978.   Used in Belsley, Kuh &amp; Welsch, 'Regression diagnostics
+...', Wiley, 1980.   N.B. Various transformations are used in the table on
+pages 244-261 of the latter.
+Variables in order:
+CRIM     per capita crime rate by town
+ZN       proportion of residential land zoned for lots over 25,000 sq.ft.
+INDUS    proportion of non-retail business acres per town
+CHAS     Charles River dummy variable (= 1 if tract bounds river; 0 otherwise)
+NOX      nitric oxides concentration (parts per 10 million)
+RM       average number of rooms per dwelling
+AGE      proportion of owner-occupied units built prior to 1940
+DIS      weighted distances to five Boston employment centres
+RAD      index of accessibility to radial highways
+TAX      full-value property-tax rate per $10,000
+PTRATIO  pupil-teacher ratio by town
+B        1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town
+LSTAT    % lower status of the population
+MEDV     Median value of owner-occupied homes in $1000's
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: last</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>D. and Rubinfeld</oml:creator><oml:creator> D.L. 'Hedonic</oml:creator>     <oml:collection_date>1978</oml:collection_date>  <oml:upload_date>2014-09-29T00:08:07</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52643/boston.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0531/dataset_531.pq</oml:parquet_url>  <oml:file_id>52643</oml:file_id>  <oml:default_target_attribute>MEDV</oml:default_target_attribute>          <oml:tag>OpenML-Reg19</oml:tag><oml:tag>study_130</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0531/dataset_531.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:16:37</oml:processing_date>      <oml:md5_checksum>cdd361fb886627eaa80c92f90d0610cc</oml:md5_checksum>
+</oml:data_set_description>

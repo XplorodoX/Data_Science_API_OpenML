@@ -1,0 +1,22 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>316</oml:id>
+  <oml:name>yeast_ml8</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+  
+**Source**: Unknown -   
+**Please cite**:   
+
+Yeast dataset
+
+Past Usage:
+André Elisseeff and Jason Weston.
+A kernel method for multi-labelled classification.
+In Thomas G. Dietterich, Susan Becker, and Zoubin Ghahramani, editors, Advances in Neural Information Processing Systems 14, 2002.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Andre Elisseeff</oml:creator><oml:creator> Jason Weston</oml:creator>  <oml:contributor></oml:contributor>   <oml:collection_date>2001</oml:collection_date>  <oml:upload_date>2014-08-25T12:01:41</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52220/yeast_ml8.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0316/dataset_316.pq</oml:parquet_url>  <oml:file_id>52220</oml:file_id>  <oml:default_target_attribute>class14</oml:default_target_attribute>        <oml:citation>Elisseeff, Andre, and Jason Weston. &quot;A kernel method for multi-labelled classification.&quot;</oml:citation>  <oml:tag>Life Science</oml:tag><oml:tag>Machine Learning</oml:tag><oml:tag>mythbusting_1</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_144</oml:tag><oml:tag>study_15</oml:tag><oml:tag>study_20</oml:tag><oml:tag>study_52</oml:tag><oml:tag>study_7</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://sites.google.com/site/hrsvmproject/datasets-multi</oml:original_data_url>    <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0316/dataset_316.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:46:14</oml:processing_date>      <oml:md5_checksum>8de1d69c4b5e204908980d79a7d32191</oml:md5_checksum>
+</oml:data_set_description>

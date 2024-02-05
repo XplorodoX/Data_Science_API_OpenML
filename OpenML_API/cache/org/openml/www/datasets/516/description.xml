@@ -1,0 +1,94 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>516</oml:id>
+  <oml:name>pbcseq</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+Primary Biliary Cirrhosis
+
+This data set is a follow-up to the original PBC data set, as discussed
+in appendix D of Fleming and Harrington, Counting Processes and Survival
+Analysis, Wiley, 1991.  An analysis based on the enclised data is found in
+Murtaugh PA. Dickson ER. Van Dam GM. Malinchoc M. Grambsch PM.
+Langworthy AL. Gips CH.  &quot;Primary biliary cirrhosis: prediction of short-term
+survival based on repeated patient visits.&quot; Hepatology. 20(1.1):126-34, 1994.
+
+Quoting from F&amp;H.  &quot;The following pages contain the data from the Mayo Clinic
+trial in primary biliary cirrhosis (PBC) of the liver conducted between 1974
+and 1984.  A description of the clinical background for the trial and the
+covariates recorded here is in Chapter 0, especially Section 0.2.  A more
+extended discussion can be found in Dickson, et al., Hepatology 10:1-7 (1989)
+and in Markus, et al., N Eng J of Med 320:1709-13 (1989).
+&quot;A total of 424 PBC patients, referred to Mayo Clinic during that ten-year
+interval, met eligibility criteria for the randomized placebo controlled
+trial of the drug D-penicillamine.  The first 312 cases in the data set
+participated in the randomized trial and contain largely complete data.  The
+additional 112 cases did not participate in the clinical trial, but consented
+to have basic measurements recorded and to be followed for survival.  Six of
+those cases were lost to follow-up shortly after diagnosis, so the data here
+are on an additional 106 cases as well as the 312 randomized participants.
+Missing data items are denoted by `.'. &quot;
+
+The F&amp;H data set contains only baseline measurements of the laboratory
+paramters.  This data set contains multiple laboratory results, but
+only on the first 312 patients.  Some baseline data values in this file
+differ from the original PBC file, for instance, the data errors in
+prothrombin time and age which were discovered after the orignal analysis,
+during research work on dfbeta residuals.  (These two data points are
+discussed in F&amp;H, figure 4.6.7).  Another major difference is that
+there was significantly more follow-up for many of the patients at the
+time this data set was assembled.
+
+One &quot;feature&quot; of the data deserves special comment.  The last
+observation before death or liver transplant often has many more
+missing covariates than other data rows.  The original clinical
+protocol for these patients specified visits at 6 months, 1 year, and
+annually thereafter.  At these protocol visits lab values were
+obtained for a large pre-specified battery of tests.  &quot;Extra&quot; visits,
+often undertaken because of worsening medical condition, did not
+necessarily have all this lab work.  The missing values are thus
+potentially informative, and violate the usual &quot;missing at random&quot;
+(MCAR or MAC) assumptions that are assumed in analyses.  Because of
+the earlier published results on the Mayo PBC risk score, however, the
+5 variables involved in that computation were usually obtained, i.e.,
+age, bilirubin, albumin, prothrombin time, and edema score.
+
+Variables:
+case number
+number of days between registration and the earlier of death,
+transplantion, or study analysis time
+status: 0=alive, 1=transplanted, 2=dead
+drug: 1= D-penicillamine, 0=placebo
+age in days, at registration
+sex: 0=male, 1=female
+day: number of days between enrollment and this visit date, remaining
+values on the line of data refer to this visit.
+presence of asictes:       0=no 1=yes
+presence of hepatomegaly   0=no 1=yes
+presence of spiders        0=no 1=yes
+presence of edema          0=no edema and no diuretic therapy for edema;
+.5 = edema present without diuretics, or edema resolved by diuretics;
+1 = edema despite diuretic therapy
+serum bilirubin in mg/dl
+serum cholesterol in mg/dl
+albumin in gm/dl
+alkaline phosphatase in U/liter
+SGOT in U/ml  (serum glutamic-oxaloacetic transaminase, the enzyme name
+has subsequently changed to &quot;ALT&quot; in the medical literature)
+platelets per cubic ml / 1000
+prothrombin time in seconds
+histologic stage of disease
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: 3</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Murtaugh PA. Dickson ER. Van Dam GM. Malinchoc M. Grambsch PM</oml:creator>     <oml:collection_date>1994</oml:collection_date>  <oml:upload_date>2014-09-29T00:07:39</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52628/pbcseq.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0516/dataset_516.pq</oml:parquet_url>  <oml:file_id>52628</oml:file_id>  <oml:default_target_attribute>status</oml:default_target_attribute>            <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0516/dataset_516.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:41:59</oml:processing_date>      <oml:md5_checksum>7eef3b4fc9440d3ecd2ec6fd285fc871</oml:md5_checksum>
+</oml:data_set_description>

@@ -7,9 +7,19 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import Helper as helper
 import hashlib
+
+#TODO
+# - Fortschrittsbalken -> Implementierung
+# - Mehrere Seiten -> Implementierung -> Performance verbesserungen?
+# - Mehr Infos über Datensätze -> Implementierung / ausklappen Figur löschen und ersetzten durch Text, falls Platz fehlt!
+# - RangeSlider -> löschen und durch Input ersetzen
+# - Abbruchbutton -> Implementierung
+
+# Setzen des Cache-Verzeichnisses
+openml.config.set_root_cache_directory('cache')
 
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -18,15 +28,18 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
+# Set global Variables
 global_max_number_of_instances = 0
 global_max_number_of_features = 0
 global_max_number_of_numeric_features = 0
 global_max_number_of_symbolic_features = 0
 
+# Function to hash a dataset
 def hash_dataset(dataset):
     dataset_string = str(dataset)
     return hashlib.sha256(dataset_string.encode()).hexdigest()
 
+# Function to update the global max values
 def updateGlobalMaxValues(ranges):
     global global_max_number_of_instances
     global global_max_number_of_features
@@ -153,24 +166,35 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
 
     return list_group_items, statistics_figure, statistics_style
 
-
-# Formatiere Datum
 def parse_date(date_str):
     """
     Konvertiert einen Datumsstring in ein datetime-Objekt, wobei nur Jahr, Monat und Tag berücksichtigt werden.
+    Wenn date_str bereits ein datetime.date oder datetime.datetime Objekt ist, wird es direkt zurückgegeben.
 
-    :param date_str: Der zu konvertierende Datumsstring.
-    :return: Ein datetime-Objekt oder None, wenn date_str None ist.
+    :param date_str: Der zu konvertierende Datumsstring oder ein datetime.date/datetime.datetime Objekt.
+    :return: Ein datetime.date Objekt oder None, wenn date_str None ist.
     """
     if date_str:
-        try:
-            # Extrahiert nur das Jahr, den Monat und den Tag
-            return datetime.strptime(date_str.split('T')[0], '%Y-%m-%d')
-        except ValueError as e:
-            print(f"Fehler beim Parsen des Datums '{date_str}': {e}")
+        if isinstance(date_str, datetime):
+            return date_str.date()
+        elif isinstance(date_str, date):
+            return date_str
+        else:
+            try:
+                # Extrahiert nur das Jahr, den Monat und den Tag
+                parsed_date = datetime.strptime(date_str.split('T')[0], '%Y-%m-%d')
+                return parsed_date.date()
+            except ValueError as e:
+                print(f"Fehler beim Parsen des Datums '{date_str}': {e}")
     return None
 
 def getUploadDate(dataset_id):
+    """
+        Zum abrufen des Upload-Datums eines Datensatzes.
+
+        :param dataset_id: Datenatz-ID
+        :return: Gibt das Uploaddatum des Datensets zurück.
+        """
     try:
         dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
         return dataset.upload_date
@@ -178,10 +202,10 @@ def getUploadDate(dataset_id):
         print(f"Fehler beim Abrufen des Upload-Datums für Dataset {dataset_id}: {e}")
         return None
 
-def Fortschritt(dataset_ids, limit):
-    total = min(len(dataset_ids), limit)
-    for i, dataset_id in enumerate(dataset_ids):
-        yield i, dataset_id, int((i / total) * 100)
+#def Fortschritt(dataset_ids, limit):
+#    total = min(len(dataset_ids), limit)
+#    for i, dataset_id in enumerate(dataset_ids):
+#        yield i, dataset_id, int((i / total) * 100)
 
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
@@ -191,10 +215,6 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
         limit = float('inf')
 
     dataset_ids = datasets['did'].tolist()
-    dataset_upload_dates = {did: getUploadDate(did) for did in dataset_ids}
-
-    start_date = parse_date(start_date) if start_date else None
-    end_date = parse_date(end_date) if end_date else None
 
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must be before end date.")
@@ -203,11 +223,15 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
     filtered_datasets = []
     for dataset_id in dataset_ids:
 
+        upload_date = getUploadDate(dataset_ids[dataset_id])
+
+        start_date = parse_date(start_date)
+        end_date = parse_date(end_date)
+
         if count >= limit:
             print("Limit erreicht")
             break
 
-        upload_date = dataset_upload_dates.get(dataset_id)
         if upload_date:
             dataset_date = parse_date(upload_date)
 
@@ -239,7 +263,6 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
                 count += 1
 
     return filtered_datasets
-
 
 # Callbacks for toggling intervals and collapsing items
 @app.callback(
@@ -474,4 +497,3 @@ app.layout = dbc.Container([
 # Hauptausführungsbereich
 if __name__ == '__main__':
     app.run_server(debug=False)
-

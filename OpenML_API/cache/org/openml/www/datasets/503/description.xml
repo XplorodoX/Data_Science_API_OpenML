@@ -1,0 +1,43 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>503</oml:id>
+  <oml:name>wind</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+wind   daily average wind speeds for 1961-1978 at 12 synoptic meteorological
+stations in the Republic of Ireland (Haslett and raftery 1989).
+
+These data were analyzed in detail in the following article:
+Haslett, J. and Raftery, A. E. (1989). Space-time Modelling with
+Long-memory Dependence: Assessing Ireland's Wind Power Resource
+(with Discussion). Applied Statistics 38, 1-50.
+
+Each line corresponds to one day of data in the following format:
+year, month, day, average wind speed at each of the stations in the order given
+in Fig.4 of Haslett and Raftery :
+RPT, VAL, ROS, KIL, SHA, BIR, DUB, CLA, MUL, CLO, BEL, MAL
+
+Fortan format : ( i2, 2i3, 12f6.2)
+
+The data are in knots, not in m/s.
+
+Permission granted for unlimited distribution.
+
+Please report all anomalies to fraley@stat.washington.edu
+
+Be aware that the dataset is 532494 bytes long (thats over half a
+Megabyte).  Please be sure you want the data before you request it.
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Haslett</oml:creator><oml:creator> J. and Raftery</oml:creator><oml:creator> A. E.</oml:creator>     <oml:collection_date>1961-1978</oml:collection_date>  <oml:upload_date>2014-09-29T00:07:06</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52615/wind.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0503/dataset_503.pq</oml:parquet_url>  <oml:file_id>52615</oml:file_id>  <oml:default_target_attribute>MAL</oml:default_target_attribute>          <oml:tag>OpenML-Reg19</oml:tag><oml:tag>study_130</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0503/dataset_503.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:03:10</oml:processing_date>      <oml:md5_checksum>79202c457c559f7f95a1b6542a0e6bf6</oml:md5_checksum>
+</oml:data_set_description>

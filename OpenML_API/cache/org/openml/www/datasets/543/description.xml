@@ -1,0 +1,16 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>543</oml:id>
+  <oml:name>boston_corrected</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-09-29T00:09:09</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52655/boston_corrected.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0543/dataset_543.pq</oml:parquet_url>  <oml:file_id>52655</oml:file_id>  <oml:default_target_attribute>LSTAT</oml:default_target_attribute>    <oml:ignore_attribute>OBS.</oml:ignore_attribute>        <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0543/dataset_543.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2018-10-03 21:23:33</oml:processing_date>      <oml:md5_checksum>c7469a4c9651a418036b6939882fd0d3</oml:md5_checksum>
+</oml:data_set_description>

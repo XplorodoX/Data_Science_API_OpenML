@@ -1,0 +1,28 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>687</oml:id>
+  <oml:name>sleuth_ex1605</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+Contains 110 data sets from the book 'The Statistical Sleuth'
+by Fred Ramsey and Dan Schafer; Duxbury Press, 1997.
+(schafer@stat.orst.edu) [14/Oct/97] (172k)
+
+Note: description taken from this web site:
+http://lib.stat.cmu.edu/datasets/
+
+File: ../data/sleuth/ex1605.asc
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Ramsey</oml:creator><oml:creator> Fred</oml:creator><oml:creator>  Daniel Schafer</oml:creator>     <oml:collection_date>1997-10-14</oml:collection_date>  <oml:upload_date>2014-10-04T13:54:29</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52987/sleuth_ex1605.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0687/dataset_687.pq</oml:parquet_url>  <oml:file_id>52987</oml:file_id>  <oml:default_target_attribute>Age13IQ</oml:default_target_attribute>        <oml:citation>Ramsey, Fred, and Daniel Schafer. The statistical sleuth: a course in methods of data analysis. Cengage Learning, 2012.</oml:citation>  <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>StatLib</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://lib.stat.cmu.edu/datasets/</oml:original_data_url>  <oml:paper_url>https://www.jstor.org/stable/pdf/2685617.pdf</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0687/dataset_687.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 20:33:36</oml:processing_date>      <oml:md5_checksum>d9d0e11f56015fbbf07de3e06755014d</oml:md5_checksum>
+</oml:data_set_description>

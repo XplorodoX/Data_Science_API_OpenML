@@ -1,0 +1,32 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>663</oml:id>
+  <oml:name>rabe_266</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**:   
+**Source**: Unknown - Date unknown  
+**Please cite**:   
+
+This file contains data from Regression Analysis By Example, 2nd Edition,
+by Samprit Chatterjee and Bertram Price, John Wiley, 1991.
+Data sets have names of the form 'rabe.xxx' where xxx is the page number
+in the book where the data occurs.
+
+For additional information, Samprit Chatterjee can be reached using
+&quot;schatter@stern.nyu.edu&quot;.
+
+File: ../data/rabe/rabe.266
+
+Note: there were no information about the columns in the data set,
+hence automatically generated names
+
+
+Information about the dataset
+CLASSTYPE: numeric
+CLASSINDEX: none specific</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Samprit Chatterjee</oml:creator><oml:creator> Bertram Price</oml:creator><oml:creator> John Wiley</oml:creator>     <oml:collection_date>1991</oml:collection_date>  <oml:upload_date>2014-10-04T13:53:50</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52963/rabe_266.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0663/dataset_663.pq</oml:parquet_url>  <oml:file_id>52963</oml:file_id>  <oml:default_target_attribute>col_3</oml:default_target_attribute>          <oml:tag>Chemistry</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>StatLib</oml:tag>  <oml:visibility>public</oml:visibility>    <oml:paper_url>https://books.google.nl/books/about/Regression_Analysis_by_Example.html?id=uiu5XsAA9kYC</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0663/dataset_663.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:46:20</oml:processing_date>      <oml:md5_checksum>b619168833f12ad706a363a1ddaf203e</oml:md5_checksum>
+</oml:data_set_description>

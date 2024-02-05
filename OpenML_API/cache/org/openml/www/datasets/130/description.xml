@@ -1,0 +1,12 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>130</oml:id>
+  <oml:name>BNG(segment)</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description></oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>Geoffrey Holmes</oml:creator><oml:creator>Bernhard Pfahringer</oml:creator><oml:creator>Jan van Rijn</oml:creator><oml:creator>Joaquin Vanschoren</oml:creator>     <oml:collection_date>2014-04-08 23:26:51</oml:collection_date>  <oml:upload_date>2014-04-08T13:25:12</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/1852/BNG(segment).arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0130/dataset_130.pq</oml:parquet_url>  <oml:file_id>1852</oml:file_id>  <oml:default_target_attribute>class</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>    <oml:tag>artificial</oml:tag><oml:tag>BNG</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0130/dataset_130.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 18:47:00</oml:processing_date>      <oml:md5_checksum>d56fd71cb4e99d0125a6e008d24c1362</oml:md5_checksum>
+</oml:data_set_description>

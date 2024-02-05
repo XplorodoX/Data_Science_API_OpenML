@@ -1,0 +1,26 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>354</oml:id>
+  <oml:name>poker</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: UCI  
+**Source**: [original](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets) -   
+**Please cite**:   
+
+This is the poker dataset, retrieved 2013-11-14 from the libSVM site. Additional to the preprocessing done there (see LibSVM site for details), this dataset was created as follows:    
+
+-join test and train datasets (non-scaled versions)   
+-relabel classes 0=positive class and 1,2,...9=negative class   
+-normalize each file columnwise according to the following rules:    
+-If a column only contains one value (constant feature), it will set to zero and thus removed by sparsity.    
+-If a column contains two values (binary feature), the value occuring more often will be set to zero, the other to one.   
+-If a column contains more than two values (multinary/real feature), the column is divided by its std deviation.   
+
+NOTE: please keep in mind that poker has a mild redundancy, e.g. some duplicated data points, roughly 0.2%, within each file &amp;#40;train,test&amp;#41;. these duplicated points have not been removed!
+</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>Sparse_ARFF</oml:format>
+  <oml:creator>UCI</oml:creator>      <oml:upload_date>2014-08-29T19:20:49</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52257/poker.sparse_arff</oml:url>
+    <oml:file_id>52257</oml:file_id>  <oml:default_target_attribute>Y</oml:default_target_attribute>          <oml:tag>Machine Learning</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets</oml:original_data_url>      <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:16:09</oml:processing_date>      <oml:md5_checksum>a506f178fee2f4f27fcfb4c3231913d9</oml:md5_checksum>
+</oml:data_set_description>

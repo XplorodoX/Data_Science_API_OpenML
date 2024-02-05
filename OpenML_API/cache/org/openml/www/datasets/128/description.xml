@@ -1,0 +1,12 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>128</oml:id>
+  <oml:name>BNG(cylinder-bands,nominal,1000000)</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>This data sets consists of 3 different types of irises' (Setosa, Versicolour, and Virginica) petal and sepal length, stored in a 150x4 numpy.ndarray</oml:description>
+  <oml:description_version>7</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>R.A.Fisher</oml:creator>     <oml:collection_date>1937</oml:collection_date>  <oml:upload_date>2014-04-08T13:20:44</oml:upload_date>
+  <oml:language>English</oml:language>  <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/1848/BNG(cylinder-bands,nominal,1000000).arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0128/dataset_128.pq</oml:parquet_url>  <oml:file_id>1848</oml:file_id>  <oml:default_target_attribute>band_type</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>  <oml:citation>The use of multiple measurements in taxonomic problems</oml:citation>  <oml:tag>artificial</oml:tag><oml:tag>BNG</oml:tag><oml:tag>Life Science</oml:tag><oml:tag>Mathematics</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0128/dataset_128.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:32:58</oml:processing_date>      <oml:md5_checksum>3b23414df6e73e0791d9a8546c314ae6</oml:md5_checksum>
+</oml:data_set_description>

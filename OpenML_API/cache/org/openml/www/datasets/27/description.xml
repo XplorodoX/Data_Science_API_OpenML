@@ -1,0 +1,18 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>27</oml:id>
+  <oml:name>colic</oml:name>
+  <oml:version>2</oml:version>
+  <oml:description>**Author**: Mary McLeish &amp; Matt Cecile, University of Guelph
+Donor: Will Taylor (taylor@pluto.arc.nasa.gov)   
+**Source**: [UCI](https://archive.ics.uci.edu/ml/datasets/Horse+Colic) - 8/6/89  
+**Please cite**:   
+
+**Horse Colic database**
+In this version (version 2), some features were removed. It is unclear why of how this was done.</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-04-06T23:21:26</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/27/colic.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0027/dataset_27.pq</oml:parquet_url>  <oml:file_id>27</oml:file_id>  <oml:default_target_attribute>surgical_lesion</oml:default_target_attribute>      <oml:version_label>2</oml:version_label>    <oml:tag>Agriculture</oml:tag><oml:tag>Health</oml:tag><oml:tag>mythbusting_1</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_15</oml:tag><oml:tag>study_20</oml:tag><oml:tag>study_41</oml:tag><oml:tag>uci</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0027/dataset_27.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:43:15</oml:processing_date>      <oml:md5_checksum>17380a1a6a64e6069ea28a3409a094b2</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,12 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>279</oml:id>
+  <oml:name>meta_stream_intervals.arff</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description></oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+        <oml:upload_date>2014-05-13T14:33:46</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/1786463/meta_stream_intervals.arff.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0279/dataset_279.pq</oml:parquet_url>  <oml:file_id>1786463</oml:file_id>  <oml:default_target_attribute>class</oml:default_target_attribute>      <oml:version_label>1</oml:version_label>    <oml:tag>study_1</oml:tag><oml:tag>study_41</oml:tag>  <oml:visibility>public</oml:visibility>      <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0279/dataset_279.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2018-10-03 22:09:31</oml:processing_date>      <oml:md5_checksum>a14d53cc3d89a20d111fbde19a93a345</oml:md5_checksum>
+</oml:data_set_description>

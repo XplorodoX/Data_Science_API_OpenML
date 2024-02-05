@@ -1,0 +1,34 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>338</oml:id>
+  <oml:name>grub-damage</oml:name>
+  <oml:version>1</oml:version>
+  <oml:description>**Author**: R. J. Townsend  
+**Source**: [original](http://www.cs.waikato.ac.nz/ml/weka/datasets.html) -   
+**Please cite**:   
+
+Grass Grubs and Damage Ranking
+
+Data source:   R. J. Townsend
+AgResearch, Lincoln, New Zealand
+
+Grass grubs are one of the major insect pests of pasture in Canterbury and  can cause severe pasture damage and economic loss. Pastoral damage may occur periodically over wide ranging areas. Grass grub populations are often influenced by biotic factors (diseases) and farming practices (such as irrigation and heavy rolling). The objective of the report was to report on grass grub population and damage levels to provide objective estimates of the annual losses caused by grass grubs.
+
+The original machine learning objective was to find a relationship between grass grub numbers, irrigation and damage ranking for the period between 1986 to 1992.
+
+Attribute Information:
+1. year_zone - Years 0, 1, 2, 6, 7, 8, 9 divided into three zones: f, m, c - enumerated
+2. year - year of trial - enumerated
+3. strip - strip of paddock sampled - integer
+4. pdk - paddock sampled - integer
+5. damage_rankRJT - RJ Townsends damage ranking - enumerated
+6. damage_rankALL - other researchers damage ranking - enumerated
+7. dry_or_irr - indicates if paddock was dry or irrigated (D: dryland, O: irrigated overhead, B: irrigated border dyke) - enumerated
+8. zone - position of paddock (F: foothills, M: midplain, C: coastal) - enumerated
+9. GG_new - based on grass grubs per metre squared - enumerated</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>ARFF</oml:format>
+  <oml:creator>R. J. Townsend</oml:creator>      <oml:upload_date>2014-08-26T21:45:29</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/52241/grub-damage.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0000/0338/dataset_338.pq</oml:parquet_url>  <oml:file_id>52241</oml:file_id>  <oml:default_target_attribute>GG_new</oml:default_target_attribute>          <oml:tag>Agriculture</oml:tag><oml:tag>Earth Science</oml:tag><oml:tag>study_1</oml:tag><oml:tag>study_41</oml:tag><oml:tag>study_52</oml:tag><oml:tag>study_7</oml:tag><oml:tag>study_88</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://www.cs.waikato.ac.nz/ml/weka/datasets.html</oml:original_data_url>    <oml:minio_url>https://openml1.win.tue.nl/datasets/0000/0338/dataset_338.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2020-11-20 19:11:51</oml:processing_date>      <oml:md5_checksum>336109917bf3b95f1cb08439f04e544f</oml:md5_checksum>
+</oml:data_set_description>
