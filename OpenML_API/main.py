@@ -114,6 +114,8 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
     statistics_figure = go.Figure()  # Default empty figure
     statistics_style = {'display': 'none'}  # Default style
 
+    global is_canceled
+
     # Check if the button was clicked
     if n_clicks is None:
         return list_group_items, statistics_figure, statistics_style
@@ -210,6 +212,7 @@ def getUploadDate(dataset_id):
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
+    global is_canceled
 
     if limit is None:
         limit = float('inf')
@@ -262,6 +265,10 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
                 })
                 count += 1
 
+        if is_canceled:
+            is_canceled = False
+            break
+
     return filtered_datasets
 
 # Callbacks for toggling intervals and collapsing items
@@ -275,6 +282,18 @@ def toggle_interval(n_clicks, disabled):
         return False
     return True
 
+@app.callback(
+    Output('cancel_status', 'children'),  # Sie können diesen Output anpassen, um Rückmeldungen im UI zu geben.
+    [Input('cancel_button', 'n_clicks')]
+)
+def cancel_search(n_clicks):
+    global is_canceled
+    if n_clicks:
+        is_canceled = True
+        return "Suche wurde abgebrochen."
+    return ""
+
+# Callbacks for toggling intervals and collapsing items
 @app.callback(
     Output({"type": "collapse", "index": dash.ALL}, "is_open"),
     [Input({"type": "toggle", "index": dash.ALL}, "n_clicks")],
@@ -479,11 +498,19 @@ app.layout = dbc.Container([
             ], className="mb-4"),
 
             # Suchbutton
+            # Suchbutton und Abbruchbutton
+            # Such- und Abbruchbutton
             dbc.Row([
                 dbc.Col([
-                    dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'})
+                    dbc.Row([
+                        dbc.Col(dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3",
+                                           style={'width': '100%'}), width=6),
+                        dbc.Col(dbc.Button('Abbrechen', id='cancel_button', color="danger", className="mt-3 mb-3",
+                                           style={'width': '100%'}), width=6)
+                    ])
                 ], md=12),
             ]),
+
             # Fortschrittsbalken
             dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
         ])
