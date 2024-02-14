@@ -6,10 +6,10 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import json
-import logging
+import math
 from datetime import datetime, timedelta, date
+from dash.exceptions import PreventUpdate
 import Helper as helper
-import hashlib
 
 #TODO
 # - Fortschrittsbalken -> Implementierung
@@ -20,12 +20,10 @@ import hashlib
 # Setzen des Cache-Verzeichnisses
 openml.config.set_root_cache_directory('cache')
 
+ITEMS_PER_PAGE = 10
+
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
-
-# Set up logging
-#logging.basicConfig(filename='app.log', level=logging.INFO,
-#                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 # Erstellen eines leeren DataFrame
 df = pd.DataFrame()
@@ -35,11 +33,6 @@ global_max_number_of_instances = 0
 global_max_number_of_features = 0
 global_max_number_of_numeric_features = 0
 global_max_number_of_symbolic_features = 0
-
-# Function to hash a dataset
-def hash_dataset(dataset):
-    dataset_string = str(dataset)
-    return hashlib.sha256(dataset_string.encode()).hexdigest()
 
 # Function to update the global max values
 def updateGlobalMaxValues(ranges):
@@ -84,9 +77,6 @@ def create_statistics_figure():
     fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
     return fig
 
-# Angenommen, ITEMS_PER_PAGE ist irgendwo definiert
-ITEMS_PER_PAGE = 10
-
 @app.callback(
     Output('test_output', 'children'),  # Erstellen Sie ein entsprechendes Ausgabe-Element im Layout
     [Input('search_button', 'n_clicks')]
@@ -107,7 +97,7 @@ def test_button_click(n_clicks):
         Input('search_button', 'n_clicks'),
         Input('previous-page', 'n_clicks'),
         Input('next-page', 'n_clicks'),
-        Input('filtered_data_id', 'filtered_data')
+        Input('filtered_data_id', 'data')
     ],
     [
         State('date_range', 'start_date'),
@@ -132,13 +122,7 @@ def on_search_button_click(search_n_clicks, prev_n_clicks, next_n_clicks, filter
     if search_n_clicks is None:
         return [], None, create_statistics_figure()
 
-    # If the function continues, you can implement your logic here and make sure to return values for each output
-    # For demonstration, I'm returning placeholders for each, but you should replace these with your actual logic
-    list_group_items = []  # Populate this list with your actual items
-    list_container_content = None  # Update this with your actual content
-    statistics_figure = create_statistics_figure()  # Or generate/update this figure based on your logic
-
-        # Create ranges from min and max values
+    # Create ranges from min and max values
     features_range = (min_features, max_features)
     numerical_features_range = (min_numerical_features, max_numerical_features)
     categorical_features_range = (min_categorical_features, max_categorical_features)
@@ -148,13 +132,13 @@ def on_search_button_click(search_n_clicks, prev_n_clicks, next_n_clicks, filter
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
 
     # Wenn keine Daten vorhanden sind, aktualisieren Sie nichts
-    if not filtered_data:  # Replace store_data with filtered_data
+    if not filtered_data:
         raise PreventUpdate
 
     # Umwandlung der gespeicherten Daten in DataFrame
     df = pd.DataFrame(filtered_data)  # Adjust to use filtered_data
 
-    current_page_value = int(current_page) if current_page is not None else 1
+    current_page = 1
 
     # Ermittlung des ausgelösten Buttons
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -169,10 +153,10 @@ def on_search_button_click(search_n_clicks, prev_n_clicks, next_n_clicks, filter
     # Anwenden der Paginierung
     start = (current_page - 1) * ITEMS_PER_PAGE
     end = start + ITEMS_PER_PAGE
-    page_data = df.iloc[start:end]
+    #page_data = df.iloc[start:end]
 
     list_group_items = []
-    for idx, dataset in enumerate(page_data, start=1):
+    for idx, dataset in enumerate(df, start=1):
         dataset_name = dataset['name']
         num_instances = dataset['instances']
         num_features = dataset['features']
