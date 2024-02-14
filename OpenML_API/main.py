@@ -22,11 +22,11 @@ import hashlib
 openml.config.set_root_cache_directory('cache')
 
 # Dash app setup
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
 # Set up logging
-logging.basicConfig(filename='app.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
+#logging.basicConfig(filename='app.log', level=logging.INFO,
+#                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 # Set global Variables
 global_max_number_of_instances = 0
@@ -101,26 +101,34 @@ def test_button_click(n_clicks):
     [
         State('date_range', 'start_date'),
         State('date_range', 'end_date'),
-        State('range_data_points', 'value'),
-        State('range_features', 'value'),
-        State('range_numerical_features', 'value'),
-        State('range_categorical_features', 'value'),
+        State('min_data_points', 'value'),
+        State('max_data_points', 'value'),
+        State('min_features', 'value'),
+        State('max_features', 'value'),
+        State('min_numerical_features', 'value'),
+        State('max_numerical_features', 'value'),
+        State('min_categorical_features', 'value'),
+        State('max_categorical_features', 'value'),
         State('input_max_datasets', 'value')
     ]
 )
-def on_search_button_click(n_clicks, start_date, end_date, data_points_range, features_range, numerical_features_range, categorical_features_range, limit):
+def on_search_button_click(n_clicks, start_date, end_date, min_data_points, max_data_points, min_features, max_features, min_numerical_features, max_numerical_features, min_categorical_features, max_categorical_features, limit):
+
     # Initialize variables at the start of the function
     list_group_items = []
     statistics_figure = go.Figure()  # Default empty figure
     statistics_style = {'display': 'none'}  # Default style
 
-    global is_canceled
-
     # Check if the button was clicked
     if n_clicks is None:
         return list_group_items, statistics_figure, statistics_style
 
-    # start_date=None, end_date=None, num_attributes_range=None, num_features_range=None, limit=None, datasets_list
+    # Create ranges from min and max values
+    features_range = (min_features, max_features)
+    numerical_features_range = (min_numerical_features, max_numerical_features)
+    categorical_features_range = (min_categorical_features, max_categorical_features)
+    data_points_range = (min_data_points, max_data_points)
+
     # Datenabrufen und Verarbeitung
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
 
@@ -168,6 +176,7 @@ def on_search_button_click(n_clicks, start_date, end_date, data_points_range, fe
 
     return list_group_items, statistics_figure, statistics_style
 
+#Datum Konvertierung
 def parse_date(date_str):
     """
     Konvertiert einen Datumsstring in ein datetime-Objekt, wobei nur Jahr, Monat und Tag berücksichtigt werden.
@@ -190,6 +199,7 @@ def parse_date(date_str):
                 print(f"Fehler beim Parsen des Datums '{date_str}': {e}")
     return None
 
+# Funktion zum Abrufen des Upload-Datums eines Datensatzes
 def getUploadDate(dataset_id):
     """
         Zum abrufen des Upload-Datums eines Datensatzes.
@@ -204,16 +214,9 @@ def getUploadDate(dataset_id):
         print(f"Fehler beim Abrufen des Upload-Datums für Dataset {dataset_id}: {e}")
         return None
 
-#def Fortschritt(dataset_ids, limit):
-#    total = min(len(dataset_ids), limit)
-#    for i, dataset_id in enumerate(dataset_ids):
-#        yield i, dataset_id, int((i / total) * 100)
-
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
-    global is_canceled
-
     if limit is None:
         limit = float('inf')
 
@@ -265,10 +268,6 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
                 })
                 count += 1
 
-        if is_canceled:
-            is_canceled = False
-            break
-
     return filtered_datasets
 
 # Callbacks for toggling intervals and collapsing items
@@ -281,17 +280,6 @@ def toggle_interval(n_clicks, disabled):
     if n_clicks:
         return False
     return True
-
-@app.callback(
-    Output('cancel_status', 'children'),  # Sie können diesen Output anpassen, um Rückmeldungen im UI zu geben.
-    [Input('cancel_button', 'n_clicks')]
-)
-def cancel_search(n_clicks):
-    global is_canceled
-    if n_clicks:
-        is_canceled = True
-        return "Suche wurde abgebrochen."
-    return ""
 
 # Callbacks for toggling intervals and collapsing items
 @app.callback(
@@ -343,12 +331,10 @@ def update_output_categorical_features(value):
 def update_output_data_points(value):
     return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
 
-# Erstellen des Dash-Layouts
 app.layout = dbc.Container([
     dbc.Card([
         dbc.CardHeader("Filter"),
         dbc.CardBody([
-            # Reihe für Datum und Anzahl der Datenpunkte
             dbc.Row([
                 dbc.Col([
                     dbc.Card([
@@ -356,7 +342,7 @@ app.layout = dbc.Container([
                         dbc.CardBody([
                             dcc.DatePickerRange(
                                 id='date_range',
-                                start_date=datetime.now() - timedelta(days=200),
+                                start_date=datetime.now() - timedelta(days=3600),
                                 end_date=datetime.now(),
                                 min_date_allowed=datetime(2000, 1, 1),
                                 max_date_allowed=datetime.now(),
@@ -366,19 +352,26 @@ app.layout = dbc.Container([
                         ]),
                     ]),
                 ], md=5),
-                # Im Dash-Layout
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Anzahl Datenpunkte"),
                         dbc.CardBody([
-                            dcc.RangeSlider(
-                                id='range_data_points',
-                                min=0,
-                                max=max_instances,  # Beispielwert
-                                step=1,
-                                value=[0, max_instances],
-                                marks={i: str(i) for i in range(0, max_instances + 1, max(1, max_instances // 10))}
-                            ),
+                            dbc.Row([
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Min"),
+                                        dbc.Input(id='min_data_points', type='number', value=0, min=0, max=max_instances),
+                                    ]),
+                                    width=6,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Max"),
+                                        dbc.Input(id='max_data_points', type='number', value=max_instances, min=0, max=max_instances),
+                                    ]),
+                                    width=6,
+                                ),
+                            ]),
                             html.Div(
                                 id='output_data_points',
                                 style={
@@ -387,7 +380,7 @@ app.layout = dbc.Container([
                                     'font-weight': 'bold',
                                     'color': '#007bff'
                                 }
-                            )  # Div für die Anzeige des aktuellen Werts
+                            )
                         ]),
                     ]),
                 ], md=5),
@@ -416,23 +409,28 @@ app.layout = dbc.Container([
                         ]),
                     ]),
                 ], md=2),
-
             ], className="mb-4"),
-            # Reihe für Anzahl der Features und numerische Features
             dbc.Row([
-                # Im Dash-Layout
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Features"),
                         dbc.CardBody([
-                            dcc.RangeSlider(
-                                id='range_features',
-                                min=0,
-                                max=max_features,
-                                step=1,
-                                value=[0, max_features],
-                                marks={i: str(i) for i in range(0, max_features + 1, max(1, max_features // 10))}
-                            ),
+                            dbc.Row([
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Min"),
+                                        dbc.Input(id='min_features', type='number', value=0, min=0, max=max_features),
+                                    ]),
+                                    width=6,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Max"),
+                                        dbc.Input(id='max_features', type='number', value=max_features, min=0, max=max_features),
+                                    ]),
+                                    width=6,
+                                ),
+                            ]),
                             html.Div(
                                 id='output_features',
                                 style={
@@ -441,7 +439,7 @@ app.layout = dbc.Container([
                                     'font-weight': 'bold',
                                     'color': '#007bff'
                                 }
-                            )  # Div für die Anzeige des aktuellen Werts
+                            )
                         ]),
                     ]),
                 ], md=4),
@@ -449,22 +447,29 @@ app.layout = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Numerischen Features"),
                         dbc.CardBody([
-                            dcc.RangeSlider(
-                                id='range_numerical_features',
-                                min=0,
-                                max=max_numeric_features,
-                                step=1,
-                                value=[0, max_numeric_features],
-                                marks={i: str(i) for i in
-                                       range(0, max_numeric_features + 1, max(1, max_numeric_features // 10))}
-                            ),
+                            dbc.Row([
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Min"),
+                                        dbc.Input(id='min_numerical_features', type='number', value=0, min=0, max=max_numeric_features),
+                                    ]),
+                                    width=6,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Max"),
+                                        dbc.Input(id='max_numerical_features', type='number', value=max_numeric_features, min=0, max=max_numeric_features),
+                                    ]),
+                                    width=6,
+                                ),
+                            ]),
                             html.Div(
                                 id='output_numerical_features',
                                 style={
                                     'margin-top': '10px',
-                                    'text-align': 'center',  # Zentriert den Text
-                                    'font-weight': 'bold',  # Macht den Text fett
-                                    'color': '#007bff'  # Blaue Schriftfarbe, passend zu den Bootstrap-Primärfarben
+                                    'text-align': 'center',
+                                    'font-weight': 'bold',
+                                    'color': '#007bff'
                                 }
                             )
                         ]),
@@ -474,15 +479,22 @@ app.layout = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader("Anzahl der Kategorialen Features"),
                         dbc.CardBody([
-                            dcc.RangeSlider(
-                                id='range_categorical_features',
-                                min=0,
-                                max=max_categorical_features,
-                                step=1,
-                                value=[0, max_categorical_features],
-                                marks={i: str(i) for i in
-                                       range(0, max_categorical_features + 1, max(1, max_categorical_features // 10))}
-                            ),
+                            dbc.Row([
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Min"),
+                                        dbc.Input(id='min_categorical_features', type='number', value=0, min=0, max=max_categorical_features),
+                                    ]),
+                                    width=6,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.InputGroupText("Max"),
+                                        dbc.Input(id='max_categorical_features', type='number', value=max_categorical_features, min=0, max=max_categorical_features),
+                                    ]),
+                                    width=6,
+                                ),
+                            ]),
                             html.Div(
                                 id='output_categorical_features',
                                 style={
@@ -491,36 +503,32 @@ app.layout = dbc.Container([
                                     'font-weight': 'bold',
                                     'color': '#007bff'
                                 }
-                            )  # Div für die Anzeige des aktuellen Werts
+                            )
                         ]),
                     ]),
                 ], md=4),
             ], className="mb-4"),
-
-            # Suchbutton
-            # Suchbutton und Abbruchbutton
-            # Such- und Abbruchbutton
             dbc.Row([
                 dbc.Col([
                     dbc.Row([
-                        dbc.Col(dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3",
-                                           style={'width': '100%'}), width=6),
-                        dbc.Col(dbc.Button('Abbrechen', id='cancel_button', color="danger", className="mt-3 mb-3",
-                                           style={'width': '100%'}), width=6)
+                        dbc.Col(dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'}), width=6),
+                        dbc.Col(dbc.Button('Abbrechen', id='cancel_button', color="danger", className="mt-3 mb-3", style={'width': '100%'}), width=6)
                     ])
                 ], md=12),
             ]),
-
-            # Fortschrittsbalken
             dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
         ])
     ]),
-    # Graph und Listengruppe
     dcc.Graph(id='statistics_figure', style={'display': 'none'}),
     dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
     dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
+    dbc.Row([
+        dbc.Col(dbc.Button("Vorherige", id="prev_page_button", className="mr-2"), width="auto"),
+        dbc.Col(dbc.Button("Nächste", id="next_page_button"), width="auto"),
+        dbc.Col(html.Div(id="page_info"), width="auto")
+    ]),
 ], fluid=True)
 
 # Hauptausführungsbereich
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
