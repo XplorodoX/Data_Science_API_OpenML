@@ -12,7 +12,8 @@ app = dash.Dash(__name__)
 ITEMS_PER_PAGE = 10
 
 app.layout = html.Div([
-    html.Div(id='table-container'),  # Container für die anzuzeigenden Daten
+    html.Div(id='table-container'),  # Container für die anzuzeigenden Daten, zunächst leer
+    html.Button('Daten anzeigen', id='show-data', n_clicks=0),
     html.Button('Zurück', id='previous-page', n_clicks=0),
     html.Span(id='current-page', children="1"),  # Anzeige der aktuellen Seite
     html.Button('Vor', id='next-page', n_clicks=0),
@@ -21,18 +22,23 @@ app.layout = html.Div([
 
 @app.callback(
     Output('table-container', 'children'),
-    [Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
+    [Input('show-data', 'n_clicks'), Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
     [State('current-page', 'children')]
 )
-def update_table(prev_clicks, next_clicks, current_page):
+def update_table(show_data_clicks, prev_clicks, next_clicks, current_page):
+    # Überprüfung, ob der Button zum Anzeigen der Daten geklickt wurde
+    if show_data_clicks == 0:
+        # Wenn nicht, leere Antwort zurückgeben
+        return ""
+
     # Umwandlung der aktuellen Seite in eine Zahl
     current_page = int(current_page)
 
     # Ermittlung des ausgelösten Buttons
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'next-page' in changed_id:
+    if 'next-page' in changed_id and show_data_clicks > 0:
         current_page = min(current_page + 1, math.ceil(len(df) / ITEMS_PER_PAGE))
-    elif 'previous-page' in changed_id:
+    elif 'previous-page' in changed_id and show_data_clicks > 0:
         current_page = max(current_page - 1, 1)
 
     # Aktualisierung der Tabelle basierend auf der aktuellen Seite
@@ -52,14 +58,16 @@ def update_table(prev_clicks, next_clicks, current_page):
 
 @app.callback(
     Output('current-page', 'children'),
-    [Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
+    [Input('show-data', 'n_clicks'), Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
     [State('current-page', 'children')]
 )
-def update_page_number(prev_clicks, next_clicks, current_page):
-    # Umwandlung der aktuellen Seite in eine Zahl
-    current_page = int(current_page)
+def update_page_number(show_data_clicks, prev_clicks, next_clicks, current_page):
+    if show_data_clicks == 0:
+        # Wenn der Button zum Anzeigen der Daten noch nicht geklickt wurde, keine Aktion
+        return current_page
 
-    # Ermittlung des ausgelösten Buttons
+    # Logik zur Aktualisierung der Seitennummer
+    current_page = int(current_page)
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'next-page' in changed_id:
         current_page = min(current_page + 1, math.ceil(len(df) / ITEMS_PER_PAGE))

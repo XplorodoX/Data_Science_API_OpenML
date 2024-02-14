@@ -27,6 +27,9 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_
 #logging.basicConfig(filename='app.log', level=logging.INFO,
 #                    format='%(asctime)s:%(levelname)s:%(message)s')
 
+# Erstellen eines leeren DataFrame
+df = pd.DataFrame()
+
 # Set global Variables
 global_max_number_of_instances = 0
 global_max_number_of_features = 0
@@ -81,6 +84,9 @@ def create_statistics_figure():
     fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
     return fig
 
+# Angenommen, ITEMS_PER_PAGE ist irgendwo definiert
+ITEMS_PER_PAGE = 10
+
 @app.callback(
     Output('test_output', 'children'),  # Erstellen Sie ein entsprechendes Ausgabe-Element im Layout
     [Input('search_button', 'n_clicks')]
@@ -93,13 +99,20 @@ def test_button_click(n_clicks):
 @app.callback(
     [
         Output('list_group', 'children'),
+        Output('list-container', 'children'),
         Output('statistics_figure', 'figure'),
-        Output('statistics_figure', 'style')
+        # Removed Output for statistics_style as it's not defined
     ],
-    [Input('search_button', 'n_clicks')],
+    [
+        Input('search_button', 'n_clicks'),
+        Input('previous-page', 'n_clicks'),
+        Input('next-page', 'n_clicks'),
+        Input('filtered_data_id', 'filtered_data')
+    ],
     [
         State('date_range', 'start_date'),
         State('date_range', 'end_date'),
+        State('current-page', 'children'),
         State('min_data_points', 'value'),
         State('max_data_points', 'value'),
         State('min_features', 'value'),
@@ -111,18 +124,21 @@ def test_button_click(n_clicks):
         State('input_max_datasets', 'value')
     ]
 )
-def on_search_button_click(n_clicks, start_date, end_date, min_data_points, max_data_points, min_features, max_features, min_numerical_features, max_numerical_features, min_categorical_features, max_categorical_features, limit):
+def on_search_button_click(search_n_clicks, prev_n_clicks, next_n_clicks, filtered_data, start_date, end_date,
+                           current_page, min_data_points, max_data_points, min_features, max_features,
+                           min_numerical_features, max_numerical_features, min_categorical_features,
+                           max_categorical_features, limit):
+    # If the button hasn't been clicked, return placeholders for each output
+    if search_n_clicks is None:
+        return [], None, create_statistics_figure()
 
-    # Initialize variables at the start of the function
-    list_group_items = []
-    statistics_figure = go.Figure()  # Default empty figure
-    statistics_style = {'display': 'none'}  # Default style
+    # If the function continues, you can implement your logic here and make sure to return values for each output
+    # For demonstration, I'm returning placeholders for each, but you should replace these with your actual logic
+    list_group_items = []  # Populate this list with your actual items
+    list_container_content = None  # Update this with your actual content
+    statistics_figure = create_statistics_figure()  # Or generate/update this figure based on your logic
 
-    # Check if the button was clicked
-    if n_clicks is None:
-        return list_group_items, statistics_figure, statistics_style
-
-    # Create ranges from min and max values
+        # Create ranges from min and max values
     features_range = (min_features, max_features)
     numerical_features_range = (min_numerical_features, max_numerical_features)
     categorical_features_range = (min_categorical_features, max_categorical_features)
@@ -131,8 +147,32 @@ def on_search_button_click(n_clicks, start_date, end_date, min_data_points, max_
     # Datenabrufen und Verarbeitung
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
 
-    # Anzeigen der Datensätze in Liste und Graph
-    for idx, dataset in enumerate(filtered_data, start=1):
+    # Wenn keine Daten vorhanden sind, aktualisieren Sie nichts
+    if not filtered_data:  # Replace store_data with filtered_data
+        raise PreventUpdate
+
+    # Umwandlung der gespeicherten Daten in DataFrame
+    df = pd.DataFrame(filtered_data)  # Adjust to use filtered_data
+
+    current_page_value = int(current_page) if current_page is not None else 1
+
+    # Ermittlung des ausgelösten Buttons
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'next-page' in changed_id:
+        current_page += 1
+    elif 'previous-page' in changed_id:
+        current_page -= 1
+
+    # Stellen Sie sicher, dass die Seitenzahl innerhalb der gültigen Bereichsgrenzen bleibt
+    current_page = max(min(current_page, math.ceil(len(df) / ITEMS_PER_PAGE)), 1)
+
+    # Anwenden der Paginierung
+    start = (current_page - 1) * ITEMS_PER_PAGE
+    end = start + ITEMS_PER_PAGE
+    page_data = df.iloc[start:end]
+
+    list_group_items = []
+    for idx, dataset in enumerate(page_data, start=1):
         dataset_name = dataset['name']
         num_instances = dataset['instances']
         num_features = dataset['features']
@@ -144,12 +184,12 @@ def on_search_button_click(n_clicks, start_date, end_date, min_data_points, max_
             [
                 html.Div(
                     [
-                        html.H5(f"{idx}. {dataset_name}", className="mb-1"),  # Added numbering here
+                        html.H5(f"{idx}. {dataset_name}", className="mb-1"),
                         html.Small(f"Zeilenanzahl: {num_instances}", className="text-secondary"),
                         html.Small(f"Dimension: {data_dimensions}", className="text-secondary"),
                     ],
                     className="d-flex flex-column",
-                    id={"type": "toggle", "index": idx},
+                    id={"type": "toggle", "index": idx + start},  # Adjust index based on pagination
                     style={
                         "cursor": "pointer",
                         "padding": "10px",
@@ -164,16 +204,14 @@ def on_search_button_click(n_clicks, start_date, end_date, min_data_points, max_
         )
         collapse = dbc.Collapse(
             dbc.Card(dbc.CardBody([dcc.Graph(figure=create_placeholder_figure())])),
-            id={"type": "collapse", "index": idx}
+            id={"type": "collapse", "index": idx + start}  # Adjust index based on pagination
         )
         list_group_items.append(list_group_item)
         list_group_items.append(collapse)
 
     statistics_figure = create_statistics_figure()
 
-    statistics_style = {'display': 'block'}
-
-    return list_group_items, statistics_figure, statistics_style
+    return [list_group_items, html.Div(), statistics_figure]
 
 #Datum Konvertierung
 def parse_date(date_str):
@@ -521,11 +559,17 @@ app.layout = dbc.Container([
     dcc.Graph(id='statistics_figure', style={'display': 'none'}),
     dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
     dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
-    dbc.Row([
-        dbc.Col(dbc.Button("Vorherige", id="prev_page_button", className="mr-2"), width="auto"),
-        dbc.Col(dbc.Button("Nächste", id="next_page_button"), width="auto"),
-        dbc.Col(html.Div(id="page_info"), width="auto")
-    ]),
+    dcc.Store(id='filtered_data_id', data=df.to_dict('records')),
+    html.Div(
+        [
+            dbc.Button("Vorherige", id="previous-page", className="mr-2"),
+            html.Span(children=["Seite ", "1"], id='current-page', className="mx-2"),
+            dbc.Button("Nächste", id="next-page", className="ml-2"),
+        ],
+        className="d-flex justify-content-center align-items-center mt-4",
+    ),
+    # Hinzufügen des fehlenden Containers für list-container
+    html.Div(id='list-container', className="list-container mt-4"),
 ], fluid=True)
 
 # Hauptausführungsbereich
