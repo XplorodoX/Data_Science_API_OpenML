@@ -65,7 +65,7 @@ max_categorical_features = int(global_max_number_of_symbolic_features)
 max_instances = int(global_max_number_of_instances)
 maxDataset = 12
 
-# Function to create a placeholder graph
+# Funktion für die Collaps Datensätze
 def create_placeholder_figure():
     fig = go.Figure(data=[
         go.Scatter(x=[1, 2, 3], y=[4, 1, 2], mode='markers', marker=dict(color='LightSkyBlue'), name='Placeholder Data'),
@@ -74,7 +74,7 @@ def create_placeholder_figure():
     fig.update_layout(title='Placeholder Figure', xaxis_title='X Axis', yaxis_title='Y Axis')
     return fig
 
-# Function to create a statistics graph
+# Funktion für die Allgemine Statistik
 def create_statistics_figure():
     fig = go.Figure(data=[
         go.Bar(x=['Dataset 1', 'Dataset 2', 'Dataset 3'], y=[50, 30, 70], name='Anzahl der Features')
