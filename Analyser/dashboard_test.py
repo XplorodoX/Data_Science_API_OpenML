@@ -173,7 +173,9 @@ def update_histogram(active_cell):
     
     return dcc.Graph(figure=fig)
 
+def run_dashboard():
+    app.run_server(debug=False, port=8050)
 
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
+# if __name__ == '__main__':
+    # app.run_server(debug=True)
