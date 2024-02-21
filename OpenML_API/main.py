@@ -133,35 +133,27 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     list_group_items = []
     for idx, dataset in enumerate(filtered_info, start=start):
-        global_index = idx + 1  # Stellen Sie sicher, dass global_index korrekt verwendet wird, falls notwendig
-        # Funktion von Dennis, angepasst mit zusätzlichen Daten
+        global_index = idx + 1
+        item_id = {"type": "dataset-click", "index": dataset['id']}    # Eindeutige ID für jedes Element
+
         list_group_item = dbc.ListGroupItem(
-            html.A([
+            html.Div([
                 html.Div([
                     html.H5(f"{global_index}. {dataset['name']}", className="mb-1"),
                     html.Div([
-                        html.Small(
-                            f"Dataset-ID: {dataset['id']}",
-                            className="text-secondary d-block"),
-                        # Entfernen des Kommas und Formatieren der Dimension
-                        html.Small(
-                            f"Dimension: {int(dataset['features'])}×{int(dataset['instances'])}",
-                            className="text-secondary d-block"),
-                        # Anzeige der Anzahl der ordinalen und numerischen Features
+                        html.Small(f"Dataset-ID: {dataset['id']}", className="text-secondary d-block"),
+                        html.Small(f"Dimension: {int(dataset['features'])}×{int(dataset['instances'])}",
+                                   className="text-secondary d-block"),
                         html.Small(
                             f"Ordinale Features: {int(dataset.get('categorical_features', 0))}, Numerische Features: {int(dataset.get('numeric_features', 0))}",
                             className="text-secondary d-block"),
-                        # Formatieren des Datums, um nur bis zum Tag anzuzeigen
-                        html.Small(
-                            f"Upload-Datum: {dataset['upload'][:10]}",
-                            className="text-secondary d-block")
+                        html.Small(f"Upload-Datum: {dataset['upload'][:10]}", className="text-secondary d-block")
                     ], className="mt-2")
-                ], style={'flex': '1'}),  # Flex Container für den Text
-            ], href='https://www.google.com', target='_blank', style={'text-decoration': 'none', 'color': 'inherit'}),
+                ], style={'flex': '1'}),
+            ], id=item_id, n_clicks=0, style={'cursor': 'pointer', 'text-decoration': 'none', 'color': 'inherit'}),
             style={
-                "cursor": "pointer",
-                "padding": "20px",  # Erhöhter Abstand
-                "margin-bottom": "10px",  # Erhöhter Abstand zwischen den Einträgen
+                "padding": "20px",
+                "margin-bottom": "10px",
                 "background-color": "#f8f9fa",
                 "border": "1px solid #ddd",
                 "border-radius": "5px",
@@ -171,6 +163,64 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
         list_group_items.append(list_group_item)
 
     return list_group_items, statistics_figure, statistics_style
+
+from dash.dependencies import Input, Output, ALL
+from dash.exceptions import PreventUpdate
+import json
+import webbrowser
+from tempfile import NamedTemporaryFile
+import dash
+import plotly.express as px
+
+# Funktion zum Erstellen verschiedener Plots basierend auf der dataset_id
+def create_plot(dataset_id):
+    # Hier könntest du unterschiedliche Daten für jeden Plot basierend auf der dataset_id haben
+    if dataset_id == 115:
+        df = pd.DataFrame({
+            'x': range(1, 11),
+            'y': [5, 3, 6, 9, 2, 4, 7, 10, 8, 1]
+        })
+        fig = px.line(df, x='x', y='y', title='Plot für Dataset 1')
+    elif dataset_id == 116:
+        df = pd.DataFrame({
+            'x': range(1, 11),
+            'y': [10, 8, 6, 4, 2, 1, 3, 5, 7, 9]
+        })
+        fig = px.bar(df, x='x', y='y', title='Plot für Dataset 2')
+    return fig
+
+@app.callback(
+    Output('output-container', 'children'),
+    [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks')],
+    prevent_initial_call=True
+)
+def on_item_click(n_clicks):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if 'dataset-click' not in triggered_id:
+        raise PreventUpdate
+
+    dataset_id = json.loads(triggered_id)['index']
+
+    # Erstelle den entsprechenden Plot basierend auf der dataset_id
+    fig = create_plot(dataset_id)
+
+    # HTML-Datei erstellen und Plot speichern
+    temp_file = NamedTemporaryFile(delete=False, suffix='.html', mode='w', encoding='utf-8')
+    fig.write_html(temp_file.name)
+    temp_file_path = temp_file.name
+    temp_file.close()
+
+    # Hier wird angenommen, dass der Plot bereits erstellt und gespeichert wurde.
+    # Öffnet die Plotly-HTML-Datei in einem neuen Browser-Tab.
+    webbrowser.open_new_tab(f'file://{temp_file_path}')
+
+    # Gibt eine Meldung zurück, dass der Datensatz geöffnet wurde
+    return html.Div(f'Dataset {dataset_id} wurde geöffnet und Plot ist verfügbar.')
+
 
 @app.callback(
     Output('memory-output', 'data'),  # Speichert den aktuellen Zustand in der dcc.Store Komponente
@@ -545,6 +595,7 @@ app.layout = dbc.Container([
         html.Span(id='current-page', children="Seite 1 von 5", className="mx-2", style={'display': 'block'}),
         dbc.Button('->', id='next-page', n_clicks=0, className="ml-2", style={'display': 'block'}),
     ], className="d-flex justify-content-center align-items-center mt-4"),
+    html.Div(id='output-container'),
     dcc.Store(id='memory-output'),
 ], fluid=True)
 
