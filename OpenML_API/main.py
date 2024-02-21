@@ -15,7 +15,6 @@ import hashlib
 # - Fortschrittsbalken -> Implementierung
 # - Mehrere Seiten -> Implementierung -> Performance verbesserungen?
 # - Mehr Infos über Datensätze -> Implementierung / ausklappen Figur löschen und ersetzten durch Text, falls Platz fehlt!
-# - RangeSlider -> löschen und durch Input ersetzen
 # - Abbruchbutton -> Implementierung
 
 # Setzen des Cache-Verzeichnisses
