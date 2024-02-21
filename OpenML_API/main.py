@@ -1,16 +1,17 @@
 import math
-import dash
-import pandas as pd
 import openml
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objs as go
-import json
-import logging
 from datetime import datetime, timedelta, date
 import Helper as helper
 import hashlib
+from dash.exceptions import PreventUpdate
+import json
+import webbrowser
+from tempfile import NamedTemporaryFile
+import dash
 
 # Setzen des Cache-Verzeichnisses
 openml.config.set_root_cache_directory('cache')
@@ -164,31 +165,6 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     return list_group_items, statistics_figure, statistics_style
 
-from dash.dependencies import Input, Output, ALL
-from dash.exceptions import PreventUpdate
-import json
-import webbrowser
-from tempfile import NamedTemporaryFile
-import dash
-import plotly.express as px
-
-# Funktion zum Erstellen verschiedener Plots basierend auf der dataset_id
-def create_plot(dataset_id):
-    # Hier könntest du unterschiedliche Daten für jeden Plot basierend auf der dataset_id haben
-    if dataset_id == 115:
-        df = pd.DataFrame({
-            'x': range(1, 11),
-            'y': [5, 3, 6, 9, 2, 4, 7, 10, 8, 1]
-        })
-        fig = px.line(df, x='x', y='y', title='Plot für Dataset 1')
-    elif dataset_id == 116:
-        df = pd.DataFrame({
-            'x': range(1, 11),
-            'y': [10, 8, 6, 4, 2, 1, 3, 5, 7, 9]
-        })
-        fig = px.bar(df, x='x', y='y', title='Plot für Dataset 2')
-    return fig
-
 @app.callback(
     Output('output-container', 'children'),
     [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks')],
@@ -196,7 +172,12 @@ def create_plot(dataset_id):
 )
 def on_item_click(n_clicks):
     ctx = dash.callback_context
+
     if not ctx.triggered:
+        raise PreventUpdate
+
+    # Überprüfen, ob alle n_clicks-Werte null sind
+    if all(click is None or click == 0 for click in n_clicks):
         raise PreventUpdate
 
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -206,20 +187,22 @@ def on_item_click(n_clicks):
     dataset_id = json.loads(triggered_id)['index']
 
     # Erstelle den entsprechenden Plot basierend auf der dataset_id
-    fig = create_plot(dataset_id)
+    #fig = create_plot(dataset_id)
 
     # HTML-Datei erstellen und Plot speichern
-    temp_file = NamedTemporaryFile(delete=False, suffix='.html', mode='w', encoding='utf-8')
-    fig.write_html(temp_file.name)
-    temp_file_path = temp_file.name
-    temp_file.close()
+    #temp_file = NamedTemporaryFile(delete=False, suffix='.html', mode='w', encoding='utf-8')
+    #fig.write_html(temp_file.name)
+    #temp_file_path = temp_file.name
+    #temp_file.close()
+    print(dataset_id)
 
     # Hier wird angenommen, dass der Plot bereits erstellt und gespeichert wurde.
     # Öffnet die Plotly-HTML-Datei in einem neuen Browser-Tab.
-    webbrowser.open_new_tab(f'file://{temp_file_path}')
+    #webbrowser.open_new_tab(f'file://{temp_file_path}')
 
     # Gibt eine Meldung zurück, dass der Datensatz geöffnet wurde
     return html.Div(f'Dataset {dataset_id} wurde geöffnet und Plot ist verfügbar.')
+
 
 
 @app.callback(
@@ -255,7 +238,7 @@ def update_page_number(show_data_clicks, prev_clicks, next_clicks, current_page_
             current_page = max(current_page - 1, 1)
         return f"Seite {current_page} von {total_pages}"
     else:
-        return "Seite 1 von 1"  # Fallback, wenn keine Daten vorhanden sind
+        return "Seite 1 von 1"
 
 #Datum Konvertierung
 def parse_date(date_str):
