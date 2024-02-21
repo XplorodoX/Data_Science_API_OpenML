@@ -1,3 +1,4 @@
+import math
 import dash
 import pandas as pd
 import openml
@@ -6,33 +7,33 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import json
-import math
+import logging
 from datetime import datetime, timedelta, date
-from dash.exceptions import PreventUpdate
 import Helper as helper
-
-#TODO
-# - Fortschrittsbalken -> Implementierung
-# - Mehrere Seiten -> Implementierung -> Performance verbesserungen?
-# - Mehr Infos über Datensätze -> Implementierung / ausklappen Figur löschen und ersetzten durch Text, falls Platz fehlt!
-# - Abbruchbutton -> Implementierung
+import hashlib
 
 # Setzen des Cache-Verzeichnisses
 openml.config.set_root_cache_directory('cache')
 
-ITEMS_PER_PAGE = 10
-
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
-# Erstellen eines leeren DataFrame
-df = pd.DataFrame()
-
 # Set global Variables
+ITEMS_PER_PAGE = 10
+stop = False
+filtered_data = []
 global_max_number_of_instances = 0
 global_max_number_of_features = 0
 global_max_number_of_numeric_features = 0
 global_max_number_of_symbolic_features = 0
+
+# Laden der Daten und Setzen der globalen Variablen
+datasets = helper.fetchDataList()
+
+# Function to hash a dataset
+def hash_dataset(dataset):
+    dataset_string = str(dataset)
+    return hashlib.sha256(dataset_string.encode()).hexdigest()
 
 # Function to update the global max values
 def updateGlobalMaxValues(ranges):
@@ -45,9 +46,6 @@ def updateGlobalMaxValues(ranges):
     global_max_number_of_features = ranges['NumberOfFeatures'][1]
     global_max_number_of_numeric_features = ranges['NumberOfNumericFeatures'][1]
     global_max_number_of_symbolic_features = ranges['NumberOfSymbolicFeatures'][1]
-
-# Laden der Daten und Setzen der globalen Variablen
-datasets = helper.fetchDataList()
 
 if datasets is not None and not datasets.empty:
     numericalRange = helper.calcRangeDatasets(datasets)
@@ -78,31 +76,15 @@ def create_statistics_figure():
     return fig
 
 @app.callback(
-    Output('test_output', 'children'),  # Erstellen Sie ein entsprechendes Ausgabe-Element im Layout
-    [Input('search_button', 'n_clicks')]
-)
-def test_button_click(n_clicks):
-    if n_clicks:
-        return "Button wurde geklickt!"
-    return "Button wurde noch nicht geklickt."
-
-@app.callback(
     [
         Output('list_group', 'children'),
-        Output('list-container', 'children'),
         Output('statistics_figure', 'figure'),
-        # Removed Output for statistics_style as it's not defined
+        Output('statistics_figure', 'style')
     ],
-    [
-        Input('search_button', 'n_clicks'),
-        Input('previous-page', 'n_clicks'),
-        Input('next-page', 'n_clicks'),
-        Input('filtered_data_id', 'data')
-    ],
+    [Input('search_button', 'n_clicks'), Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
     [
         State('date_range', 'start_date'),
         State('date_range', 'end_date'),
-        State('current-page', 'children'),
         State('min_data_points', 'value'),
         State('max_data_points', 'value'),
         State('min_features', 'value'),
@@ -111,16 +93,21 @@ def test_button_click(n_clicks):
         State('max_numerical_features', 'value'),
         State('min_categorical_features', 'value'),
         State('max_categorical_features', 'value'),
-        State('input_max_datasets', 'value')
+        State('input_max_datasets', 'value'),
+        State('current-page', 'children')
     ]
 )
-def on_search_button_click(search_n_clicks, prev_n_clicks, next_n_clicks, filtered_data, start_date, end_date,
-                           current_page, min_data_points, max_data_points, min_features, max_features,
-                           min_numerical_features, max_numerical_features, min_categorical_features,
-                           max_categorical_features, limit):
-    # If the button hasn't been clicked, return placeholders for each output
-    if search_n_clicks is None:
-        return [], None, create_statistics_figure()
+def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points, min_features, max_features, min_numerical_features, max_numerical_features, min_categorical_features, max_categorical_features, limit, current_page_text):
+    global filtered_data
+
+    # Initialize variables at the start of the function
+    list_group_items = []
+    statistics_figure = go.Figure()  # Default empty figure
+    statistics_style = {'display': 'none'}  # Default style
+
+    # Check if the button was clicked
+    if n_clicks is None:
+        return list_group_items, statistics_figure, statistics_style
 
     # Create ranges from min and max values
     features_range = (min_features, max_features)
@@ -131,71 +118,94 @@ def on_search_button_click(search_n_clicks, prev_n_clicks, next_n_clicks, filter
     # Datenabrufen und Verarbeitung
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
 
-    # Wenn keine Daten vorhanden sind, aktualisieren Sie nichts
-    if not filtered_data:
-        raise PreventUpdate
+    # Anzeigen der Datensätze in Liste
+    # Extrahiere die aktuelle Seitenzahl aus dem Text "Seite x von y"
+    current_page = int(current_page_text.split()[1])
 
-    # Umwandlung der gespeicherten Daten in DataFrame
-    df = pd.DataFrame(filtered_data)  # Adjust to use filtered_data
-
-    current_page = 1
-
-    # Ermittlung des ausgelösten Buttons
-    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    changed_id = dash.callback_context.triggered[0]['prop_id']
     if 'next-page' in changed_id:
-        current_page += 1
+        current_page = min(current_page + 1, math.ceil(len(filtered_data) / ITEMS_PER_PAGE))
     elif 'previous-page' in changed_id:
-        current_page -= 1
+        current_page = max(current_page - 1, 1)
 
-    # Stellen Sie sicher, dass die Seitenzahl innerhalb der gültigen Bereichsgrenzen bleibt
-    current_page = max(min(current_page, math.ceil(len(df) / ITEMS_PER_PAGE)), 1)
-
-    # Anwenden der Paginierung
     start = (current_page - 1) * ITEMS_PER_PAGE
-    end = start + ITEMS_PER_PAGE
-    #page_data = df.iloc[start:end]
+    filtered_info = filtered_data[start:start + ITEMS_PER_PAGE]
 
     list_group_items = []
-    for idx, dataset in enumerate(df, start=1):
-        dataset_name = dataset['name']
-        num_instances = dataset['instances']
-        num_features = dataset['features']
-        num_numeric_features = dataset['numeric_features']
-        num_categorical_features = dataset['categorical_features']
-        data_dimensions = f"{int(num_instances)} x {int(num_features)}"
-
+    for idx, dataset in enumerate(filtered_info, start=start):
+        global_index = idx + 1  # Stellen Sie sicher, dass global_index korrekt verwendet wird, falls notwendig
+        # Funktion von Dennis, angepasst mit zusätzlichen Daten
         list_group_item = dbc.ListGroupItem(
-            [
-                html.Div(
-                    [
-                        html.H5(f"{idx}. {dataset_name}", className="mb-1"),
-                        html.Small(f"Zeilenanzahl: {num_instances}", className="text-secondary"),
-                        html.Small(f"Dimension: {data_dimensions}", className="text-secondary"),
-                    ],
-                    className="d-flex flex-column",
-                    id={"type": "toggle", "index": idx + start},  # Adjust index based on pagination
-                    style={
-                        "cursor": "pointer",
-                        "padding": "10px",
-                        "margin-bottom": "5px",
-                        "background-color": "#f8f9fa",
-                        "border": "1px solid #ddd",
-                        "border-radius": "5px",
-                        "box-shadow": "0 2px 2px rgba(0,0,0,0.1)"
-                    },
-                )
-            ]
-        )
-        collapse = dbc.Collapse(
-            dbc.Card(dbc.CardBody([dcc.Graph(figure=create_placeholder_figure())])),
-            id={"type": "collapse", "index": idx + start}  # Adjust index based on pagination
+            html.A([
+                html.Div([
+                    html.H5(f"{global_index}. {dataset['name']}", className="mb-1"),
+                    html.Div([
+                        html.Small(
+                            f"Dataset-ID: {dataset['id']}",
+                            className="text-secondary d-block"),
+                        # Entfernen des Kommas und Formatieren der Dimension
+                        html.Small(
+                            f"Dimension: {int(dataset['features'])}×{int(dataset['instances'])}",
+                            className="text-secondary d-block"),
+                        # Anzeige der Anzahl der ordinalen und numerischen Features
+                        html.Small(
+                            f"Ordinale Features: {int(dataset.get('categorical_features', 0))}, Numerische Features: {int(dataset.get('numeric_features', 0))}",
+                            className="text-secondary d-block"),
+                        # Formatieren des Datums, um nur bis zum Tag anzuzeigen
+                        html.Small(
+                            f"Upload-Datum: {dataset['upload'][:10]}",
+                            className="text-secondary d-block")
+                    ], className="mt-2")
+                ], style={'flex': '1'}),  # Flex Container für den Text
+            ], href='https://www.google.com', target='_blank', style={'text-decoration': 'none', 'color': 'inherit'}),
+            style={
+                "cursor": "pointer",
+                "padding": "20px",  # Erhöhter Abstand
+                "margin-bottom": "10px",  # Erhöhter Abstand zwischen den Einträgen
+                "background-color": "#f8f9fa",
+                "border": "1px solid #ddd",
+                "border-radius": "5px",
+                "box-shadow": "0 2px 2px rgba(0,0,0,0.1)"
+            }
         )
         list_group_items.append(list_group_item)
-        list_group_items.append(collapse)
 
-    statistics_figure = create_statistics_figure()
+    return list_group_items, statistics_figure, statistics_style
 
-    return [list_group_items, html.Div(), statistics_figure]
+@app.callback(
+    Output('memory-output', 'data'),  # Speichert den aktuellen Zustand in der dcc.Store Komponente
+    Input('cancel_button', 'n_clicks'),  # Löst den Callback bei jedem Klick aus
+    State('memory-output', 'data')  # Behält den vorherigen Zustand bei, ohne den Callback auszulösen
+)
+def StopProcess(clicks, current_state):
+    global stop
+    if clicks is None or current_state is None:
+        # Wenn der Button noch nie geklickt wurde oder kein vorheriger Zustand vorhanden ist,
+        # initialisieren Sie den Zustand als False (standardmäßig laufen)
+        stop = False
+        return False
+    else:
+        # Kehren Sie den aktuellen Zustand um, jedes Mal wenn der Button geklickt wird
+        stop = True
+        return not current_state
+
+@app.callback(
+    Output('current-page', 'children'),
+    [Input('search_button', 'n_clicks'), Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
+    [State('current-page', 'children')]
+)
+def update_page_number(show_data_clicks, prev_clicks, next_clicks, current_page_text):
+    if filtered_data:  # Stellen Sie sicher, dass Daten vorhanden sind
+        current_page = int(current_page_text.split()[1])  # Aktuelle Seite aus dem Text extrahieren
+        total_pages = math.ceil(len(filtered_data) / ITEMS_PER_PAGE)
+        changed_id = dash.callback_context.triggered[0]['prop_id']
+        if 'next-page' in changed_id:
+            current_page = min(current_page + 1, total_pages)
+        elif 'previous-page' in changed_id:
+            current_page = max(current_page - 1, 1)
+        return f"Seite {current_page} von {total_pages}"
+    else:
+        return "Seite 1 von 1"  # Fallback, wenn keine Daten vorhanden sind
 
 #Datum Konvertierung
 def parse_date(date_str):
@@ -238,6 +248,7 @@ def getUploadDate(dataset_id):
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
+
     if limit is None:
         limit = float('inf')
 
@@ -250,13 +261,15 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
     filtered_datasets = []
     for dataset_id in dataset_ids:
 
+        global stop
+
         upload_date = getUploadDate(dataset_ids[dataset_id])
 
         start_date = parse_date(start_date)
         end_date = parse_date(end_date)
 
-        if count >= limit:
-            print("Limit erreicht")
+        if count >= limit or stop == True:
+            print("Abbruch")
             break
 
         if upload_date:
@@ -285,7 +298,8 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
                     'instances': num_instances,
                     'features': num_features,
                     'numeric_features': num_numeric_features,
-                    'categorical_features': num_categorical_features
+                    'categorical_features': num_categorical_features,
+                    'upload' : upload_date
                 })
                 count += 1
 
@@ -301,24 +315,6 @@ def toggle_interval(n_clicks, disabled):
     if n_clicks:
         return False
     return True
-
-# Callbacks for toggling intervals and collapsing items
-@app.callback(
-    Output({"type": "collapse", "index": dash.ALL}, "is_open"),
-    [Input({"type": "toggle", "index": dash.ALL}, "n_clicks")],
-    [State({"type": "collapse", "index": dash.ALL}, "is_open")],
-)
-def toggle_collapse(n_clicks, is_open):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return is_open
-
-    button_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])
-    idx = button_id["index"] - 1
-
-    new_is_open = is_open[:]
-    new_is_open[idx] = not is_open[idx]
-    return new_is_open
 
 # Callback-Funktion
 @app.callback(
@@ -543,19 +539,15 @@ app.layout = dbc.Container([
     dcc.Graph(id='statistics_figure', style={'display': 'none'}),
     dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
     dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
-    dcc.Store(id='filtered_data_id', data=df.to_dict('records')),
-    html.Div(
-        [
-            dbc.Button("Vorherige", id="previous-page", className="mr-2"),
-            html.Span(children=["Seite ", "1"], id='current-page', className="mx-2"),
-            dbc.Button("Nächste", id="next-page", className="ml-2"),
-        ],
-        className="d-flex justify-content-center align-items-center mt-4",
-    ),
-    # Hinzufügen des fehlenden Containers für list-container
     html.Div(id='list-container', className="list-container mt-4"),
+    html.Div([
+        dbc.Button('<-', id='previous-page', n_clicks=0, className="mr-2", style={'display': 'block'}),
+        html.Span(id='current-page', children="Seite 1 von 5", className="mx-2", style={'display': 'block'}),
+        dbc.Button('->', id='next-page', n_clicks=0, className="ml-2", style={'display': 'block'}),
+    ], className="d-flex justify-content-center align-items-center mt-4"),
+    dcc.Store(id='memory-output'),
 ], fluid=True)
 
 # Hauptausführungsbereich
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, threaded=True)
