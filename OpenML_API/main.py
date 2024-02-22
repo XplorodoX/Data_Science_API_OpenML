@@ -1,3 +1,4 @@
+# Imports der Bibliotheken
 import math
 import openml
 from dash import html, dcc
@@ -6,7 +7,6 @@ from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objs as go
 from datetime import datetime, timedelta, date
 import Helper as helper
-import hashlib
 from dash.exceptions import PreventUpdate
 import json
 import webbrowser
@@ -16,13 +16,16 @@ import dash
 # Setzen des Cache-Verzeichnisses
 openml.config.set_root_cache_directory('cache')
 
+
 # Dash app setup
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://use.fontawesome.com/releases/v5.8.1/css/all.css'], suppress_callback_exceptions=True)
 
 # Set global Variables
-ITEMS_PER_PAGE = 10
-stop = False
-filtered_data = []
+ITEMS_PER_PAGE = 10 # Max Anzahl der Items pro page
+stop = False # Stop Variable
+filtered_data = [] # Alle Gefilterte Daten
+
+#Globale Variablen für die max Nummern etc
 global_max_number_of_instances = 0
 global_max_number_of_features = 0
 global_max_number_of_numeric_features = 0
@@ -30,11 +33,6 @@ global_max_number_of_symbolic_features = 0
 
 # Laden der Daten und Setzen der globalen Variablen
 datasets = helper.fetchDataList()
-
-# Function to hash a dataset
-def hash_dataset(dataset):
-    dataset_string = str(dataset)
-    return hashlib.sha256(dataset_string.encode()).hexdigest()
 
 # Function to update the global max values
 def updateGlobalMaxValues(ranges):
@@ -76,6 +74,7 @@ def create_statistics_figure():
     fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
     return fig
 
+#TODO fix für Statitischegesamtgrafik
 @app.callback(
     [
         Output('list_group', 'children'),
@@ -119,10 +118,17 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     # Datenabrufen und Verarbeitung
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
 
-    # Anzeigen der Datensätze in Liste
-    # Extrahiere die aktuelle Seitenzahl aus dem Text "Seite x von y"
-    current_page = int(current_page_text.split()[1])
+    # Anfang des Callbacks oder der Funktion
+    # Stellen Sie sicher, dass 'current_page_text' nicht leer ist und das erwartete Format hat
+    if current_page_text and len(current_page_text.split()) > 2:
+        try:
+            current_page = int(current_page_text.split()[1])
+        except ValueError:  # Fängt Fehler ab, falls die Konvertierung zu int fehlschlägt
+            current_page = 1  # Setzen Sie einen Standardwert, falls ein Fehler auftritt
+    else:
+        current_page = 1  # Standardwert, falls 'current_page_text' nicht dem erwarteten Format entspricht
 
+    # Ihr Code für die Behandlung von Seitenwechseln
     changed_id = dash.callback_context.triggered[0]['prop_id']
     if 'next-page' in changed_id:
         current_page = min(current_page + 1, math.ceil(len(filtered_data) / ITEMS_PER_PAGE))
@@ -132,7 +138,6 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     start = (current_page - 1) * ITEMS_PER_PAGE
     filtered_info = filtered_data[start:start + ITEMS_PER_PAGE]
 
-    list_group_items = []
     for idx, dataset in enumerate(filtered_info, start=start):
         global_index = idx + 1
         item_id = {"type": "dataset-click", "index": dataset['id']}    # Eindeutige ID für jedes Element
@@ -203,8 +208,7 @@ def on_item_click(n_clicks):
     # Gibt eine Meldung zurück, dass der Datensatz geöffnet wurde
     return html.Div(f'Dataset {dataset_id} wurde geöffnet und Plot ist verfügbar.')
 
-
-
+#TODO Überarbeiten nochmal!
 @app.callback(
     Output('memory-output', 'data'),  # Speichert den aktuellen Zustand in der dcc.Store Komponente
     Input('cancel_button', 'n_clicks'),  # Löst den Callback bei jedem Klick aus
@@ -222,23 +226,61 @@ def StopProcess(clicks, current_state):
         stop = True
         return not current_state
 
+from dash.exceptions import PreventUpdate
+import math
+
+
+
+import math
+
 @app.callback(
-    Output('current-page', 'children'),
-    [Input('search_button', 'n_clicks'), Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
-    [State('current-page', 'children')]
+    [
+        Output('current-page', 'children'),
+        Output('current-page', 'style'),  # Steuert die Sichtbarkeit der Seitennummer
+        Output('previous-page', 'style'),  # Steuert die Sichtbarkeit des vorherigen Buttons
+        Output('next-page', 'style'),  # Steuert die Sichtbarkeit des nächsten Buttons
+        Output('pagination-container', 'style')  # Steuert die Sichtbarkeit des Gesamtcontainers
+    ],
+    [
+        Input('search_button', 'n_clicks'),
+        Input('previous-page', 'n_clicks'),
+        Input('next-page', 'n_clicks')
+    ],
+    [
+        State('current-page', 'children'),
+        State('input_max_datasets', 'value')
+    ]
 )
-def update_page_number(show_data_clicks, prev_clicks, next_clicks, current_page_text):
-    if filtered_data:  # Stellen Sie sicher, dass Daten vorhanden sind
-        current_page = int(current_page_text.split()[1])  # Aktuelle Seite aus dem Text extrahieren
-        total_pages = math.ceil(len(filtered_data) / ITEMS_PER_PAGE)
-        changed_id = dash.callback_context.triggered[0]['prop_id']
-        if 'next-page' in changed_id:
-            current_page = min(current_page + 1, total_pages)
-        elif 'previous-page' in changed_id:
-            current_page = max(current_page - 1, 1)
-        return f"Seite {current_page} von {total_pages}"
+def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_text, maxData):
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
+
+    # Initialisieren Sie die Anzahl der maximalen Daten, falls nicht angegeben
+    maxData = maxData or 100  # Angenommen, 100 als Standardwert, falls nichts eingegeben wird
+
+    # Berechnen Sie die Gesamtzahl der Seiten basierend auf maxData
+    total_pages = math.ceil(maxData / ITEMS_PER_PAGE)
+
+    # Bestimmen der aktuellen Seite basierend auf dem ausgelösten Ereignis
+    if 'search_button' in triggered_id:
+        current_page = 1  # Zurücksetzen auf die erste Seite, wenn die Suche ausgelöst wird
+    elif 'next-page' in triggered_id and search_clicks:
+        current_page = min(int(current_page_text.split()[1]) + 1,
+                           total_pages) if current_page_text and ' ' in current_page_text else 2
+    elif 'previous-page' in triggered_id and search_clicks:
+        current_page = max(int(current_page_text.split()[1]) - 1,
+                           1) if current_page_text and ' ' in current_page_text else 1
     else:
-        return "Seite 1 von 1"
+        current_page = int(current_page_text.split()[1]) if current_page_text and ' ' in current_page_text else 1
+
+    # Stil und Sichtbarkeitseinstellungen basierend auf der Anzahl der Klicks
+    container_style = {'display': 'flex'} if search_clicks else {'display': 'none'}
+    page_style = {'visibility': 'visible', 'display': 'block'} if search_clicks else {'visibility': 'hidden','display': 'none'}
+    prev_button_style = {'visibility': 'visible','display': 'inline-block'} if current_page > 1 and search_clicks else {'visibility': 'hidden', 'display': 'none'}
+    next_button_style = {'visibility': 'visible', 'display': 'inline-block'} if current_page < total_pages and search_clicks else {'visibility': 'hidden', 'display': 'none'}
+    page_number_text = f"Seite {current_page} von {total_pages}" if search_clicks else ""
+
+    return page_number_text, page_style, prev_button_style, next_button_style, container_style
 
 #Datum Konvertierung
 def parse_date(date_str):
@@ -281,7 +323,7 @@ def getUploadDate(dataset_id):
 # Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
-
+    # TODO Filter nochmal überprüfen und testen
     if limit is None:
         limit = float('inf')
 
@@ -302,7 +344,6 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
         end_date = parse_date(end_date)
 
         if count >= limit or stop == True:
-            print("Abbruch")
             break
 
         if upload_date:
@@ -381,6 +422,7 @@ def update_output_categorical_features(value):
 def update_output_data_points(value):
     return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
 
+# App Layout
 app.layout = dbc.Container([
     dbc.Card([
         dbc.CardHeader("Filter"),
@@ -574,10 +616,39 @@ app.layout = dbc.Container([
     dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
     html.Div(id='list-container', className="list-container mt-4"),
     html.Div([
-        dbc.Button('<-', id='previous-page', n_clicks=0, className="mr-2", style={'display': 'block'}),
-        html.Span(id='current-page', children="Seite 1 von 5", className="mx-2", style={'display': 'block'}),
-        dbc.Button('->', id='next-page', n_clicks=0, className="ml-2", style={'display': 'block'}),
-    ], className="d-flex justify-content-center align-items-center mt-4"),
+        dbc.Button(
+            html.Span(className="fas fa-chevron-left"),  # FontAwesome Pfeil nach links
+            id='previous-page',
+            n_clicks=0,
+            className="mr-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
+            style={
+                'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
+                'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
+                'color': 'white',
+                'borderRadius': '20px',  # Abgerundete Ecken
+                'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
+            }
+        ),
+        html.Span(
+            id='current-page',
+            children="",  # Der Text wird durch einen Dash Callback gesetzt
+            className="px-3",  # Fügen Sie etwas Padding hinzu für besseren Abstand
+            style={'fontSize': '20px'}  # Größere Schriftart für die Seitenzahl
+        ),
+        dbc.Button(
+            html.Span(className="fas fa-chevron-right"),  # FontAwesome Pfeil nach rechts
+            id='next-page',
+            n_clicks=0,
+            className="ml-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
+            style={
+                'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
+                'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
+                'color': 'white',
+                'borderRadius': '20px',  # Abgerundete Ecken
+                'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
+            }
+        )
+    ], className="d-flex justify-content-center align-items-center mt-4", id='pagination-container'),
     html.Div(id='output-container'),
     dcc.Store(id='memory-output'),
 ], fluid=True)

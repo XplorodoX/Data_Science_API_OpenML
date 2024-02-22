@@ -1,6 +1,9 @@
 import openml
 import pandas as pd
 
+# Helfer Funktionen um den Hauptcode übersichtlicher zu halten
+
+# sammelt die Datensätzeids
 def fetchDataList():
     datasets_list = openml.datasets.list_datasets(output_format='dataframe')
     return datasets_list
