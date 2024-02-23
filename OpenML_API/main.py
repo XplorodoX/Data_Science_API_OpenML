@@ -1,21 +1,17 @@
 # Imports der Bibliotheken
 import math
-import threading
 import os
-import pandas
-import plotly.express as px
 from dash import dash_table
 import numpy as np
 import openml
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State, ALL, MATCH
+from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objs as go
 from datetime import datetime, timedelta, date
 import Helper as helper
 import json
 import dash
-from dash.exceptions import PreventUpdate
 
 # Setzen des Cache-Verzeichnisses
 openml.config.set_root_cache_directory('cache')
