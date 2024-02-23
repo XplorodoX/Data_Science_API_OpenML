@@ -9,17 +9,13 @@ import numpy as np
 import openml
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State, ALL
+from dash.dependencies import Input, Output, State, ALL, MATCH
 import plotly.graph_objs as go
 from datetime import datetime, timedelta, date
 import Helper as helper
 import json
 import dash
 from dash.exceptions import PreventUpdate
-
-#unuesd Bibs
-import webbrowser
-from tempfile import NamedTemporaryFile
 
 # Setzen des Cache-Verzeichnisses
 openml.config.set_root_cache_directory('cache')
@@ -31,12 +27,6 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://u
 ITEMS_PER_PAGE = 10 # Max Anzahl der Items pro page
 stop = False # Stop Variable
 filtered_data = [] # Alle Gefilterte Daten
-
-initial_df = pandas.DataFrame
-dataset_info = {}
-completeness_graph = px.scatter()
-columns = None
-summary_records = None
 
 #Globale Variablen für die max Nummern etc
 global_max_number_of_instances = 0
@@ -79,26 +69,14 @@ def create_statistics_figure():
     return fig
 
 @app.callback(
-    Output('feature-histogram', 'children'),
-    [Input('feature-summary-table', 'active_cell')]
+    Output({'type': 'feature-histogram', 'index': MATCH}, 'children'),
+    [Input({'type': 'feature-summary-table', 'index': MATCH}, 'active_cell')]
 )
+def update_output(active_cell):
+    if active_cell:
+        return f"Aktive Zelle in Zeile: {active_cell['row']}, Spalte: {active_cell['column_id']}"
+    return "Keine Zelle ausgewählt"
 
-def update_histogram(active_cell, data):
-    print("Callback wurde ausgelöst", active_cell, data)
-    if not active_cell or not data:
-        return "Please select a feature from the table to display a histogram."
-
-    df = pd.DataFrame(data)  # Erstelle einen DataFrame aus den Tabellendaten
-
-    # Stellen Sie sicher, dass Sie den Namen des Features aus der korrekten Zelle erhalten
-    selected_feature = df.iloc[active_cell['row']]['Feature']
-    if selected_feature not in initial_df.columns:
-        return f"Feature {selected_feature} not found in dataframe."
-
-    # Erstellung des Histogramms für das ausgewählte Feature
-    fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
-
-    return dcc.Graph(figure=fig)
 
 #TODO fix für Statitischegesamtgrafik
 @app.callback(
@@ -196,32 +174,6 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     return list_group_items, statistics_figure, statistics_style
 
-def generate_detail_view(dataset_info, completeness_graph, summary_records, columns):
-    # Erstelle die Komponenten für die Detailansicht
-    detail_components = [
-        dbc.ListGroupItem([
-            html.H4("Datasetinformation"),
-            html.P(f"Name of Dataset: {dataset_info.get('name', 'Not available')}"),
-            html.P(f"Number of Features: {dataset_info.get('features_count', 'Not available')}"),
-            html.P(f"Number of Instances: {dataset_info.get('instances_count', 'Not available')}"),
-            html.P(f"Upload date: {dataset_info.get('upload_date', 'Not available')}"),
-        ]),
-        dbc.ListGroupItem([
-            dcc.Graph(figure=completeness_graph)
-        ]),
-        dbc.ListGroupItem([
-            dash_table.DataTable(
-                id='feature-summary-table',
-                columns=columns,
-                data=summary_records,
-                style_table={'overflowX': 'auto', 'height': '391px'},
-                style_cell={'textAlign': 'left', 'padding': '6px'},
-                style_header={'fontWeight': 'bold'},
-            )
-        ]),
-    ]
-    return detail_components
-
 @app.callback(
     [Output('detail-section', 'style'),
      Output('filter-section', 'style'),
@@ -232,7 +184,6 @@ def generate_detail_view(dataset_info, completeness_graph, summary_records, colu
 )
 def on_item_click(n_clicks, *args):
 
-    global initial_df, dataset_info, completeness_graph, summary_records, columns
     ctx = dash.callback_context
 
     if not ctx.triggered:
@@ -253,9 +204,28 @@ def on_item_click(n_clicks, *args):
         completeness_graph = create_data_completeness_graph(initial_df)
         summary_records, columns = create_feature_summary_table(initial_df)
 
-        # Generiere die Detailansicht und setze sie als Kinder der ListGroup
-        detail_components = generate_detail_view(dataset_info, completeness_graph, summary_records, columns)
-
+        detail_components = [
+            dbc.ListGroupItem([
+                html.H4("Datasetinformation"),
+                html.P(f"Name of Dataset: {dataset_info.get('name', 'Not available')}"),
+                html.P(f"Number of Features: {dataset_info.get('features_count', 'Not available')}"),
+                html.P(f"Number of Instances: {dataset_info.get('instances_count', 'Not available')}"),
+                html.P(f"Upload date: {dataset_info.get('upload_date', 'Not available')}"),
+            ]),
+            dbc.ListGroupItem([
+                dcc.Graph(figure=completeness_graph)
+            ]),
+            dbc.ListGroupItem([
+                dash_table.DataTable(
+                    id='feature-summary-table',
+                    columns=columns,
+                    data=summary_records,
+                    style_table={'overflowX': 'auto', 'height': '391px'},
+                    style_cell={'textAlign': 'left', 'padding': '6px'},
+                    style_header={'fontWeight': 'bold'},
+                )
+            ]),
+        ]
         # Mache den Detailbereich sichtbar und verstecke den Filterbereich
         return {'display': 'block'}, {'display': 'none'}, detail_components
 
