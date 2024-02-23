@@ -1,5 +1,11 @@
 # Imports der Bibliotheken
 import math
+import threading
+import os
+import pandas
+import plotly.express as px
+from dash import dash_table
+import numpy as np
 import openml
 from dash import html, dcc
 import dash_bootstrap_components as dbc
@@ -7,15 +13,16 @@ from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objs as go
 from datetime import datetime, timedelta, date
 import Helper as helper
-from dash.exceptions import PreventUpdate
 import json
+import dash
+from dash.exceptions import PreventUpdate
+
+#unuesd Bibs
 import webbrowser
 from tempfile import NamedTemporaryFile
-import dash
 
 # Setzen des Cache-Verzeichnisses
 openml.config.set_root_cache_directory('cache')
-
 
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://use.fontawesome.com/releases/v5.8.1/css/all.css'], suppress_callback_exceptions=True)
@@ -24,6 +31,12 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://u
 ITEMS_PER_PAGE = 10 # Max Anzahl der Items pro page
 stop = False # Stop Variable
 filtered_data = [] # Alle Gefilterte Daten
+
+initial_df = pandas.DataFrame
+dataset_info = {}
+completeness_graph = px.scatter()
+columns = None
+summary_records = None
 
 #Globale Variablen für die max Nummern etc
 global_max_number_of_instances = 0
@@ -57,15 +70,6 @@ max_categorical_features = int(global_max_number_of_symbolic_features)
 max_instances = int(global_max_number_of_instances)
 maxDataset = 12
 
-# Funktion für die Collaps Datensätze
-def create_placeholder_figure():
-    fig = go.Figure(data=[
-        go.Scatter(x=[1, 2, 3], y=[4, 1, 2], mode='markers', marker=dict(color='LightSkyBlue'), name='Placeholder Data'),
-        go.Scatter(x=[1, 2, 3], y=[2, 3, 1], mode='markers', marker=dict(color='Violet'), name='Placeholder Data 2')
-    ])
-    fig.update_layout(title='Placeholder Figure', xaxis_title='X Axis', yaxis_title='Y Axis')
-    return fig
-
 # Funktion für die Allgemine Statistik
 def create_statistics_figure():
     fig = go.Figure(data=[
@@ -73,6 +77,28 @@ def create_statistics_figure():
     ])
     fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
     return fig
+
+@app.callback(
+    Output('feature-histogram', 'children'),
+    [Input('feature-summary-table', 'active_cell')]
+)
+
+def update_histogram(active_cell, data):
+    print("Callback wurde ausgelöst", active_cell, data)
+    if not active_cell or not data:
+        return "Please select a feature from the table to display a histogram."
+
+    df = pd.DataFrame(data)  # Erstelle einen DataFrame aus den Tabellendaten
+
+    # Stellen Sie sicher, dass Sie den Namen des Features aus der korrekten Zelle erhalten
+    selected_feature = df.iloc[active_cell['row']]['Feature']
+    if selected_feature not in initial_df.columns:
+        return f"Feature {selected_feature} not found in dataframe."
+
+    # Erstellung des Histogramms für das ausgewählte Feature
+    fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
+
+    return dcc.Graph(figure=fig)
 
 #TODO fix für Statitischegesamtgrafik
 @app.callback(
@@ -170,43 +196,72 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     return list_group_items, statistics_figure, statistics_style
 
+def generate_detail_view(dataset_info, completeness_graph, summary_records, columns):
+    # Erstelle die Komponenten für die Detailansicht
+    detail_components = [
+        dbc.ListGroupItem([
+            html.H4("Datasetinformation"),
+            html.P(f"Name of Dataset: {dataset_info.get('name', 'Not available')}"),
+            html.P(f"Number of Features: {dataset_info.get('features_count', 'Not available')}"),
+            html.P(f"Number of Instances: {dataset_info.get('instances_count', 'Not available')}"),
+            html.P(f"Upload date: {dataset_info.get('upload_date', 'Not available')}"),
+        ]),
+        dbc.ListGroupItem([
+            dcc.Graph(figure=completeness_graph)
+        ]),
+        dbc.ListGroupItem([
+            dash_table.DataTable(
+                id='feature-summary-table',
+                columns=columns,
+                data=summary_records,
+                style_table={'overflowX': 'auto', 'height': '391px'},
+                style_cell={'textAlign': 'left', 'padding': '6px'},
+                style_header={'fontWeight': 'bold'},
+            )
+        ]),
+    ]
+    return detail_components
+
 @app.callback(
-    Output('output-container', 'children'),
-    [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks')],
+    [Output('detail-section', 'style'),
+     Output('filter-section', 'style'),
+     Output('list_histogram', 'children')],
+    [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks'),
+     Input('back-button', 'n_clicks')],
     prevent_initial_call=True
 )
-def on_item_click(n_clicks):
+def on_item_click(n_clicks, *args):
+
+    global initial_df, dataset_info, completeness_graph, summary_records, columns
     ctx = dash.callback_context
 
     if not ctx.triggered:
         raise PreventUpdate
 
+    # Ermitteln, welcher Input ausgelöst wurde
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
     # Überprüfen, ob alle n_clicks-Werte null sind
     if all(click is None or click == 0 for click in n_clicks):
         raise PreventUpdate
+    elif 'dataset-click' in button_id:
 
-    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    if 'dataset-click' not in triggered_id:
-        raise PreventUpdate
+        # Dies ist ein Klick auf ein Dataset-Element
+        dataset_id = json.loads(button_id.split('.')[0])['index']
 
-    dataset_id = json.loads(triggered_id)['index']
+        initial_df, dataset_info = download_dataset(dataset_id)
+        completeness_graph = create_data_completeness_graph(initial_df)
+        summary_records, columns = create_feature_summary_table(initial_df)
 
-    # Erstelle den entsprechenden Plot basierend auf der dataset_id
-    #fig = create_plot(dataset_id)
+        # Generiere die Detailansicht und setze sie als Kinder der ListGroup
+        detail_components = generate_detail_view(dataset_info, completeness_graph, summary_records, columns)
 
-    # HTML-Datei erstellen und Plot speichern
-    #temp_file = NamedTemporaryFile(delete=False, suffix='.html', mode='w', encoding='utf-8')
-    #fig.write_html(temp_file.name)
-    #temp_file_path = temp_file.name
-    #temp_file.close()
-    print(dataset_id)
+        # Mache den Detailbereich sichtbar und verstecke den Filterbereich
+        return {'display': 'block'}, {'display': 'none'}, detail_components
 
-    # Hier wird angenommen, dass der Plot bereits erstellt und gespeichert wurde.
-    # Öffnet die Plotly-HTML-Datei in einem neuen Browser-Tab.
-    #webbrowser.open_new_tab(f'file://{temp_file_path}')
-
-    # Gibt eine Meldung zurück, dass der Datensatz geöffnet wurde
-    return html.Div(f'Dataset {dataset_id} wurde geöffnet und Plot ist verfügbar.')
+    # Detailansicht ausblenden, Filter anzeigen, wenn der Zurück-Button gedrückt wurde
+    elif 'back-button' in button_id:
+        return {'display': 'none'}, {'display': 'block'}, []
 
 #TODO Überarbeiten nochmal!
 @app.callback(
@@ -225,13 +280,6 @@ def StopProcess(clicks, current_state):
         # Kehren Sie den aktuellen Zustand um, jedes Mal wenn der Button geklickt wird
         stop = True
         return not current_state
-
-from dash.exceptions import PreventUpdate
-import math
-
-
-
-import math
 
 @app.callback(
     [
@@ -422,237 +470,362 @@ def update_output_categorical_features(value):
 def update_output_data_points(value):
     return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
 
+######### Dennis Code ##############
+def download_dataset(dataset_id=None):
+    dataset_info = {}
+    #df = pd.DataFrame()  # Initialisieren Sie df hier, um sicherzustellen, dass es immer definiert ist
+
+    if dataset_id:
+        try:
+            dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
+            X, y, categorical_indicator, attribute_names = dataset.get_data(target=dataset.default_target_attribute,
+                                                                            dataset_format='dataframe')
+            df = pd.DataFrame(X, columns=attribute_names)
+            if y is not None:
+                df['target'] = y
+
+            try:
+                upload_date_obj = datetime.strptime(dataset.upload_date, '%Y-%m-%d')
+                formatted_date = upload_date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                formatted_date = dataset.upload_date
+
+            dataset_info = {
+                'name': dataset.name,
+                'features_count': len(attribute_names),
+                'instances_count': df.shape[0],
+                'upload_date': formatted_date
+            }
+        except Exception as e:
+            print(f"Error downloading the data set: {e}")
+    else:
+        print("No dataset_id specified. Attempts to load test file...")
+
+    return df, dataset_info
+
+def create_data_completeness_graph(df):
+    if df.empty:
+        return go.Figure()  # Gibt eine leere Figur zurück, wenn df leer ist
+    total_values = np.prod(df.shape)  # Verwende np.prod() statt np.product()
+    missing_values = df.isnull().sum().sum()
+    complete_values = total_values - missing_values
+    fig = go.Figure(data=[go.Pie(labels=['Complete data', 'Missing data fields'],
+                                 values=[complete_values, missing_values], hole=.6)])
+    fig.update_layout(title_text="Completeness of the dataset", title_x=0.5)
+    return fig
+
+def format_number(value):
+    """Formatiert eine Zahl mit bis zu vier Nachkommastellen, entfernt jedoch nachfolgende Nullen."""
+    try:
+        # Versuche, den Wert in einen Float umzuwandeln
+        float_value = float(value)
+        # Wenn der Wert eine ganze Zahl ist, gib ihn als ganze Zahl zurück
+        if float_value.is_integer():
+            return f"{int(float_value)}"
+        else:
+            # Andernfalls formatiere den Wert mit vier Nachkommastellen
+            return f"{float_value:.4f}".rstrip('0').rstrip('.')
+    except ValueError:
+        # Wenn der Wert nicht in einen Float umgewandelt werden kann, gib ihn unverändert zurück
+        return value
+
+def create_feature_summary_table(df):
+    if df.empty:
+        return [], []  # Gibt leere Werte zurück, wenn df leer ist
+
+    summary = df.describe(percentiles=[.25, .5, .75, .97, .997]).transpose()
+
+    # Modus berechnen und zur Zusammenfassung hinzufügen
+    modes = df.mode().iloc[0]
+    summary['mode'] = [modes[col] if col in modes else np.nan for col in summary.index]
+
+    summary.reset_index(inplace=True)
+    summary.rename(columns={'index': 'Feature'}, inplace=True)
+
+    # Formatieren der numerischen Werte als Strings mit bedingter Nachkommastellen-Anzeige
+    for col in summary.columns[1:]:  # Überspringe die 'Feature'-Spalte
+        summary[col] = summary[col].apply(format_number)
+
+    summary_records = summary.to_dict('records')
+    columns = [{"name": i, "id": i} for i in summary.columns]
+
+    return summary_records, columns
+
+
+import plotly.express as px
+from dash import dcc
+
+
+import plotly.express as px
+from dash import dcc
+import pandas as pd  # Stellen Sie sicher, dass pandas importiert wird
+
 # App Layout
 app.layout = dbc.Container([
-    dbc.Card([
-        dbc.CardHeader("Filter"),
-        dbc.CardBody([
-            dbc.Row([
-                dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Datum"),
-                        dbc.CardBody([
-                            dcc.DatePickerRange(
-                                id='date_range',
-                                start_date=datetime.now() - timedelta(days=3600),
-                                end_date=datetime.now(),
-                                min_date_allowed=datetime(2000, 1, 1),
-                                max_date_allowed=datetime.now(),
-                                display_format='DD.MM.YYYY',
-                                initial_visible_month=datetime.now()
-                            ),
-                        ]),
-                    ]),
-                ], md=5),
-                dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Anzahl Datenpunkte"),
-                        dbc.CardBody([
-                            dbc.Row([
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Min"),
-                                        dbc.Input(id='min_data_points', type='number', value=0, min=0, max=max_instances),
-                                    ]),
-                                    width=6,
-                                ),
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Max"),
-                                        dbc.Input(id='max_data_points', type='number', value=max_instances, min=0, max=max_instances),
-                                    ]),
-                                    width=6,
-                                ),
-                            ]),
-                            html.Div(
-                                id='output_data_points',
-                                style={
-                                    'margin-top': '10px',
-                                    'text-align': 'center',
-                                    'font-weight': 'bold',
-                                    'color': '#007bff'
-                                }
-                            )
-                        ]),
-                    ]),
-                ], md=5),
-
-                dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Maximale Datensatzanzahl"),
-                        dbc.CardBody([
-                            dbc.Row([
-                                dbc.Col(
-                                    dbc.Input(
-                                        id='input_max_datasets',
-                                        type='number',
-                                        min=0,
-                                        max=100000,
-                                        step=1,
-                                        value=20
-                                    ),
-                                    width=10,
-                                ),
-                            ]),
-                            dbc.Tooltip(
-                                "Geben Sie die maximale Anzahl der Datensätze ein, die berücksichtigt werden sollen.",
-                                target="input_max_datasets",
-                            ),
-                        ]),
-                    ]),
-                ], md=2),
-            ], className="mb-4"),
-            dbc.Row([
-                dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Anzahl der Features"),
-                        dbc.CardBody([
-                            dbc.Row([
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Min"),
-                                        dbc.Input(id='min_features', type='number', value=0, min=0, max=max_features),
-                                    ]),
-                                    width=6,
-                                ),
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Max"),
-                                        dbc.Input(id='max_features', type='number', value=max_features, min=0, max=max_features),
-                                    ]),
-                                    width=6,
-                                ),
-                            ]),
-                            html.Div(
-                                id='output_features',
-                                style={
-                                    'margin-top': '10px',
-                                    'text-align': 'center',
-                                    'font-weight': 'bold',
-                                    'color': '#007bff'
-                                }
-                            )
-                        ]),
-                    ]),
-                ], md=4),
-                dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Anzahl der Numerischen Features"),
-                        dbc.CardBody([
-                            dbc.Row([
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Min"),
-                                        dbc.Input(id='min_numerical_features', type='number', value=0, min=0, max=max_numeric_features),
-                                    ]),
-                                    width=6,
-                                ),
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Max"),
-                                        dbc.Input(id='max_numerical_features', type='number', value=max_numeric_features, min=0, max=max_numeric_features),
-                                    ]),
-                                    width=6,
-                                ),
-                            ]),
-                            html.Div(
-                                id='output_numerical_features',
-                                style={
-                                    'margin-top': '10px',
-                                    'text-align': 'center',
-                                    'font-weight': 'bold',
-                                    'color': '#007bff'
-                                }
-                            )
-                        ]),
-                    ]),
-                ], md=4),
-                dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Anzahl der Kategorialen Features"),
-                        dbc.CardBody([
-                            dbc.Row([
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Min"),
-                                        dbc.Input(id='min_categorical_features', type='number', value=0, min=0, max=max_categorical_features),
-                                    ]),
-                                    width=6,
-                                ),
-                                dbc.Col(
-                                    dbc.InputGroup([
-                                        dbc.InputGroupText("Max"),
-                                        dbc.Input(id='max_categorical_features', type='number', value=max_categorical_features, min=0, max=max_categorical_features),
-                                    ]),
-                                    width=6,
-                                ),
-                            ]),
-                            html.Div(
-                                id='output_categorical_features',
-                                style={
-                                    'margin-top': '10px',
-                                    'text-align': 'center',
-                                    'font-weight': 'bold',
-                                    'color': '#007bff'
-                                }
-                            )
-                        ]),
-                    ]),
-                ], md=4),
-            ], className="mb-4"),
-            dbc.Row([
-                dbc.Col([
-                    dbc.Row([
-                        dbc.Col(dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'}), width=6),
-                        dbc.Col(dbc.Button('Abbrechen', id='cancel_button', color="danger", className="mt-3 mb-3", style={'width': '100%'}), width=6)
-                    ])
-                ], md=12),
-            ]),
-            dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
-        ])
+    # Verstecke diesen Teil standardmäßig durch Setzen von 'display': 'none' im style
+    html.Div(id='detail-section', style={'display': 'none'}, children=[
+        dbc.ListGroup(id='list_histogram', flush=True, className="mt-4"),
+        html.Button("Zurück", id='back-button', className="btn btn-secondary mt-3"),
     ]),
-    dcc.Graph(id='statistics_figure', style={'display': 'none'}),
-    dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
-    dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
-    html.Div(id='list-container', className="list-container mt-4"),
-    html.Div([
-        dbc.Button(
-            html.Span(className="fas fa-chevron-left"),  # FontAwesome Pfeil nach links
-            id='previous-page',
-            n_clicks=0,
-            className="mr-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
-            style={
-                'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
-                'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
-                'color': 'white',
-                'borderRadius': '20px',  # Abgerundete Ecken
-                'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
-            }
-        ),
-        html.Span(
-            id='current-page',
-            children="",  # Der Text wird durch einen Dash Callback gesetzt
-            className="px-3",  # Fügen Sie etwas Padding hinzu für besseren Abstand
-            style={'fontSize': '20px'}  # Größere Schriftart für die Seitenzahl
-        ),
-        dbc.Button(
-            html.Span(className="fas fa-chevron-right"),  # FontAwesome Pfeil nach rechts
-            id='next-page',
-            n_clicks=0,
-            className="ml-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
-            style={
-                'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
-                'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
-                'color': 'white',
-                'borderRadius': '20px',  # Abgerundete Ecken
-                'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
-            }
-        )
-    ], className="d-flex justify-content-center align-items-center mt-4", id='pagination-container'),
-    html.Div(id='output-container'),
-    dcc.Store(id='memory-output'),
+    html.Div(id='filter-section', style={'display': 'block'}, children=[
+        dbc.Card([
+            dbc.CardHeader("Filter"),
+            dbc.CardBody([
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Card([
+                            dbc.CardHeader("Datum"),
+                            dbc.CardBody([
+                                dcc.DatePickerRange(
+                                    id='date_range',
+                                    start_date=datetime.now() - timedelta(days=3600),
+                                    end_date=datetime.now(),
+                                    min_date_allowed=datetime(2000, 1, 1),
+                                    max_date_allowed=datetime.now(),
+                                    display_format='DD.MM.YYYY',
+                                    initial_visible_month=datetime.now()
+                                ),
+                            ]),
+                        ]),
+                    ], md=5),
+                    dbc.Col([
+                        dbc.Card([
+                            dbc.CardHeader("Anzahl Datenpunkte"),
+                            dbc.CardBody([
+                                dbc.Row([
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Min"),
+                                            dbc.Input(id='min_data_points', type='number', value=0, min=0, max=max_instances),
+                                        ]),
+                                        width=6,
+                                    ),
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Max"),
+                                            dbc.Input(id='max_data_points', type='number', value=max_instances, min=0, max=max_instances),
+                                        ]),
+                                        width=6,
+                                    ),
+                                ]),
+                                html.Div(
+                                    id='output_data_points',
+                                    style={
+                                        'margin-top': '10px',
+                                        'text-align': 'center',
+                                        'font-weight': 'bold',
+                                        'color': '#007bff'
+                                    }
+                                )
+                            ]),
+                        ]),
+                    ], md=5),
+
+                    dbc.Col([
+                        dbc.Card([
+                            dbc.CardHeader("Maximale Datensatzanzahl"),
+                            dbc.CardBody([
+                                dbc.Row([
+                                    dbc.Col(
+                                        dbc.Input(
+                                            id='input_max_datasets',
+                                            type='number',
+                                            min=0,
+                                            max=100000,
+                                            step=1,
+                                            value=20
+                                        ),
+                                        width=10,
+                                    ),
+                                ]),
+                                dbc.Tooltip(
+                                    "Geben Sie die maximale Anzahl der Datensätze ein, die berücksichtigt werden sollen.",
+                                    target="input_max_datasets",
+                                ),
+                            ]),
+                        ]),
+                    ], md=2),
+                ], className="mb-4"),
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Card([
+                            dbc.CardHeader("Anzahl der Features"),
+                            dbc.CardBody([
+                                dbc.Row([
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Min"),
+                                            dbc.Input(id='min_features', type='number', value=0, min=0, max=max_features),
+                                        ]),
+                                        width=6,
+                                    ),
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Max"),
+                                            dbc.Input(id='max_features', type='number', value=max_features, min=0, max=max_features),
+                                        ]),
+                                        width=6,
+                                    ),
+                                ]),
+                                html.Div(
+                                    id='output_features',
+                                    style={
+                                        'margin-top': '10px',
+                                        'text-align': 'center',
+                                        'font-weight': 'bold',
+                                        'color': '#007bff'
+                                    }
+                                )
+                            ]),
+                        ]),
+                    ], md=4),
+                    dbc.Col([
+                        dbc.Card([
+                            dbc.CardHeader("Anzahl der Numerischen Features"),
+                            dbc.CardBody([
+                                dbc.Row([
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Min"),
+                                            dbc.Input(id='min_numerical_features', type='number', value=0, min=0, max=max_numeric_features),
+                                        ]),
+                                        width=6,
+                                    ),
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Max"),
+                                            dbc.Input(id='max_numerical_features', type='number', value=max_numeric_features, min=0, max=max_numeric_features),
+                                        ]),
+                                        width=6,
+                                    ),
+                                ]),
+                                html.Div(
+                                    id='output_numerical_features',
+                                    style={
+                                        'margin-top': '10px',
+                                        'text-align': 'center',
+                                        'font-weight': 'bold',
+                                        'color': '#007bff'
+                                    }
+                                )
+                            ]),
+                        ]),
+                    ], md=4),
+                    dbc.Col([
+                        dbc.Card([
+                            dbc.CardHeader("Anzahl der Kategorialen Features"),
+                            dbc.CardBody([
+                                dbc.Row([
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Min"),
+                                            dbc.Input(id='min_categorical_features', type='number', value=0, min=0, max=max_categorical_features),
+                                        ]),
+                                        width=6,
+                                    ),
+                                    dbc.Col(
+                                        dbc.InputGroup([
+                                            dbc.InputGroupText("Max"),
+                                            dbc.Input(id='max_categorical_features', type='number', value=max_categorical_features, min=0, max=max_categorical_features),
+                                        ]),
+                                        width=6,
+                                    ),
+                                ]),
+                                html.Div(
+                                    id='output_categorical_features',
+                                    style={
+                                        'margin-top': '10px',
+                                        'text-align': 'center',
+                                        'font-weight': 'bold',
+                                        'color': '#007bff'
+                                    }
+                                )
+                            ]),
+                        ]),
+                    ], md=4),
+                ], className="mb-4"),
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Row([
+                            dbc.Col(dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'}), width=6),
+                            dbc.Col(dbc.Button('Abbrechen', id='cancel_button', color="danger", className="mt-3 mb-3", style={'width': '100%'}), width=6)
+                        ])
+                    ], md=12),
+                ]),
+                dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
+            ])
+        ]),
+        dcc.Graph(id='statistics_figure', style={'display': 'none'}),
+        dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
+        dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
+        html.Div(id='list-container', className="list-container mt-4"),
+        html.Div([
+            dbc.Button(
+                html.Span(className="fas fa-chevron-left"),  # FontAwesome Pfeil nach links
+                id='previous-page',
+                n_clicks=0,
+                className="mr-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
+                style={
+                    'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
+                    'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
+                    'color': 'white',
+                    'borderRadius': '20px',  # Abgerundete Ecken
+                    'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
+                }
+            ),
+            html.Span(
+                id='current-page',
+                children="",  # Der Text wird durch einen Dash Callback gesetzt
+                className="px-3",  # Fügen Sie etwas Padding hinzu für besseren Abstand
+                style={'fontSize': '20px'}  # Größere Schriftart für die Seitenzahl
+            ),
+            dbc.Button(
+                html.Span(className="fas fa-chevron-right"),  # FontAwesome Pfeil nach rechts
+                id='next-page',
+                n_clicks=0,
+                className="ml-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
+                style={
+                    'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
+                    'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
+                    'color': 'white',
+                    'borderRadius': '20px',  # Abgerundete Ecken
+                    'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
+                }
+            )
+        ], className="d-flex justify-content-center align-items-center mt-4", id='pagination-container'),
+        html.Div(id='output-container'),
+        dcc.Store(id='memory-output'),
+    ]),
 ], fluid=True)
 
-# Hauptausführungsbereich
+def initialize_openml_cache():
+    try:
+        # Überprüfen, ob der Cache-Ordner bereits existiert
+        cache_dir = 'cache'  # Setzen Sie den Pfad zu Ihrem Cache-Verzeichnis
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)  # Erstellen Sie den Cache-Ordner, wenn er nicht existiert
+            print(f"Cache-Verzeichnis {cache_dir} wurde erstellt.")
+
+            # Erhalten Sie die Liste aller Datensätze im DataFrame-Format
+            datasets_df = openml.datasets.list_datasets(output_format='dataframe')
+            dataset_ids = datasets_df['did'].tolist()
+            print(f"Es werden {len(dataset_ids)} Datensätze im Cache gespeichert...")
+
+            # Laden Sie jeden Datensatz herunter, um den Cache zu initialisieren
+            for dataset_id in dataset_ids:
+                try:
+                    openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
+                    print(f"Dataset {dataset_id} wurde im Cache gespeichert.")
+                except Exception as e:
+                    print(f"Fehler beim Abrufen von Dataset {dataset_id}: {e}")
+        else:
+            print(f"Cache-Verzeichnis {cache_dir} existiert bereits. Keine erneute Initialisierung notwendig.")
+    except Exception as e:
+        print(f"Fehler beim Initialisieren des OpenML-Cache: {e}")
+
+
+#cache_thread = threading.Thread(target=initialize_openml_cache, daemon=True)
+#cache_thread.start()
+
 if __name__ == '__main__':
     app.run_server(debug=True, threaded=True)
