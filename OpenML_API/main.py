@@ -158,6 +158,10 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
         )
         list_group_items.append(list_group_item)
 
+    # Aktualisieren Sie die Statistikfigur basierend auf gefilterten Daten oder anderen Kriterien
+    statistics_figure = create_statistics_figure()  # Aufrufen der Funktion, um die Figur zu erstellen
+    statistics_style = {'display': 'block'}  # Aktualisieren des Stils, um die Figur anzuzeigen
+
     return list_group_items, statistics_figure, statistics_style
 
 
@@ -777,39 +781,10 @@ app.layout = dbc.Container([
                 }
             )
         ], className="d-flex justify-content-center align-items-center mt-4", id='pagination-container'),
-        html.Div(id='output-container'),
-        dcc.Store(id='memory-output'),
     ]),
 ], fluid=True)
 
-def initialize_openml_cache():
-    try:
-        # Überprüfen, ob der Cache-Ordner bereits existiert
-        cache_dir = 'cache'  # Setzen Sie den Pfad zu Ihrem Cache-Verzeichnis
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)  # Erstellen Sie den Cache-Ordner, wenn er nicht existiert
-            print(f"Cache-Verzeichnis {cache_dir} wurde erstellt.")
-
-            # Erhalten Sie die Liste aller Datensätze im DataFrame-Format
-            datasets_df = openml.datasets.list_datasets(output_format='dataframe')
-            dataset_ids = datasets_df['did'].tolist()
-            print(f"Es werden {len(dataset_ids)} Datensätze im Cache gespeichert...")
-
-            # Laden Sie jeden Datensatz herunter, um den Cache zu initialisieren
-            for dataset_id in dataset_ids:
-                try:
-                    openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
-                    print(f"Dataset {dataset_id} wurde im Cache gespeichert.")
-                except Exception as e:
-                    print(f"Fehler beim Abrufen von Dataset {dataset_id}: {e}")
-        else:
-            print(f"Cache-Verzeichnis {cache_dir} existiert bereits. Keine erneute Initialisierung notwendig.")
-    except Exception as e:
-        print(f"Fehler beim Initialisieren des OpenML-Cache: {e}")
-
-
-#cache_thread = threading.Thread(target=initialize_openml_cache, daemon=True)
-#cache_thread.start()
+#TODO INIT Funktion?
 
 if __name__ == '__main__':
     app.run_server(debug=True, threaded=True)
