@@ -68,16 +68,6 @@ def create_statistics_figure():
     fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
     return fig
 
-@app.callback(
-    Output({'type': 'feature-histogram', 'index': MATCH}, 'children'),
-    [Input({'type': 'feature-summary-table', 'index': MATCH}, 'active_cell')]
-)
-def update_output(active_cell):
-    if active_cell:
-        return f"Aktive Zelle in Zeile: {active_cell['row']}, Spalte: {active_cell['column_id']}"
-    return "Keine Zelle ausgewählt"
-
-
 #TODO fix für Statitischegesamtgrafik
 @app.callback(
     [
@@ -174,6 +164,39 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     return list_group_items, statistics_figure, statistics_style
 
+
+from dash.dependencies import Input, Output
+
+from dash.exceptions import PreventUpdate
+import plotly.express as px
+
+@app.callback(
+    Output('feature-histogram', 'figure'),
+    [Input('feature-summary-table', 'active_cell'),
+     State('feature-summary-table', 'data')],
+    prevent_initial_call=True
+)
+def update_histogram(active_cell, table_data):
+    if not active_cell or not table_data:
+        # Wenn keine Zelle ausgewählt ist oder keine Daten vorhanden sind, zeige eine leere Figur
+        raise PreventUpdate
+
+    # Zugriff auf das ausgewählte Feature basierend auf der aktiven Zelle
+    selected_feature = table_data[active_cell['row']]['Feature']
+
+    # Da 'table_data' hier eine Liste von Wörterbüchern ist, extrahieren Sie alle Werte für das ausgewählte Feature
+    # Wir erstellen ein neues DataFrame, das nur das ausgewählte Feature und seine Häufigkeiten enthält
+    feature_values = [record[selected_feature] for record in table_data if selected_feature in record]
+
+    # Umwandlung in DataFrame für das Histogramm
+    feature_df = pd.DataFrame({selected_feature: feature_values})
+
+    # Erstellung des Histogramms für das ausgewählte Feature
+    fig = px.histogram(feature_df, x=selected_feature, title=f'Histogram of {selected_feature}')
+
+    return fig
+
+
 @app.callback(
     [Output('detail-section', 'style'),
      Output('filter-section', 'style'),
@@ -223,7 +246,8 @@ def on_item_click(n_clicks, *args):
                     style_table={'overflowX': 'auto', 'height': '391px'},
                     style_cell={'textAlign': 'left', 'padding': '6px'},
                     style_header={'fontWeight': 'bold'},
-                )
+                ),
+                dcc.Graph(id='feature-histogram')
             ]),
         ]
         # Mache den Detailbereich sichtbar und verstecke den Filterbereich
@@ -521,12 +545,6 @@ def create_feature_summary_table(df):
 
     return summary_records, columns
 
-
-import plotly.express as px
-from dash import dcc
-
-
-import plotly.express as px
 from dash import dcc
 import pandas as pd  # Stellen Sie sicher, dass pandas importiert wird
 
