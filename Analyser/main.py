@@ -224,6 +224,12 @@ def update_histogram(active_cell, table_data):
 
     return fig
 
+def prepare_table_data_from_df(df):
+    """Erstellt eine Liste von Dictionaries für die DataTable aus einem DataFrame."""
+    # Erstellt eine Liste von Dictionaries, wobei jedes Dictionary eine Zeile repräsentiert
+    table_data = [{"Feature": feature} for feature in df.columns]
+    return table_data
+
 
 @app.callback(
     [Output('detail-section', 'style'),
@@ -257,6 +263,20 @@ def on_item_click(n_clicks, *args):
         completeness_graph = create_data_completeness_graph(initial_df)
         summary_records, columns = create_feature_summary_table(initial_df)
 
+        columns = [
+    {"name": "Feature", "id": "Feature"},
+    {"name": "Count", "id": "count"},
+    {"name": "Mean", "id": "mean"},
+    {"name": "Std", "id": "std"},
+    {"name": "Min", "id": "min"},
+    {"name": "25%", "id": "25%"},
+    {"name": "50%", "id": "50%"},
+    {"name": "75%", "id": "75%"},
+    {"name": "97%", "id": "97%"},
+    {"name": "99.7%", "id": "99.7%"},
+    {"name": "Max", "id": "max"},
+    {"name": "Mode", "id": "mode"}
+]
         detail_components = [
             dbc.ListGroupItem([
                 html.H4("Datasetinformation"),
@@ -271,8 +291,8 @@ def on_item_click(n_clicks, *args):
             dbc.ListGroupItem([
                 dash_table.DataTable(
                     id='feature-summary-table',
-                    columns=columns,
-                    data=summary_records,
+                    columns=columns,  # Verwenden Sie die vorher definierten Spaltenüberschriften
+                    data=summary_records,  # Verwenden Sie hier die durch create_feature_summary_table generierten Daten
                     style_table={'overflowX': 'auto', 'height': '391px'},
                     style_cell={'textAlign': 'left', 'padding': '6px'},
                     style_header={'fontWeight': 'bold'},
@@ -541,37 +561,37 @@ def create_data_completeness_graph(df):
 def format_number(value):
     """Formatiert eine Zahl mit bis zu vier Nachkommastellen, entfernt jedoch nachfolgende Nullen."""
     try:
-        # Versuche, den Wert in einen Float umzuwandeln
         float_value = float(value)
-        # Wenn der Wert eine ganze Zahl ist, gib ihn als ganze Zahl zurück
         if float_value.is_integer():
-            return f"{int(float_value)}"
+            return str(int(float_value))
         else:
-            # Andernfalls formatiere den Wert mit vier Nachkommastellen
             return f"{float_value:.4f}".rstrip('0').rstrip('.')
     except ValueError:
-        # Wenn der Wert nicht in einen Float umgewandelt werden kann, gib ihn unverändert zurück
         return value
 
 def create_feature_summary_table(df):
     if df.empty:
         return [], []  # Gibt leere Werte zurück, wenn df leer ist
 
-    summary = df.describe(percentiles=[.25, .5, .75, .97, .997]).transpose()
+    # Berechnung der deskriptiven Statistiken
+    summary = df.describe(percentiles=[.25, .5, .75, .97, .997], include='all').transpose()
 
-    # Modus berechnen und zur Zusammenfassung hinzufügen
+    # Modus für jede Spalte berechnen
     modes = df.mode().iloc[0]
-    summary['mode'] = [modes[col] if col in modes else np.nan for col in summary.index]
+    summary['mode'] = [modes[col] if col in modes else "N/A" for col in df.columns]
 
+    # Formatieren der numerischen Werte
+    for col in summary.columns:
+        summary[col] = summary[col].apply(format_number)
+
+    # Anpassen der Spaltennamen für die Darstellung in der DataTable
     summary.reset_index(inplace=True)
     summary.rename(columns={'index': 'Feature'}, inplace=True)
 
-    # Formatieren der numerischen Werte als Strings mit bedingter Nachkommastellen-Anzeige
-    for col in summary.columns[1:]:  # Überspringe die 'Feature'-Spalte
-        summary[col] = summary[col].apply(format_number)
-
     summary_records = summary.to_dict('records')
-    columns = [{"name": i, "id": i} for i in summary.columns]
+
+    # Definieren der Spalten für die DataTable
+    columns = [{"name": col, "id": col} for col in summary.columns]
 
     return summary_records, columns
 
