@@ -165,12 +165,9 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     statistics_style = {'display': 'block'}  # Aktualisieren des Stils, um die Figur anzuzeigen
 
     return list_group_items, statistics_figure, statistics_style
-
-import plotly.express as px
-from dash.exceptions import PreventUpdate
 import pandas as pd
 import plotly.express as px
-from dash import Input, Output, State, dcc
+from dash import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 @app.callback(
@@ -183,17 +180,13 @@ def update_histogram(active_cell, table_data):
     if not active_cell or not table_data:
         raise PreventUpdate
 
-    # Annahme: 'table_data' ist eine Liste von Dictionaries, die Ihre Datentabelle darstellt.
-    # 'df' wird aus 'table_data' erstellt, um die Struktur zu erhalten.
+    # Konvertierung der 'table_data' (Liste von Dictionaries) in einen pandas DataFrame
     df = pd.DataFrame(table_data)
-    
-    # Zugriff auf das ausgewählte Feature basierend auf der aktiven Zelle.
-    # Achtung: Hier muss sichergestellt werden, dass 'Feature' der richtige Schlüssel ist.
-    selected_feature = df.iloc[active_cell['row']]["Feature"]
-    
-    # Hier müssten Sie auf den ursprünglichen DataFrame zugreifen, der die Daten für das Histogramm enthält.
-    # Dieses Beispiel geht davon aus, dass Sie Zugriff auf einen DataFrame `original_df` haben, der die echten Daten enthält.
-    # Wenn `selected_feature` tatsächlich ein Spaltenname in `original_df` ist, können Sie direkt fortfahren.
+
+    # Zugriff auf das ausgewählte Feature basierend auf der aktiven Zelle
+    selected_feature = df.iloc[active_cell['row']]['Feature']
+
+    # Überprüfung, ob das Feature im originalen DataFrame vorhanden ist
     if selected_feature not in initial_df.columns:
         return {
             "data": [],
@@ -204,10 +197,22 @@ def update_histogram(active_cell, table_data):
             }
         }
 
+    # Überprüfen, ob das Feature numerisch ist
+    if not pd.api.types.is_numeric_dtype(initial_df[selected_feature]):
+        return {
+            "data": [],
+            "layout": {
+                "title": f"Feature {selected_feature} is not numeric.",
+                "xaxis": {"visible": False},
+                "yaxis": {"visible": False}
+            }
+        }
+
+    # Erstellung des Histogramms nur für numerische Features
     fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
 
+    # Optional: Hinzufügen von Quantillinien, wenn das Feature numerisch ist
     quantiles = initial_df[selected_feature].quantile([0.25, 0.5, 0.75, 0.97, 0.997]).to_dict()
-
     for quantile, value in quantiles.items():
         fig.add_vline(x=value, line_dash="solid", line_color="blue",
                       annotation_text=f"{quantile * 100}th: {value:.2f}",
