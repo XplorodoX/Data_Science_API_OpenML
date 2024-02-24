@@ -207,6 +207,7 @@ def update_histogram(active_cell, table_data):
                 "yaxis": {"visible": False}
             }
         }
+    #TODO: Histogram oder irgendwas anderes finden, was nicht numerische features darstellen kann
 
     # Erstellung des Histogramms nur für numerische Features
     fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
