@@ -170,6 +170,8 @@ import plotly.express as px
 from dash import Input, Output, State
 from dash.exceptions import PreventUpdate
 
+# Definieren Sie eine Liste von bekannten ordinalen Features, falls zutreffend
+ordinal_features = ['ordinal_feature1', 'ordinal_feature2']
 
 @app.callback(
     Output('feature-histogram', 'figure'),
@@ -181,33 +183,46 @@ def update_histogram(active_cell, table_data):
     if not active_cell or not table_data:
         raise PreventUpdate
 
-    df = pd.DataFrame(table_data)  # Konvertierung in einen DataFrame
-
+    df = pd.DataFrame(table_data)
     selected_feature = df.iloc[active_cell['row']]['Feature']
 
     if selected_feature not in initial_df.columns:
-        return {"data": [], "layout": {"title": f"Feature {selected_feature} not found in dataframe.",
-                                       "xaxis": {"visible": False}, "yaxis": {"visible": False}}}
+        return {
+            "data": [],
+            "layout": {
+                "title": f"Feature {selected_feature} not found in dataframe.",
+                "xaxis": {"visible": False},
+                "yaxis": {"visible": False}
+            }
+        }
 
-    # Anpassung der Typüberprüfung hier
+    # Überprüfen, ob das Feature numerisch ist
     if pd.api.types.is_numeric_dtype(initial_df[selected_feature]):
+        fig_type = 'histogram'
+    # Überprüfen, ob das Feature ordinal ist
+    elif selected_feature in ordinal_features:
+        fig_type = 'bar'
+    # Andernfalls behandeln wir das Feature als nominal
+    else:
+        fig_type = 'bar'
+
+    # Entscheiden, welche Art von Diagramm basierend auf dem Feature-Typ zu erstellen
+    if fig_type == 'histogram':
         fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
+    elif fig_type == 'bar':
+        fig = px.bar(initial_df, x=selected_feature, title=f'Distribution of {selected_feature}')
+
+    # Optional: Hinzufügen von Quantillinien für numerische Features
+    if fig_type == 'histogram':
         quantiles = initial_df[selected_feature].quantile([0.25, 0.5, 0.75, 0.97, 0.997]).to_dict()
         for quantile, value in quantiles.items():
             fig.add_vline(x=value, line_dash="solid", line_color="blue",
                           annotation_text=f"{quantile * 100}th: {value:.2f}", annotation_position="top right",
                           annotation=dict(font_size=10, font_color="green", showarrow=False))
-    elif isinstance(initial_df[selected_feature].dtype, pd.CategoricalDtype) or \
-         pd.api.types.is_object_dtype(initial_df[selected_feature]):
-        # Für kategoriale oder ordinale Features
-        fig = px.bar(initial_df, x=selected_feature, title=f'Distribution of {selected_feature}')
-    else:
-        return {"data": [], "layout": {"title": f"Feature {selected_feature} has unsupported type.",
-                                       "xaxis": {"visible": False}, "yaxis": {"visible": False}}}
 
-    fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram'))
+    fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram' if fig_type == 'histogram' else 'bar'))
+
     return fig
-
 
 
 @app.callback(
