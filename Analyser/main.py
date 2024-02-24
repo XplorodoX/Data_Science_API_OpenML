@@ -170,6 +170,7 @@ import plotly.express as px
 from dash import Input, Output, State
 from dash.exceptions import PreventUpdate
 
+
 @app.callback(
     Output('feature-histogram', 'figure'),
     [Input('feature-summary-table', 'active_cell'),
@@ -180,48 +181,31 @@ def update_histogram(active_cell, table_data):
     if not active_cell or not table_data:
         raise PreventUpdate
 
-    # Konvertierung der 'table_data' (Liste von Dictionaries) in einen pandas DataFrame
-    df = pd.DataFrame(table_data)
+    df = pd.DataFrame(table_data)  # Konvertierung in einen DataFrame
 
-    # Zugriff auf das ausgewählte Feature basierend auf der aktiven Zelle
     selected_feature = df.iloc[active_cell['row']]['Feature']
 
-    # Überprüfung, ob das Feature im originalen DataFrame vorhanden ist
     if selected_feature not in initial_df.columns:
-        return {
-            "data": [],
-            "layout": {
-                "title": f"Feature {selected_feature} not found in dataframe.",
-                "xaxis": {"visible": False},
-                "yaxis": {"visible": False}
-            }
-        }
+        return {"data": [], "layout": {"title": f"Feature {selected_feature} not found in dataframe.",
+                                       "xaxis": {"visible": False}, "yaxis": {"visible": False}}}
 
-    # Überprüfen, ob das Feature numerisch ist
-    if not pd.api.types.is_numeric_dtype(initial_df[selected_feature]):
-        return {
-            "data": [],
-            "layout": {
-                "title": f"Feature {selected_feature} is not numeric.",
-                "xaxis": {"visible": False},
-                "yaxis": {"visible": False}
-            }
-        }
-    #TODO: Histogram oder irgendwas anderes finden, was nicht numerische features darstellen kann
-
-    # Erstellung des Histogramms nur für numerische Features
-    fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
-
-    # Optional: Hinzufügen von Quantillinien, wenn das Feature numerisch ist
-    quantiles = initial_df[selected_feature].quantile([0.25, 0.5, 0.75, 0.97, 0.997]).to_dict()
-    for quantile, value in quantiles.items():
-        fig.add_vline(x=value, line_dash="solid", line_color="blue",
-                      annotation_text=f"{quantile * 100}th: {value:.2f}",
-                      annotation_position="top right",
-                      annotation=dict(font_size=10, font_color="green", showarrow=False))
+    # Anpassung der Typüberprüfung hier
+    if pd.api.types.is_numeric_dtype(initial_df[selected_feature]):
+        fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
+        quantiles = initial_df[selected_feature].quantile([0.25, 0.5, 0.75, 0.97, 0.997]).to_dict()
+        for quantile, value in quantiles.items():
+            fig.add_vline(x=value, line_dash="solid", line_color="blue",
+                          annotation_text=f"{quantile * 100}th: {value:.2f}", annotation_position="top right",
+                          annotation=dict(font_size=10, font_color="green", showarrow=False))
+    elif isinstance(initial_df[selected_feature].dtype, pd.CategoricalDtype) or \
+         pd.api.types.is_object_dtype(initial_df[selected_feature]):
+        # Für kategoriale oder ordinale Features
+        fig = px.bar(initial_df, x=selected_feature, title=f'Distribution of {selected_feature}')
+    else:
+        return {"data": [], "layout": {"title": f"Feature {selected_feature} has unsupported type.",
+                                       "xaxis": {"visible": False}, "yaxis": {"visible": False}}}
 
     fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram'))
-
     return fig
 
 
