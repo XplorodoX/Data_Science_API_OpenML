@@ -621,7 +621,7 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_data_points', type='number', value=max_instances, min=0, max=max_instances),
+                                            dbc.Input(id='max_data_points', type='number', value=2000, min=0, max=max_instances),
                                         ]),
                                         width=6,
                                     ),
@@ -680,7 +680,7 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_features', type='number', value=max_features, min=0, max=max_features),
+                                            dbc.Input(id='max_features', type='number', value=400, min=0, max=max_features),
                                         ]),
                                         width=6,
                                     ),
@@ -712,7 +712,7 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_numerical_features', type='number', value=max_numeric_features, min=0, max=max_numeric_features),
+                                            dbc.Input(id='max_numerical_features', type='number', value=100, min=0, max=max_numeric_features),
                                         ]),
                                         width=6,
                                     ),
@@ -744,7 +744,7 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_categorical_features', type='number', value=max_categorical_features, min=0, max=max_categorical_features),
+                                            dbc.Input(id='max_categorical_features', type='number', value=100, min=0, max=max_categorical_features),
                                         ]),
                                         width=6,
                                     ),
