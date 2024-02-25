@@ -58,20 +58,28 @@ max_categorical_features = int(global_max_number_of_symbolic_features)
 max_instances = int(global_max_number_of_instances)
 maxDataset = 12
 
-# Funktion für die Allgemine Statistik
 def create_statistics_figure(filtered_info):
     if not filtered_info:
         return go.Figure()  # Gibt eine leere Figur zurück, wenn keine Daten vorhanden sind
 
-    # Extrahiere die Namen und die Anzahl der Features der Datensätze
+    # Extrahiere die Namen der Datensätze
     dataset_names = [f"Dataset {idx+1}" for idx, dataset in enumerate(filtered_info)]
-    feature_counts = [dataset['features'] for dataset in filtered_info]
+    # Extrahiere die Anzahl der numerischen und kategorialen Features
+    numeric_feature_counts = [dataset['numeric_features'] for dataset in filtered_info]
+    categorical_feature_counts = [dataset['categorical_features'] for dataset in filtered_info]
 
-    # Erstelle die Figur mit den extrahierten Daten
+    # Erstelle die Figur und füge die Daten für numerische und kategoriale Features hinzu
     fig = go.Figure(data=[
-        go.Bar(x=dataset_names, y=feature_counts, name='Anzahl der Features')
+        go.Bar(name='Numeric Features', x=dataset_names, y=numeric_feature_counts),
+        go.Bar(name='Categorial Features', x=dataset_names, y=categorical_feature_counts)
     ])
-    fig.update_layout(title='Statistik aller Datensätze auf dieser Seite', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
+    # Aktualisiere das Layout der Figur
+    fig.update_layout(
+        title='Statistics of the datasets on the current page',
+        xaxis_title='Datasets',
+        yaxis_title='Number of features',
+        barmode='group'  # Gruppiere die Balken, um einen Vergleich zu ermöglichen
+    )
 
     return fig
 
@@ -173,6 +181,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     statistics_style = {'display': 'block'}
 
     return list_group_items, statistics_figure, statistics_style
+
 import pandas as pd
 import plotly.express as px
 from dash import Input, Output, State
@@ -287,7 +296,8 @@ def on_item_click(n_clicks, *args):
 ]
         detail_components = [
             dbc.ListGroupItem([
-                html.H4("Datasetinformation"),
+                html.H4("Information of current dataset"),
+                html.P(f"ID of Dataset: {dataset_id}"),
                 html.P(f"Name of Dataset: {dataset_info.get('name', 'Not available')}"),
                 html.P(f"Number of Features: {dataset_info.get('features_count', 'Not available')}"),
                 html.P(f"Number of Instances: {dataset_info.get('instances_count', 'Not available')}"),
