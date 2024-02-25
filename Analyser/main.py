@@ -59,12 +59,22 @@ max_instances = int(global_max_number_of_instances)
 maxDataset = 12
 
 # Funktion für die Allgemine Statistik
-def create_statistics_figure():
+def create_statistics_figure(filtered_info):
+    if not filtered_info:
+        return go.Figure()  # Gibt eine leere Figur zurück, wenn keine Daten vorhanden sind
+
+    # Extrahiere die Namen und die Anzahl der Features der Datensätze
+    dataset_names = [f"Dataset {idx+1}" for idx, dataset in enumerate(filtered_info)]
+    feature_counts = [dataset['features'] for dataset in filtered_info]
+
+    # Erstelle die Figur mit den extrahierten Daten
     fig = go.Figure(data=[
-        go.Bar(x=['Dataset 1', 'Dataset 2', 'Dataset 3'], y=[50, 30, 70], name='Anzahl der Features')
+        go.Bar(x=dataset_names, y=feature_counts, name='Anzahl der Features')
     ])
-    fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
+    fig.update_layout(title='Statistik aller Datensätze auf dieser Seite', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
+
     return fig
+
 
 #TODO fix für Statitischegesamtgrafik
 @app.callback(
@@ -92,14 +102,11 @@ def create_statistics_figure():
 def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points, min_features, max_features, min_numerical_features, max_numerical_features, min_categorical_features, max_categorical_features, limit, current_page_text):
     global filtered_data
 
-    # Initialize variables at the start of the function
     list_group_items = []
-    statistics_figure = go.Figure()  # Default empty figure
-    statistics_style = {'display': 'none'}  # Default style
+    statistics_style = {'display': 'none'}
 
-    # Check if the button was clicked
     if n_clicks is None:
-        return list_group_items, statistics_figure, statistics_style
+        return list_group_items, go.Figure(), statistics_style
 
     # Create ranges from min and max values
     features_range = (min_features, max_features)
@@ -161,8 +168,9 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
         list_group_items.append(list_group_item)
 
     # Aktualisieren Sie die Statistikfigur basierend auf gefilterten Daten oder anderen Kriterien
-    statistics_figure = create_statistics_figure()  # Aufrufen der Funktion, um die Figur zu erstellen
-    statistics_style = {'display': 'block'}  # Aktualisieren des Stils, um die Figur anzuzeigen
+    # Aktualisiere die Statistikfigur basierend auf den Datensätzen der aktuellen Seite
+    statistics_figure = create_statistics_figure(filtered_info)
+    statistics_style = {'display': 'block'}
 
     return list_group_items, statistics_figure, statistics_style
 import pandas as pd
