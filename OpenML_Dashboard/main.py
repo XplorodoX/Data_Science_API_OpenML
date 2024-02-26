@@ -741,7 +741,7 @@ def download_dataset(dataset_id=None):
 
 def create_data_completeness_graph(df):
     """
-    Creates a pie chart to visualize the completeness of the provided DataFrame.
+    Creates a donut chart to visualize the completeness of the provided DataFrame.
 
     Args:
         df (DataFrame): DataFrame containing the dataset.
