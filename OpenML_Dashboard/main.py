@@ -1,7 +1,7 @@
 # Libraries Imports
 import math
 import os
-from dash import dash_table
+from dash import dash_table, callback_context
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -104,7 +104,9 @@ def create_statistics_figure(filtered_info):
     [
         Output('list_group', 'children'),
         Output('statistics_figure', 'figure'),
-        Output('statistics_figure', 'style')
+        Output('statistics_figure', 'style'),
+        Output('error-modal', 'is_open'),  # Output for opening/closing the modal
+        Output('error-invalid-range', 'children')  # Output for the error message
     ],
     [Input('search_button', 'n_clicks'), Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
     [
@@ -125,44 +127,38 @@ def create_statistics_figure(filtered_info):
 def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points,
                            min_features, max_features, min_numerical_features, max_numerical_features,
                            min_categorical_features, max_categorical_features, limit, current_page_text):
-    """
-    Callback function to handle search button click and pagination.
-
-    Args:
-        n_clicks (int): Number of times search button has been clicked.
-        prev_clicks (int): Number of times previous page button has been clicked.
-        next_clicks (int): Number of times next page button has been clicked.
-        start_date (str): Start date selected from the date range picker.
-        end_date (str): End date selected from the date range picker.
-        min_data_points (int): Minimum number of data points input value.
-        max_data_points (int): Maximum number of data points input value.
-        min_features (int): Minimum number of features input value.
-        max_features (int): Maximum number of features input value.
-        min_numerical_features (int): Minimum number of numerical features input value.
-        max_numerical_features (int): Maximum number of numerical features input value.
-        min_categorical_features (int): Minimum number of categorical features input value.
-        max_categorical_features (int): Maximum number of categorical features input value.
-        limit (int): Maximum number of datasets to display per page.
-        current_page_text (str): Current page number.
-
-    Returns:
-        tuple: A tuple containing list group items for datasets, a statistics figure, and the style for the statistics figure.
-    """
     global filtered_data
+
+    # Determine which input triggered the callback
+    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+
+    # If the search button wasn't clicked, don't update the search results or errors
+    if triggered_id != 'search_button':
+        raise PreventUpdate
 
     list_group_items = []
     statistics_style = {'display': 'none'}
 
-    if n_clicks is None:
-        return list_group_items, go.Figure(), statistics_style
-
-    # Create ranges from min and max values
+    # Create ranges from min and max values for validation
     features_range = (min_features, max_features)
     numerical_features_range = (min_numerical_features, max_numerical_features)
     categorical_features_range = (min_categorical_features, max_categorical_features)
     data_points_range = (min_data_points, max_data_points)
 
-    # Fetch and process data
+    # Correctly formatted call to the modified check_input_ranges function
+    valid, messages = check_input_ranges(
+        ((min_features, max_features), 'Features range'),
+        ((min_numerical_features, max_numerical_features), 'Numerical Features range'),
+        ((min_categorical_features, max_categorical_features), 'Categorical Features range'),
+        ((min_data_points, max_data_points), 'Data Points range')
+    )
+
+    # If the validation fails, return error message and open modal
+    if not valid:
+        error_message = '\n'.join(messages)  # Combine all error messages into a single string
+        return [], go.Figure(), {'display': 'none'}, True, error_message  # Use the actual error message
+
+    # If the inputs are valid, continue with the data processing
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range,
                                 categorical_features_range, data_points_range, limit)
 
@@ -220,12 +216,22 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     statistics_figure = create_statistics_figure(filtered_info)
     statistics_style = {'display': 'block'}
 
-    return list_group_items, statistics_figure, statistics_style
+    # Return the normal state if there are no errors
+    return list_group_items, statistics_figure, statistics_style, False, ""  # Keep the modal closed, no error message
+
+@app.callback(
+    Output('error-modal', 'is_open', allow_duplicate=True),
+    [Input('close-error-modal', 'n_clicks')],
+    [State('error-modal', 'is_open')], prevent_initial_call=True
+)
+def toggle_error_modal(n_clicks, is_open):
+    if n_clicks:
+        return False  # Close the modal
+    return is_open  # Leave the state unchanged if the button hasn't been clicked
 
 
 # Define a list of known categorical features if applicable
 categorical_features = ['categorical_feature1', 'categorical_feature2']
-
 
 @app.callback(
     Output('feature-histogram', 'figure'),
@@ -517,6 +523,35 @@ def getUploadDate(dataset_id):
         # Print an error message if there's an exception during dataset retrieval
         print(f"Error on Dataset: {dataset_id}: {e}")
         return None
+
+def check_input_ranges(*ranges):
+    """
+    Checks if the input ranges are valid.
+
+    Parameters:
+        - ranges (tuple): Variable number of tuples, each representing a range in the form (min, max).
+
+    Returns:
+        - valid (bool): True if all ranges are valid, False otherwise.
+        - messages (list): List of error messages for invalid ranges.
+    """
+    valid = True
+    messages = []
+
+    # Iterate through each range
+    for index, (range_tuple, label) in enumerate(ranges):
+        # Unpack the tuple
+        if range_tuple is not None:  # Only check non-None ranges
+            min_val, max_val = range_tuple
+
+            # Check if the range is valid
+            if min_val > max_val:
+                valid = False
+                messages.append(
+                    f"Error in {label}: Minimum value ({min_val}) is greater than maximum value ({max_val}).")
+
+    return valid, messages
+
 
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
@@ -827,6 +862,16 @@ def check_cache_folder_exists():
     """
     return os.path.exists('cache')  # Modify the path to your cache folder as needed
 
+# Funktion zum Cachen aller Datensätze
+def cache_all_openml_datasets():
+    datasets = openml.datasets.list_datasets()
+    total_datasets = len(datasets)
+    for i, (_, dataset) in enumerate(datasets.items(), 1):
+        print(f"Caching dataset {i}/{total_datasets}: {dataset.name}...")
+        openml.datasets.get_dataset(dataset.dataset_id)
+        # Fortschritt aktualisieren
+        progress = i / total_datasets * 100
+        yield progress
 
 # Callback function for updating the progress bar visibility and the visibility of the loading section
 @app.callback(
@@ -982,6 +1027,21 @@ modal = dbc.Modal(
     ],
     id="download-modal",
     is_open=False,  # This ensures the modal is not shown initially
+)
+
+error_modal = dbc.Modal(
+    [
+        dbc.ModalHeader(dbc.ModalTitle("Error: Invalid Input")),
+        dbc.ModalBody("", id='error-invalid-range'),  # Leave the body empty; the content will be updated dynamically.
+        dbc.ModalFooter(
+            dbc.Button("Close", id="close-error-modal", className="ms-auto", n_clicks=0)
+        ),
+    ],
+    id="error-modal",
+    is_open=False,
+    centered=True,
+    keyboard=True,
+    backdrop="static",
 )
 
 # App Layout
@@ -1234,6 +1294,7 @@ app.layout = dbc.Container([
             type="border",
             fullscreen=False,
         ),
+        error_modal,
         dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
         html.Div(id='list-container', className="list-container mt-4"),
         # Pagination buttons
