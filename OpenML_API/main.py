@@ -1,8 +1,6 @@
 # Imports der Bibliotheken
 import math
 import os
-import urllib
-
 from dash import dash_table
 import numpy as np
 import pandas as pd
@@ -13,9 +11,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objs as go
 from datetime import datetime, timedelta, date
-
 from dash.exceptions import PreventUpdate
-
 import Helper as helper
 import json
 import dash
@@ -618,24 +614,31 @@ def update_progress_visibility_and_filter_visibility(n, cache_status, loading_st
     # Überprüfen Sie, ob der Cache-Ordner existiert
     cache_exists = check_cache_folder_exists()
 
-    # Wenn der Cache-Ordner existiert und die Aktion bereits durchgeführt wurde, aktualisieren Sie nichts
-    if cache_exists and (cache_status and cache_status.get('updated')):
-        raise PreventUpdate
-
     # Initialisieren Sie die Ausgabewerte
     new_value = 0
     new_loading_style = loading_style.copy()
     new_filter_style = filter_style.copy()
-    new_cache_status = {'updated': False}
+    new_cache_status = cache_status if cache_status else {'updated': False}
 
-    # Wenn der Cache-Ordner existiert, aber die Aktion noch nicht durchgeführt wurde
-    if cache_exists and not (cache_status and cache_status.get('updated')):
+    # Bei Programmneustart, wenn Cache existiert und noch kein Update signalisiert wurde
+    if cache_exists and n == 0:
         new_value = 100
         new_loading_style['display'] = 'none'
         new_filter_style['display'] = 'block'
-        new_cache_status = {'updated': True}  # Markieren, dass die Aktion durchgeführt wurde
+        new_cache_status['updated'] = True
+        return new_value, new_loading_style, new_filter_style, new_cache_status
+    elif cache_exists and new_cache_status.get('updated'):
+        # Wenn der Cache existiert und bereits aktualisiert wurde, verhindern Sie ein Update
+        raise PreventUpdate
+
+    # Wenn der Cache-Ordner existiert, aber die Aktion noch nicht durchgeführt wurde
+    if cache_exists and not new_cache_status.get('updated'):
+        new_value = 100
+        new_loading_style['display'] = 'none'
+        new_filter_style['display'] = 'block'
+        new_cache_status['updated'] = True  # Markieren, dass die Aktion durchgeführt wurde
     elif not cache_exists:
-        # Update logic here for when cache does not exist
+        # Logik für den Fall, dass der Cache nicht existiert
         new_value = min((n * 10), 100)
         new_loading_style['display'] = 'block' if new_value < 100 else 'none'
         new_filter_style['display'] = 'none' if new_value < 100 else 'block'
@@ -643,32 +646,33 @@ def update_progress_visibility_and_filter_visibility(n, cache_status, loading_st
     return new_value, new_loading_style, new_filter_style, new_cache_status
 
 @app.callback(
-    Output('detail-section', 'children'),  # Aktualisieren des versteckten Divs
-    Input('download-button', 'n_clicks'),  # Auf Klicks des Download-Buttons hören
-    State('dataset-store', 'data')  # Verwenden Sie die Dataset-ID aus dem Store
+    Output('detail-section', 'children'),
+    Input('download-button', 'n_clicks'),
+    State('dataset-store', 'data')
 )
-def download_Set(n_clicks, store_data):
+def download_set(n_clicks, store_data):
     if n_clicks is None or store_data is None:
-        # Update verhindern, bevor der Button geklickt wurde oder wenn keine Dataset-ID ausgewählt wurde
         raise dash.exceptions.PreventUpdate
 
-    # Holen Sie sich die Dataset-ID aus dem Store
     dataset_id = store_data.get('selected_dataset_id') if store_data else None
-
     if dataset_id is None:
-        # Keine Dataset-ID ausgewählt
         raise dash.exceptions.PreventUpdate
+
+    # Ersetzen Sie diesen Teil, um das Dataset lokal zu speichern
+    folder_name = 'Downloaded_Dataset'  # Definieren Sie den Ordnernamen
+    if not os.path.exists(folder_name):  # Erstellen Sie den Ordner, wenn er nicht existiert
+        os.makedirs(folder_name)
 
     # Dataset von OpenML herunterladen
     dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
     df, _, _, _ = dataset.get_data(target=dataset.default_target_attribute)
 
-    # Konvertieren Sie das Dataset in einen CSV-String
-    csv_string = df.to_csv(index=False, encoding='utf-8')
-    csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
+    # Speichern Sie das Dataset als CSV in dem neuen Ordner
+    file_path = os.path.join(folder_name, f"dataset_{dataset_id}.csv")
+    df.to_csv(file_path, index=False)
 
-    # Geben Sie einen Download-Link zurück
-    return html.A("Download", href=csv_string, download=f"dataset_{dataset_id}.csv", className="btn btn-secondary mt-3")
+    # Hinweis für den Benutzer erstellen
+    return f'Dataset {dataset_id} wurde als CSV gespeichert: {file_path}'
 
 # App Layout
 app.layout = dbc.Container([
@@ -738,11 +742,12 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_data_points', type='number', value=max_instances, min=0, max=max_instances),
+                                            dbc.Input(id='max_data_points', type='number', value=12345, min=0, max=max_instances),
                                         ]),
                                         width=6,
                                     ),
                                 ]),
+                                dbc.Tooltip(f"Previous max range was 0 to {max_instances}.", target="max_data_points"),
                                 html.Div(
                                     id='output_data_points',
                                     style={
@@ -766,17 +771,14 @@ app.layout = dbc.Container([
                                             id='input_max_datasets',
                                             type='number',
                                             min=0,
-                                            max=100000,
+                                            max=5500,
                                             step=1,
                                             value=20
                                         ),
                                         width=10,
                                     ),
                                 ]),
-                                dbc.Tooltip(
-                                    "Enter the maximum number of records to be considered.",
-                                    target="input_max_datasets",
-                                ),
+                                dbc.Tooltip("Previous max range was 0 to 5500.", target="input_max_datasets"),
                             ]),
                         ]),
                     ], md=2),
@@ -797,11 +799,12 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_features', type='number', value=max_features, min=0, max=max_features),
+                                            dbc.Input(id='max_features', type='number', value=50, min=0, max=max_features),
                                         ]),
                                         width=6,
                                     ),
                                 ]),
+                                dbc.Tooltip(f"Previous max range was 0 to {max_features}.", target="max_features"),
                                 html.Div(
                                     id='output_features',
                                     style={
@@ -829,11 +832,12 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_numerical_features', type='number', value=max_numeric_features, min=0, max=max_numeric_features),
+                                            dbc.Input(id='max_numerical_features', type='number', value=30, min=0, max=max_numeric_features),
                                         ]),
                                         width=6,
                                     ),
                                 ]),
+                                dbc.Tooltip(f"Previous max range was 0 to {max_numeric_features}.", target="max_numerical_features"),
                                 html.Div(
                                     id='output_numerical_features',
                                     style={
@@ -861,11 +865,12 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_categorical_features', type='number', value=max_categorical_features, min=0, max=max_categorical_features),
+                                            dbc.Input(id='max_categorical_features', type='number', value=20, min=0, max=max_categorical_features),
                                         ]),
                                         width=6,
                                     ),
                                 ]),
+                                dbc.Tooltip(f"Previous max range was 0 to {max_categorical_features}.", target="max_categorical_features"),
                                 html.Div(
                                     id='output_categorical_features',
                                     style={
@@ -888,8 +893,16 @@ app.layout = dbc.Container([
                 ]),
             ])
         ]),
-        dcc.Graph(id='statistics_figure', style={'display': 'none'}),
-        dbc.ListGroup(id='list_group', flush=True, className="mt-4"),
+        dbc.Spinner(  # Fügen Sie den Spinner hier ein
+            children=[  # Beginn der Kinder, die geladen werden
+                dcc.Graph(id='statistics_figure', style={'display': 'none'}),
+                dbc.ListGroup(id='list_group', flush=True, className="mt-4")
+            ],
+            size="lg",  # Größe des Spinners
+            color="primary",  # Farbe des Spinners
+            type="border",  # Art des Spinners, z.B. 'border' oder 'grow'
+            fullscreen=False,  # Ob der Spinner den ganzen Bildschirm abdecken soll
+        ),
         dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
         html.Div(id='list-container', className="list-container mt-4"),
         html.Div([
