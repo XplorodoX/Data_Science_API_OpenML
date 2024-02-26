@@ -33,6 +33,7 @@ global_max_number_of_instances = 0
 global_max_number_of_features = 0
 global_max_number_of_numeric_features = 0
 global_max_number_of_symbolic_features = 0
+global_maxDataSet = 0
 
 # Laden der Daten und Setzen der globalen Variablen
 datasets = helper.fetchDataList()
@@ -49,6 +50,7 @@ def updateGlobalMaxValues(ranges):
     global_max_number_of_numeric_features = ranges['NumberOfNumericFeatures'][1]
     global_max_number_of_symbolic_features = ranges['NumberOfSymbolicFeatures'][1]
 
+
 if datasets is not None and not datasets.empty:
     numericalRange = helper.calcRangeDatasets(datasets)
     updateGlobalMaxValues(numericalRange)
@@ -58,7 +60,7 @@ max_features = int(global_max_number_of_features)
 max_numeric_features = int(global_max_number_of_numeric_features)
 max_categorical_features = int(global_max_number_of_symbolic_features)
 max_instances = int(global_max_number_of_instances)
-maxDataset = 12
+maxDataset = int(len(datasets))
 
 def create_statistics_figure(filtered_info):
     if not filtered_info:
@@ -771,14 +773,14 @@ app.layout = dbc.Container([
                                             id='input_max_datasets',
                                             type='number',
                                             min=0,
-                                            max=5500,
+                                            max=maxDataset,
                                             step=1,
                                             value=20
                                         ),
                                         width=10,
                                     ),
                                 ]),
-                                dbc.Tooltip("Previous max range was 0 to 5500.", target="input_max_datasets"),
+                                dbc.Tooltip(f"Previous max range was 0 to {maxDataset}.", target="input_max_datasets"),
                             ]),
                         ]),
                     ], md=2),
