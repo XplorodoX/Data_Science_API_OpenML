@@ -1,14 +1,21 @@
 # Imports der Bibliotheken
 import math
 import os
+import urllib
+
 from dash import dash_table
 import numpy as np
+import pandas as pd
+import plotly.express as px
 import openml
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State, ALL
 import plotly.graph_objs as go
 from datetime import datetime, timedelta, date
+
+from dash.exceptions import PreventUpdate
+
 import Helper as helper
 import json
 import dash
@@ -23,6 +30,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://u
 ITEMS_PER_PAGE = 10 # Max Anzahl der Items pro page
 stop = False # Stop Variable
 filtered_data = [] # Alle Gefilterte Daten
+initial_df = pd.DataFrame() # Initialisieren Sie df hier, um sicherzustellen, dass es immer definiert ist
 
 #Globale Variablen für die max Nummern etc
 global_max_number_of_instances = 0
@@ -56,15 +64,31 @@ max_categorical_features = int(global_max_number_of_symbolic_features)
 max_instances = int(global_max_number_of_instances)
 maxDataset = 12
 
-# Funktion für die Allgemine Statistik
-def create_statistics_figure():
+def create_statistics_figure(filtered_info):
+    if not filtered_info:
+        return go.Figure()  # Gibt eine leere Figur zurück, wenn keine Daten vorhanden sind
+
+    # Extrahiere die Namen der Datensätze
+    dataset_names = [f"Dataset {idx+1}" for idx, dataset in enumerate(filtered_info)]
+    # Extrahiere die Anzahl der numerischen und kategorialen Features
+    numeric_feature_counts = [dataset['numeric_features'] for dataset in filtered_info]
+    categorical_feature_counts = [dataset['categorical_features'] for dataset in filtered_info]
+
+    # Erstelle die Figur und füge die Daten für numerische und kategoriale Features hinzu
     fig = go.Figure(data=[
-        go.Bar(x=['Dataset 1', 'Dataset 2', 'Dataset 3'], y=[50, 30, 70], name='Anzahl der Features')
+        go.Bar(name='Numeric Features', x=dataset_names, y=numeric_feature_counts),
+        go.Bar(name='Categorial Features', x=dataset_names, y=categorical_feature_counts)
     ])
-    fig.update_layout(title='Statistik aller Datensätze', xaxis_title='Datensätze', yaxis_title='Anzahl der Features')
+    # Aktualisiere das Layout der Figur
+    fig.update_layout(
+        title='Statistics of the datasets on the current page',
+        xaxis_title='Datasets',
+        yaxis_title='Number of features',
+        barmode='group'  # Gruppiere die Balken, um einen Vergleich zu ermöglichen
+    )
+
     return fig
 
-#TODO fix für Statitischegesamtgrafik
 @app.callback(
     [
         Output('list_group', 'children'),
@@ -90,14 +114,11 @@ def create_statistics_figure():
 def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points, min_features, max_features, min_numerical_features, max_numerical_features, min_categorical_features, max_categorical_features, limit, current_page_text):
     global filtered_data
 
-    # Initialize variables at the start of the function
     list_group_items = []
-    statistics_figure = go.Figure()  # Default empty figure
-    statistics_style = {'display': 'none'}  # Default style
+    statistics_style = {'display': 'none'}
 
-    # Check if the button was clicked
     if n_clicks is None:
-        return list_group_items, statistics_figure, statistics_style
+        return list_group_items, go.Figure(), statistics_style
 
     # Create ranges from min and max values
     features_range = (min_features, max_features)
@@ -159,16 +180,13 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
         list_group_items.append(list_group_item)
 
     # Aktualisieren Sie die Statistikfigur basierend auf gefilterten Daten oder anderen Kriterien
-    statistics_figure = create_statistics_figure()  # Aufrufen der Funktion, um die Figur zu erstellen
-    statistics_style = {'display': 'block'}  # Aktualisieren des Stils, um die Figur anzuzeigen
+    statistics_figure = create_statistics_figure(filtered_info)
+    statistics_style = {'display': 'block'}
 
     return list_group_items, statistics_figure, statistics_style
 
-
-from dash.dependencies import Input, Output
-
-from dash.exceptions import PreventUpdate
-import plotly.express as px
+# Definieren Sie eine Liste von bekannten ordinalen Features, falls zutreffend
+ordinal_features = ['ordinal_feature1', 'ordinal_feature2']
 
 @app.callback(
     Output('feature-histogram', 'figure'),
@@ -178,29 +196,60 @@ import plotly.express as px
 )
 def update_histogram(active_cell, table_data):
     if not active_cell or not table_data:
-        # Wenn keine Zelle ausgewählt ist oder keine Daten vorhanden sind, zeige eine leere Figur
         raise PreventUpdate
 
-    # Zugriff auf das ausgewählte Feature basierend auf der aktiven Zelle
-    selected_feature = table_data[active_cell['row']]['Feature']
+    df = pd.DataFrame(table_data)
+    selected_feature = df.iloc[active_cell['row']]['Feature']
 
-    # Da 'table_data' hier eine Liste von Wörterbüchern ist, extrahieren Sie alle Werte für das ausgewählte Feature
-    # Wir erstellen ein neues DataFrame, das nur das ausgewählte Feature und seine Häufigkeiten enthält
-    feature_values = [record[selected_feature] for record in table_data if selected_feature in record]
+    if selected_feature not in initial_df.columns:
+        return {
+            "data": [],
+            "layout": {
+                "title": f"Feature {selected_feature} not found in dataframe.",
+                "xaxis": {"visible": False},
+                "yaxis": {"visible": False}
+            }
+        }
 
-    # Umwandlung in DataFrame für das Histogramm
-    feature_df = pd.DataFrame({selected_feature: feature_values})
+    # Überprüfen, ob das Feature numerisch ist
+    if pd.api.types.is_numeric_dtype(initial_df[selected_feature]):
+        fig_type = 'histogram'
+    # Überprüfen, ob das Feature ordinal ist
+    elif selected_feature in ordinal_features:
+        fig_type = 'bar'
+    # Andernfalls behandeln wir das Feature als nominal
+    else:
+        fig_type = 'bar'
 
-    # Erstellung des Histogramms für das ausgewählte Feature
-    fig = px.histogram(feature_df, x=selected_feature, title=f'Histogram of {selected_feature}')
+    # Entscheiden, welche Art von Diagramm basierend auf dem Feature-Typ zu erstellen
+    if fig_type == 'histogram':
+        fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
+    elif fig_type == 'bar':
+        fig = px.bar(initial_df, x=selected_feature, title=f'Distribution of {selected_feature}')
+
+    # Optional: Hinzufügen von Quantillinien für numerische Features
+    if fig_type == 'histogram':
+        quantiles = initial_df[selected_feature].quantile([0.25, 0.5, 0.75, 0.97, 0.997]).to_dict()
+        for quantile, value in quantiles.items():
+            fig.add_vline(x=value, line_dash="solid", line_color="blue",
+                          annotation_text=f"{quantile * 100}th: {value:.2f}", annotation_position="top right",
+                          annotation=dict(font_size=10, font_color="green", showarrow=False))
+
+    fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram' if fig_type == 'histogram' else 'bar'))
 
     return fig
 
+def prepare_table_data_from_df(df):
+    """Erstellt eine Liste von Dictionaries für die DataTable aus einem DataFrame."""
+    # Erstellt eine Liste von Dictionaries, wobei jedes Dictionary eine Zeile repräsentiert
+    table_data = [{"Feature": feature} for feature in df.columns]
+    return table_data
 
 @app.callback(
     [Output('detail-section', 'style'),
      Output('filter-section', 'style'),
-     Output('list_histogram', 'children')],
+     Output('list_histogram', 'children'),
+     Output('dataset-store', 'data')],
     [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks'),
      Input('back-button', 'n_clicks')],
     prevent_initial_call=True
@@ -223,13 +272,30 @@ def on_item_click(n_clicks, *args):
         # Dies ist ein Klick auf ein Dataset-Element
         dataset_id = json.loads(button_id.split('.')[0])['index']
 
+        global initial_df
+
         initial_df, dataset_info = download_dataset(dataset_id)
         completeness_graph = create_data_completeness_graph(initial_df)
         summary_records, columns = create_feature_summary_table(initial_df)
 
+        columns = [
+    {"name": "Feature", "id": "Feature"},
+    {"name": "Count", "id": "count"},
+    {"name": "Mean", "id": "mean"},
+    {"name": "Std", "id": "std"},
+    {"name": "Min", "id": "min"},
+    {"name": "25%", "id": "25%"},
+    {"name": "50%", "id": "50%"},
+    {"name": "75%", "id": "75%"},
+    {"name": "97%", "id": "97%"},
+    {"name": "99.7%", "id": "99.7%"},
+    {"name": "Max", "id": "max"},
+    {"name": "Mode", "id": "mode"}
+]
         detail_components = [
             dbc.ListGroupItem([
-                html.H4("Datasetinformation"),
+                html.H4("Information of current dataset"),
+                html.P(f"ID of Dataset: {dataset_id}"),
                 html.P(f"Name of Dataset: {dataset_info.get('name', 'Not available')}"),
                 html.P(f"Number of Features: {dataset_info.get('features_count', 'Not available')}"),
                 html.P(f"Number of Instances: {dataset_info.get('instances_count', 'Not available')}"),
@@ -241,8 +307,8 @@ def on_item_click(n_clicks, *args):
             dbc.ListGroupItem([
                 dash_table.DataTable(
                     id='feature-summary-table',
-                    columns=columns,
-                    data=summary_records,
+                    columns=columns,  # Verwenden Sie die vorher definierten Spaltenüberschriften
+                    data=summary_records,  # Verwenden Sie hier die durch create_feature_summary_table generierten Daten
                     style_table={'overflowX': 'auto', 'height': '391px'},
                     style_cell={'textAlign': 'left', 'padding': '6px'},
                     style_header={'fontWeight': 'bold'},
@@ -251,29 +317,11 @@ def on_item_click(n_clicks, *args):
             ]),
         ]
         # Mache den Detailbereich sichtbar und verstecke den Filterbereich
-        return {'display': 'block'}, {'display': 'none'}, detail_components
+        return {'display': 'block'}, {'display': 'none'}, detail_components, {'selected_dataset_id': dataset_id}
 
     # Detailansicht ausblenden, Filter anzeigen, wenn der Zurück-Button gedrückt wurde
     elif 'back-button' in button_id:
-        return {'display': 'none'}, {'display': 'block'}, []
-
-#TODO Überarbeiten nochmal!
-@app.callback(
-    Output('memory-output', 'data'),  # Speichert den aktuellen Zustand in der dcc.Store Komponente
-    Input('cancel_button', 'n_clicks'),  # Löst den Callback bei jedem Klick aus
-    State('memory-output', 'data')  # Behält den vorherigen Zustand bei, ohne den Callback auszulösen
-)
-def StopProcess(clicks, current_state):
-    global stop
-    if clicks is None or current_state is None:
-        # Wenn der Button noch nie geklickt wurde oder kein vorheriger Zustand vorhanden ist,
-        # initialisieren Sie den Zustand als False (standardmäßig laufen)
-        stop = False
-        return False
-    else:
-        # Kehren Sie den aktuellen Zustand um, jedes Mal wenn der Button geklickt wird
-        stop = True
-        return not current_state
+        return {'display': 'none'}, {'display': 'block'}, [], dash.no_update
 
 @app.callback(
     [
@@ -320,7 +368,7 @@ def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_tex
     page_style = {'visibility': 'visible', 'display': 'block'} if search_clicks else {'visibility': 'hidden','display': 'none'}
     prev_button_style = {'visibility': 'visible','display': 'inline-block'} if current_page > 1 and search_clicks else {'visibility': 'hidden', 'display': 'none'}
     next_button_style = {'visibility': 'visible', 'display': 'inline-block'} if current_page < total_pages and search_clicks else {'visibility': 'hidden', 'display': 'none'}
-    page_number_text = f"Seite {current_page} von {total_pages}" if search_clicks else ""
+    page_number_text = f"Page {current_page} of {total_pages}" if search_clicks else ""
 
     return page_number_text, page_style, prev_button_style, next_button_style, container_style
 
@@ -344,7 +392,7 @@ def parse_date(date_str):
                 parsed_date = datetime.strptime(date_str.split('T')[0], '%Y-%m-%d')
                 return parsed_date.date()
             except ValueError as e:
-                print(f"Fehler beim Parsen des Datums '{date_str}': {e}")
+                print(f"Error while parsing Data '{date_str}': {e}")
     return None
 
 # Funktion zum Abrufen des Upload-Datums eines Datensatzes
@@ -359,7 +407,7 @@ def getUploadDate(dataset_id):
         dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
         return dataset.upload_date
     except Exception as e:
-        print(f"Fehler beim Abrufen des Upload-Datums für Dataset {dataset_id}: {e}")
+        print(f"Error on Dataset: {dataset_id}: {e}")
         return None
 
 # Function to filter datasets by attribute types
@@ -467,8 +515,6 @@ def update_output_data_points(value):
 ######### Dennis Code ##############
 def download_dataset(dataset_id=None):
     dataset_info = {}
-    #df = pd.DataFrame()  # Initialisieren Sie df hier, um sicherzustellen, dass es immer definiert ist
-
     if dataset_id:
         try:
             dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
@@ -511,49 +557,150 @@ def create_data_completeness_graph(df):
 def format_number(value):
     """Formatiert eine Zahl mit bis zu vier Nachkommastellen, entfernt jedoch nachfolgende Nullen."""
     try:
-        # Versuche, den Wert in einen Float umzuwandeln
         float_value = float(value)
-        # Wenn der Wert eine ganze Zahl ist, gib ihn als ganze Zahl zurück
         if float_value.is_integer():
-            return f"{int(float_value)}"
+            return str(int(float_value))
         else:
-            # Andernfalls formatiere den Wert mit vier Nachkommastellen
             return f"{float_value:.4f}".rstrip('0').rstrip('.')
     except ValueError:
-        # Wenn der Wert nicht in einen Float umgewandelt werden kann, gib ihn unverändert zurück
         return value
 
 def create_feature_summary_table(df):
     if df.empty:
         return [], []  # Gibt leere Werte zurück, wenn df leer ist
 
-    summary = df.describe(percentiles=[.25, .5, .75, .97, .997]).transpose()
+    # Berechnung der deskriptiven Statistiken
+    summary = df.describe(percentiles=[.25, .5, .75, .97, .997], include='all').transpose()
 
-    # Modus berechnen und zur Zusammenfassung hinzufügen
+    # Modus für jede Spalte berechnen
     modes = df.mode().iloc[0]
-    summary['mode'] = [modes[col] if col in modes else np.nan for col in summary.index]
+    summary['mode'] = [modes[col] if col in modes else "N/A" for col in df.columns]
 
+    # Formatieren der numerischen Werte
+    for col in summary.columns:
+        summary[col] = summary[col].apply(format_number)
+
+    # Anpassen der Spaltennamen für die Darstellung in der DataTable
     summary.reset_index(inplace=True)
     summary.rename(columns={'index': 'Feature'}, inplace=True)
 
-    # Formatieren der numerischen Werte als Strings mit bedingter Nachkommastellen-Anzeige
-    for col in summary.columns[1:]:  # Überspringe die 'Feature'-Spalte
-        summary[col] = summary[col].apply(format_number)
-
     summary_records = summary.to_dict('records')
-    columns = [{"name": i, "id": i} for i in summary.columns]
+
+    # Definieren der Spalten für die DataTable
+    columns = [{"name": col, "id": col} for col in summary.columns]
 
     return summary_records, columns
 
-from dash import dcc
-import pandas as pd  # Stellen Sie sicher, dass pandas importiert wird
+########################################################################################
+
+# Überprüfen Sie, ob der Cache-Ordner existiert
+def check_cache_folder_exists():
+    return os.path.exists('cache')  # Ändern Sie den Pfad zu Ihrem cache-Ordner nach Bedarf
+
+# Callback-Funktion für die Aktualisierung des Fortschrittsbalkens und die Sichtbarkeit der Ladesektion
+@app.callback(
+    [
+        Output('progress_bar', 'value'),
+        Output('loading-section', 'style'),
+        Output('filter-section', 'style', allow_duplicate=True),
+        Output('cache-status-store', 'data')# Fügen Sie eine neue Output-Komponente hinzu
+    ],
+    [
+        Input('progress_interval', 'n_intervals'),
+        Input('cache-status-store', 'data')  # Verwenden der gespeicherten Cache-Status-Information
+    ],
+    [
+        State('loading-section', 'style'),  # Zustand des aktuellen Stils der Ladesektion
+        State('filter-section', 'style')  # Zustand des aktuellen Stils der Filtersektion
+    ], prevent_initial_call=True
+)
+def update_progress_visibility_and_filter_visibility(n, cache_status, loading_style, filter_style):
+    # Überprüfen Sie, ob der Cache-Ordner existiert
+    cache_exists = check_cache_folder_exists()
+
+    # Wenn der Cache-Ordner existiert und die Aktion bereits durchgeführt wurde, aktualisieren Sie nichts
+    if cache_exists and (cache_status and cache_status.get('updated')):
+        raise PreventUpdate
+
+    # Initialisieren Sie die Ausgabewerte
+    new_value = 0
+    new_loading_style = loading_style.copy()
+    new_filter_style = filter_style.copy()
+    new_cache_status = {'updated': False}
+
+    # Wenn der Cache-Ordner existiert, aber die Aktion noch nicht durchgeführt wurde
+    if cache_exists and not (cache_status and cache_status.get('updated')):
+        new_value = 100
+        new_loading_style['display'] = 'none'
+        new_filter_style['display'] = 'block'
+        new_cache_status = {'updated': True}  # Markieren, dass die Aktion durchgeführt wurde
+    elif not cache_exists:
+        # Update logic here for when cache does not exist
+        new_value = min((n * 10), 100)
+        new_loading_style['display'] = 'block' if new_value < 100 else 'none'
+        new_filter_style['display'] = 'none' if new_value < 100 else 'block'
+
+    return new_value, new_loading_style, new_filter_style, new_cache_status
+
+@app.callback(
+    Output('detail-section', 'children'),  # Aktualisieren des versteckten Divs
+    Input('download-button', 'n_clicks'),  # Auf Klicks des Download-Buttons hören
+    State('dataset-store', 'data')  # Verwenden Sie die Dataset-ID aus dem Store
+)
+def download_Set(n_clicks, store_data):
+    if n_clicks is None or store_data is None:
+        # Update verhindern, bevor der Button geklickt wurde oder wenn keine Dataset-ID ausgewählt wurde
+        raise dash.exceptions.PreventUpdate
+
+    # Holen Sie sich die Dataset-ID aus dem Store
+    dataset_id = store_data.get('selected_dataset_id') if store_data else None
+
+    if dataset_id is None:
+        # Keine Dataset-ID ausgewählt
+        raise dash.exceptions.PreventUpdate
+
+    # Dataset von OpenML herunterladen
+    dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
+    df, _, _, _ = dataset.get_data(target=dataset.default_target_attribute)
+
+    # Konvertieren Sie das Dataset in einen CSV-String
+    csv_string = df.to_csv(index=False, encoding='utf-8')
+    csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
+
+    # Geben Sie einen Download-Link zurück
+    return html.A("Download", href=csv_string, download=f"dataset_{dataset_id}.csv", className="btn btn-secondary mt-3")
 
 # App Layout
 app.layout = dbc.Container([
+    html.Div(
+        id='loading-section',
+        style={'display': 'block'},
+        children=[
+            dbc.Row(
+                dbc.Col(
+                    [
+                        html.H4("Daten werden geladen, bitte warten...", className="text-center mb-3"),
+                        dbc.Progress(id='progress_bar', value=0, striped=True, animated=True, style={"height": "30px"}),
+                        html.P("Der Ladevorgang kann einige Momente dauern. Vielen Dank für Ihre Geduld.",
+                               className="text-center mt-3"),
+                        dcc.Store(id='cache-status-store', storage_type='session'),
+                        dcc.Interval(id='progress_interval', interval=1000, n_intervals=0)
+                        # Timer set to tick every second
+                    ],
+                    width={"size": 10, "offset": 1},
+                    style={'max-width': '800px', 'margin': 'auto'}
+                    # Stellen Sie sicher, dass dies korrekt innerhalb von dbc.Col ist
+                )
+            )
+        ],
+        className="mt-5"
+    ),
     # Verstecke diesen Teil standardmäßig durch Setzen von 'display': 'none' im style
     html.Div(id='detail-section', style={'display': 'none'}, children=[
         dbc.ListGroup(id='list_histogram', flush=True, className="mt-4"),
-        html.Button("Zurück", id='back-button', className="btn btn-secondary mt-3"),
+        html.Button("Back", id='back-button', className="btn btn-secondary mt-3"),
+        html.Button("Download", id='download-button', className="btn btn-secondary mt-3"),
+        dcc.Store(id='dataset-store', storage_type='session'),
     ]),
     html.Div(id='filter-section', style={'display': 'block'}, children=[
         dbc.Card([
@@ -562,7 +709,7 @@ app.layout = dbc.Container([
                 dbc.Row([
                     dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Datum"),
+                            dbc.CardHeader("Upload-Date"),
                             dbc.CardBody([
                                 dcc.DatePickerRange(
                                     id='date_range',
@@ -578,7 +725,7 @@ app.layout = dbc.Container([
                     ], md=5),
                     dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Anzahl Datenpunkte"),
+                            dbc.CardHeader("Number of Data Points"),
                             dbc.CardBody([
                                 dbc.Row([
                                     dbc.Col(
@@ -611,7 +758,7 @@ app.layout = dbc.Container([
 
                     dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Maximale Datensatzanzahl"),
+                            dbc.CardHeader("Max Datasets"),
                             dbc.CardBody([
                                 dbc.Row([
                                     dbc.Col(
@@ -627,7 +774,7 @@ app.layout = dbc.Container([
                                     ),
                                 ]),
                                 dbc.Tooltip(
-                                    "Geben Sie die maximale Anzahl der Datensätze ein, die berücksichtigt werden sollen.",
+                                    "Enter the maximum number of records to be considered.",
                                     target="input_max_datasets",
                                 ),
                             ]),
@@ -637,7 +784,7 @@ app.layout = dbc.Container([
                 dbc.Row([
                     dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Anzahl der Features"),
+                            dbc.CardHeader("Number of Features"),
                             dbc.CardBody([
                                 dbc.Row([
                                     dbc.Col(
@@ -669,7 +816,7 @@ app.layout = dbc.Container([
                     ], md=4),
                     dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Anzahl der Numerischen Features"),
+                            dbc.CardHeader("Number of Numerical Features"),
                             dbc.CardBody([
                                 dbc.Row([
                                     dbc.Col(
@@ -701,7 +848,7 @@ app.layout = dbc.Container([
                     ], md=4),
                     dbc.Col([
                         dbc.Card([
-                            dbc.CardHeader("Anzahl der Kategorialen Features"),
+                            dbc.CardHeader("Number of Categorical Features"),
                             dbc.CardBody([
                                 dbc.Row([
                                     dbc.Col(
@@ -735,12 +882,10 @@ app.layout = dbc.Container([
                 dbc.Row([
                     dbc.Col([
                         dbc.Row([
-                            dbc.Col(dbc.Button('Suchen', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'}), width=6),
-                            dbc.Col(dbc.Button('Abbrechen', id='cancel_button', color="danger", className="mt-3 mb-3", style={'width': '100%'}), width=6)
+                            dbc.Col(dbc.Button('Search', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'}))
                         ])
                     ], md=12),
                 ]),
-                dbc.Progress(id='progress_bar', value=0, style={"height": "20px", "margin-top": "15px"}, striped=True),
             ])
         ]),
         dcc.Graph(id='statistics_figure', style={'display': 'none'}),
@@ -783,8 +928,6 @@ app.layout = dbc.Container([
         ], className="d-flex justify-content-center align-items-center mt-4", id='pagination-container'),
     ]),
 ], fluid=True)
-
-#TODO INIT Funktion?
 
 if __name__ == '__main__':
     app.run_server(debug=True, threaded=True)
