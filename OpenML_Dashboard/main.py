@@ -20,7 +20,9 @@ import dash
 openml.config.set_root_cache_directory('cache')
 
 # Dash app setup
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://use.fontawesome.com/releases/v5.8.1/css/all.css'], suppress_callback_exceptions=True)
+app = dash.Dash(__name__,
+                external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://use.fontawesome.com/releases/v5.8.1/css/all.css'],
+                suppress_callback_exceptions=True)
 
 # Set global Variables
 ITEMS_PER_PAGE = 10  # Max number of items per page
@@ -45,6 +47,7 @@ class DatasetMetrics:
         self.max_number_of_symbolic_features = max(self.max_number_of_symbolic_features,
                                                    ranges['NumberOfSymbolicFeatures'][1])
 
+
 metrics = DatasetMetrics()
 datasets = helper.fetchDataList()  # Fetch data lists
 
@@ -59,6 +62,7 @@ max_numeric_features = int(metrics.max_number_of_numeric_features)
 max_categorical_features = int(metrics.max_number_of_symbolic_features)
 max_instances = int(metrics.max_number_of_instances)
 maxDataset = len(datasets)
+
 
 def create_statistics_figure(filtered_info):
     """
@@ -97,6 +101,7 @@ def create_statistics_figure(filtered_info):
 
     return fig
 
+
 @app.callback(
     [
         Output('list_group', 'children'),
@@ -119,7 +124,9 @@ def create_statistics_figure(filtered_info):
         State('current-page', 'children')
     ]
 )
-def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points, min_features, max_features, min_numerical_features, max_numerical_features, min_categorical_features, max_categorical_features, limit, current_page_text):
+def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points,
+                           min_features, max_features, min_numerical_features, max_numerical_features,
+                           min_categorical_features, max_categorical_features, limit, current_page_text):
     """
     Callback function to handle search button click and pagination.
 
@@ -158,7 +165,8 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     data_points_range = (min_data_points, max_data_points)
 
     # Fetch and process data
-    filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
+    filtered_data = processData(start_date, end_date, features_range, numerical_features_range,
+                                categorical_features_range, data_points_range, limit)
 
     # Start of the callback or function
     # Make sure 'current_page_text' is not empty and has the expected format
@@ -182,7 +190,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     for idx, dataset in enumerate(filtered_info, start=start):
         global_index = idx + 1
-        item_id = {"type": "dataset-click", "index": dataset['id']}    # Unique ID for each item
+        item_id = {"type": "dataset-click", "index": dataset['id']}  # Unique ID for each item
 
         list_group_item = dbc.ListGroupItem(
             html.Div([
@@ -216,8 +224,10 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     return list_group_items, statistics_figure, statistics_style
 
+
 # Define a list of known ordinal features if applicable
 ordinal_features = ['ordinal_feature1', 'ordinal_feature2']
+
 
 @app.callback(
     Output('feature-histogram', 'figure'),
@@ -281,6 +291,8 @@ def update_histogram(active_cell, table_data):
     # Update hover information for traces
     fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram' if fig_type == 'histogram' else 'bar'))
     return fig
+
+
 def prepare_table_data_from_df(df):
     """
     Creates a list of dictionaries for the DataTable from a DataFrame.
@@ -296,13 +308,13 @@ def prepare_table_data_from_df(df):
     return table_data
 
 @app.callback(
-    [Output('detail-section', 'style'),       # Output for the detail section style
-     Output('filter-section', 'style'),       # Output for the filter section style
-     Output('list_histogram', 'children'),    # Output for the list histogram children
-     Output('dataset-store', 'data')],        # Output for the dataset store data
+    [Output('detail-section', 'style'),  # Output for the detail section style
+     Output('filter-section', 'style'),  # Output for the filter section style
+     Output('list_histogram', 'children'),  # Output for the list histogram children
+     Output('dataset-store', 'data')],  # Output for the dataset store data
     [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks'),  # Input trigger for dataset clicks
-     Input('back-button', 'n_clicks')],       # Input trigger for back button click
-    prevent_initial_call=True                  # Prevent initial callback upon page load
+     Input('back-button', 'n_clicks')],  # Input trigger for back button click
+    prevent_initial_call=True  # Prevent initial callback upon page load
 )
 def on_item_click(n_clicks, *args):
     """
@@ -391,9 +403,9 @@ def on_item_click(n_clicks, *args):
 @app.callback(
     [
         Output('current-page', 'children'),
-        Output('current-page', 'style'),      # Controls the visibility of the page number
-        Output('previous-page', 'style'),     # Controls the visibility of the previous button
-        Output('next-page', 'style'),         # Controls the visibility of the next button
+        Output('current-page', 'style'),  # Controls the visibility of the page number
+        Output('previous-page', 'style'),  # Controls the visibility of the previous button
+        Output('next-page', 'style'),  # Controls the visibility of the next button
         Output('pagination-container', 'style')  # Controls the visibility of the overall container
     ],
     [
@@ -406,6 +418,7 @@ def on_item_click(n_clicks, *args):
         State('input_max_datasets', 'value')
     ]
 )
+
 def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_text, maxData):
     """
     Callback function to update the page number and pagination controls.
@@ -438,21 +451,27 @@ def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_tex
     if 'search_button' in triggered_id:
         current_page = 1  # Reset to the first page if search is triggered
     elif 'next-page' in triggered_id and search_clicks:
-        current_page = min(int(current_page_text.split()[1]) + 1, total_pages) if current_page_text and ' ' in current_page_text else 2
+        current_page = min(int(current_page_text.split()[1]) + 1,
+                           total_pages) if current_page_text and ' ' in current_page_text else 2
     elif 'previous-page' in triggered_id and search_clicks:
-        current_page = max(int(current_page_text.split()[1]) - 1, 1) if current_page_text and ' ' in current_page_text else 1
+        current_page = max(int(current_page_text.split()[1]) - 1,
+                           1) if current_page_text and ' ' in current_page_text else 1
     else:
         current_page = int(current_page_text.split()[1]) if current_page_text and ' ' in current_page_text else 1
 
     # Style and visibility settings based on the number of clicks
     container_style = {'display': 'flex'} if search_clicks else {'display': 'none'}
-    page_style = {'visibility': 'visible', 'display': 'block'} if search_clicks else {'visibility': 'hidden', 'display': 'none'}
-    prev_button_style = {'visibility': 'visible', 'display': 'inline-block'} if current_page > 1 and search_clicks else {'visibility': 'hidden', 'display': 'none'}
-    next_button_style = {'visibility': 'visible', 'display': 'inline-block'} if current_page < total_pages and search_clicks else {'visibility': 'hidden', 'display': 'none'}
+    page_style = {'visibility': 'visible', 'display': 'block'} if search_clicks else {'visibility': 'hidden',
+                                                                                      'display': 'none'}
+    prev_button_style = {'visibility': 'visible',
+                         'display': 'inline-block'} if current_page > 1 and search_clicks else {'visibility': 'hidden',
+                                                                                                'display': 'none'}
+    next_button_style = {'visibility': 'visible',
+                         'display': 'inline-block'} if current_page < total_pages and search_clicks else {
+        'visibility': 'hidden', 'display': 'none'}
     page_number_text = f"Page {current_page} of {total_pages}" if search_clicks else ""
 
     return page_number_text, page_style, prev_button_style, next_button_style, container_style
-
 
 # Date Conversion
 def parse_date(date_str):
@@ -479,7 +498,6 @@ def parse_date(date_str):
             except ValueError as e:
                 print(f"Error while parsing Date '{date_str}': {e}")
     return None
-
 
 def getUploadDate(dataset_id):
     """
@@ -568,10 +586,12 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
 
             # Check if the dataset satisfies all filtering criteria
             if ((not features_range or (features_range[0] <= num_features <= features_range[1])) and
-                    (not numerical_features_range or (numerical_features_range[0] <= num_numeric_features <= numerical_features_range[1])) and
-                    (not categorical_features_range or (categorical_features_range[0] <= num_categorical_features <= categorical_features_range[1])) and
+                    (not numerical_features_range or (
+                            numerical_features_range[0] <= num_numeric_features <= numerical_features_range[1])) and
+                    (not categorical_features_range or (
+                            categorical_features_range[0] <= num_categorical_features <= categorical_features_range[
+                        1])) and
                     (not data_points_range or (data_points_range[0] <= num_instances <= data_points_range[1]))):
-
                 # Append the dataset information to the filtered datasets list
                 filtered_datasets.append({
                     'id': dataset_id,
@@ -585,7 +605,6 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
                 count += 1
 
     return filtered_datasets
-
 
 # Callback for toggling intervals based on search button clicks
 @app.callback(
@@ -608,6 +627,7 @@ def toggle_interval(n_clicks, disabled):
         return False  # Enable interval component if search button is clicked
     return True  # Disable interval component if search button is not clicked
 
+
 # Callback function to update output for numerical features range
 @app.callback(
     Output('output_numerical_features', 'children'),  # Output: Display for selected numerical features range
@@ -624,6 +644,7 @@ def update_output(value):
         str: A string indicating the selected range of numerical features.
     """
     return f"Selected range: {value[0]} to {value[1]}"
+
 
 # Callback function to update output for total features range
 @app.callback(
@@ -642,6 +663,7 @@ def update_output_features(value):
     """
     return f"Selected range: {value[0]} to {value[1]}"
 
+
 # Callback function to update output for categorical features range
 @app.callback(
     Output('output_categorical_features', 'children'),  # Output: Display for selected categorical features range
@@ -658,6 +680,7 @@ def update_output_categorical_features(value):
         str: A string indicating the selected range of categorical features.
     """
     return f"Selected range: {value[0]} to {value[1]}"
+
 
 # Callback function to update output for data points range
 @app.callback(
@@ -676,6 +699,7 @@ def update_output_data_points(value):
     """
     return f"Selected range: {value[0]} to {value[1]}"
 
+
 def download_dataset(dataset_id=None):
     """
     Downloads a dataset based on the provided dataset_id.
@@ -690,7 +714,8 @@ def download_dataset(dataset_id=None):
     dataset_info = {}
     if dataset_id:
         try:
-            dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
+            dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
+                                                  download_features_meta_data=False)
             X, y, categorical_indicator, attribute_names = dataset.get_data(target=dataset.default_target_attribute,
                                                                             dataset_format='dataframe')
             df = pd.DataFrame(X, columns=attribute_names)
@@ -716,6 +741,7 @@ def download_dataset(dataset_id=None):
 
     return df, dataset_info
 
+
 def create_data_completeness_graph(df):
     """
     Creates a pie chart to visualize the completeness of the provided DataFrame.
@@ -736,6 +762,7 @@ def create_data_completeness_graph(df):
     fig.update_layout(title_text="Completeness of the dataset", title_x=0.5)
     return fig
 
+
 def format_number(value):
     """
     Formats a number with up to four decimal places, but removes trailing zeros.
@@ -754,6 +781,7 @@ def format_number(value):
             return f"{float_value:.4f}".rstrip('0').rstrip('.')
     except ValueError:
         return value
+
 
 def create_feature_summary_table(df):
     """
@@ -790,6 +818,7 @@ def create_feature_summary_table(df):
 
     return summary_records, columns
 
+
 ########################################################################################
 # Check if the cache folder exists
 def check_cache_folder_exists():
@@ -800,6 +829,7 @@ def check_cache_folder_exists():
         bool: True if the cache folder exists, False otherwise.
     """
     return os.path.exists('cache')  # Modify the path to your cache folder as needed
+
 
 # Callback function for updating the progress bar visibility and the visibility of the loading section
 @app.callback(
@@ -869,6 +899,8 @@ def update_progress_visibility_and_filter_visibility(n, cache_status, loading_st
         new_filter_style['display'] = 'none' if new_value < 100 else 'block'
 
     return new_value, f"{new_value}%", new_loading_style, new_filter_style, new_cache_status
+
+
 # Update your callback function
 @app.callback(
     [
@@ -905,7 +937,8 @@ def download_set(n_clicks, store_data):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
-    dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
+    dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
+                                          download_features_meta_data=False)
     df, _, _, _ = dataset.get_data(target=dataset.default_target_attribute)
 
     file_path = os.path.join(folder_name, f"dataset_{dataset_id}.csv")
@@ -913,6 +946,7 @@ def download_set(n_clicks, store_data):
 
     # Return the new message for the modal and the command to open the modal
     return True, f'Dataset {dataset_id} has been saved as CSV: {file_path}'
+
 
 # Callback to close the modal
 @app.callback(
@@ -939,6 +973,7 @@ def close_modal(n_clicks, is_open):
     if n_clicks:
         return False
     return is_open
+
 
 modal = dbc.Modal(
     [
@@ -1018,14 +1053,16 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Min"),
-                                            dbc.Input(id='min_data_points', type='number', value=0, min=0, max=max_instances),
+                                            dbc.Input(id='min_data_points', type='number', value=0, min=0,
+                                                      max=max_instances),
                                         ]),
                                         width=6,
                                     ),
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_data_points', type='number', value=12345, min=0, max=max_instances),
+                                            dbc.Input(id='max_data_points', type='number', value=12345, min=0,
+                                                      max=max_instances),
                                         ]),
                                         width=6,
                                     ),
@@ -1076,14 +1113,16 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Min"),
-                                            dbc.Input(id='min_features', type='number', value=0, min=0, max=max_features),
+                                            dbc.Input(id='min_features', type='number', value=0, min=0,
+                                                      max=max_features),
                                         ]),
                                         width=6,
                                     ),
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_features', type='number', value=50, min=0, max=max_features),
+                                            dbc.Input(id='max_features', type='number', value=50, min=0,
+                                                      max=max_features),
                                         ]),
                                         width=6,
                                     ),
@@ -1110,19 +1149,22 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Min"),
-                                            dbc.Input(id='min_numerical_features', type='number', value=0, min=0, max=max_numeric_features),
+                                            dbc.Input(id='min_numerical_features', type='number', value=0, min=0,
+                                                      max=max_numeric_features),
                                         ]),
                                         width=6,
                                     ),
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_numerical_features', type='number', value=30, min=0, max=max_numeric_features),
+                                            dbc.Input(id='max_numerical_features', type='number', value=30, min=0,
+                                                      max=max_numeric_features),
                                         ]),
                                         width=6,
                                     ),
                                 ]),
-                                dbc.Tooltip(f"Previous max range was 0 to {max_numeric_features}.", target="max_numerical_features"),
+                                dbc.Tooltip(f"Previous max range was 0 to {max_numeric_features}.",
+                                            target="max_numerical_features"),
                                 html.Div(
                                     id='output_numerical_features',
                                     style={
@@ -1144,19 +1186,22 @@ app.layout = dbc.Container([
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Min"),
-                                            dbc.Input(id='min_categorical_features', type='number', value=0, min=0, max=max_categorical_features),
+                                            dbc.Input(id='min_categorical_features', type='number', value=0, min=0,
+                                                      max=max_categorical_features),
                                         ]),
                                         width=6,
                                     ),
                                     dbc.Col(
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
-                                            dbc.Input(id='max_categorical_features', type='number', value=20, min=0, max=max_categorical_features),
+                                            dbc.Input(id='max_categorical_features', type='number', value=20, min=0,
+                                                      max=max_categorical_features),
                                         ]),
                                         width=6,
                                     ),
                                 ]),
-                                dbc.Tooltip(f"Previous max range was 0 to {max_categorical_features}.", target="max_categorical_features"),
+                                dbc.Tooltip(f"Previous max range was 0 to {max_categorical_features}.",
+                                            target="max_categorical_features"),
                                 html.Div(
                                     id='output_categorical_features',
                                     style={
@@ -1174,7 +1219,8 @@ app.layout = dbc.Container([
                 dbc.Row([
                     dbc.Col([
                         dbc.Row([
-                            dbc.Col(dbc.Button('Search', id='search_button', color="primary", className="mt-3 mb-3", style={'width': '100%'}))
+                            dbc.Col(dbc.Button('Search', id='search_button', color="primary", className="mt-3 mb-3",
+                                               style={'width': '100%'}))
                         ])
                     ], md=12),
                 ]),
