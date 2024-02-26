@@ -28,39 +28,35 @@ stop = False # Stop Variable
 filtered_data = [] # Alle Gefilterte Daten
 initial_df = pd.DataFrame() # Initialisieren Sie df hier, um sicherzustellen, dass es immer definiert ist
 
-#Globale Variablen für die max Nummern etc
-global_max_number_of_instances = 0
-global_max_number_of_features = 0
-global_max_number_of_numeric_features = 0
-global_max_number_of_symbolic_features = 0
-global_maxDataSet = 0
+class DatasetMetrics:
+    def __init__(self):
+        self.max_number_of_instances = 0
+        self.max_number_of_features = 0
+        self.max_number_of_numeric_features = 0
+        self.max_number_of_symbolic_features = 0
 
-# Laden der Daten und Setzen der globalen Variablen
+    def update_max_values(self, ranges):
+        """Update the maximum values based on the provided ranges."""
+        self.max_number_of_instances = max(self.max_number_of_instances, ranges['NumberOfInstances'][1])
+        self.max_number_of_features = max(self.max_number_of_features, ranges['NumberOfFeatures'][1])
+        self.max_number_of_numeric_features = max(self.max_number_of_numeric_features,
+                                                  ranges['NumberOfNumericFeatures'][1])
+        self.max_number_of_symbolic_features = max(self.max_number_of_symbolic_features,
+                                                   ranges['NumberOfSymbolicFeatures'][1])
+
+metrics = DatasetMetrics()
 datasets = helper.fetchDataList()
 
-# Function to update the global max values
-def updateGlobalMaxValues(ranges):
-    global global_max_number_of_instances
-    global global_max_number_of_features
-    global global_max_number_of_numeric_features
-    global global_max_number_of_symbolic_features
-
-    global_max_number_of_instances = ranges['NumberOfInstances'][1]
-    global_max_number_of_features = ranges['NumberOfFeatures'][1]
-    global_max_number_of_numeric_features = ranges['NumberOfNumericFeatures'][1]
-    global_max_number_of_symbolic_features = ranges['NumberOfSymbolicFeatures'][1]
-
-
-if datasets is not None and not datasets.empty:
+if not datasets.empty:
     numericalRange = helper.calcRangeDatasets(datasets)
-    updateGlobalMaxValues(numericalRange)
+    metrics.update_max_values(numericalRange)
 
-# Umwandlung der Maximalwerte in Ganzzahlen
-max_features = int(global_max_number_of_features)
-max_numeric_features = int(global_max_number_of_numeric_features)
-max_categorical_features = int(global_max_number_of_symbolic_features)
-max_instances = int(global_max_number_of_instances)
-maxDataset = int(len(datasets))
+# Convert maximum values to integers and use them directly from the metrics object
+max_features = int(metrics.max_number_of_features)
+max_numeric_features = int(metrics.max_number_of_numeric_features)
+max_categorical_features = int(metrics.max_number_of_symbolic_features)
+max_instances = int(metrics.max_number_of_instances)
+maxDataset = len(datasets)
 
 def create_statistics_figure(filtered_info):
     if not filtered_info:
