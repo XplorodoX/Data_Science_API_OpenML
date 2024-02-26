@@ -524,7 +524,7 @@ def getUploadDate(dataset_id):
         print(f"Error on Dataset: {dataset_id}: {e}")
         return None
 
-# TODO Verbessern!
+# TODO Probleme mit dem max Data und hinzufügen der Überprüfung von max datasets
 def check_input_ranges(*range_labels_max):
     """
     Checks if the input ranges are valid and do not exceed the specified maximum values.
@@ -742,129 +742,6 @@ def update_output_data_points(value):
     """
     return f"Selected range: {value[0]} to {value[1]}"
 
-
-def download_dataset(dataset_id=None):
-    """
-    Downloads a dataset based on the provided dataset_id.
-
-    Args:
-        dataset_id (int): The ID of the dataset to download.
-
-    Returns:
-        df (DataFrame): DataFrame containing the dataset.
-        dataset_info (dict): Information about the downloaded dataset.
-    """
-    dataset_info = {}
-    if dataset_id:
-        try:
-            dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
-                                                  download_features_meta_data=False)
-            X, y, categorical_indicator, attribute_names = dataset.get_data(target=dataset.default_target_attribute,
-                                                                            dataset_format='dataframe')
-            df = pd.DataFrame(X, columns=attribute_names)
-            if y is not None:
-                df['target'] = y
-
-            try:
-                upload_date_obj = datetime.strptime(dataset.upload_date, '%Y-%m-%d')
-                formatted_date = upload_date_obj.strftime('%Y-%m-%d')
-            except ValueError:
-                formatted_date = dataset.upload_date
-
-            dataset_info = {
-                'name': dataset.name,
-                'features_count': len(attribute_names),
-                'instances_count': df.shape[0],
-                'upload_date': formatted_date
-            }
-        except Exception as e:
-            print(f"Error downloading the data set: {e}")
-    else:
-        print("No dataset_id specified. Attempts to load test file...")
-
-    return df, dataset_info
-
-
-def create_data_completeness_graph(df):
-    """
-    Creates a donut chart to visualize the completeness of the provided DataFrame.
-
-    Args:
-        df (DataFrame): DataFrame containing the dataset.
-
-    Returns:
-        fig (plotly.graph_objs.Figure): Plotly figure representing the data completeness.
-    """
-    if df.empty:
-        return go.Figure()  # Returns an empty figure if df is empty
-    total_values = np.prod(df.shape)  # Use np.prod() instead of np.product()
-    missing_values = df.isnull().sum().sum()
-    complete_values = total_values - missing_values
-    fig = go.Figure(data=[go.Pie(labels=['Complete data', 'Missing data fields'],
-                                 values=[complete_values, missing_values], hole=.6)])
-    fig.update_layout(title_text="Completeness of the dataset", title_x=0.5)
-    return fig
-
-
-def format_number(value):
-    """
-    Formats a number with up to four decimal places, but removes trailing zeros.
-
-    Args:
-        value: The number to format.
-
-    Returns:
-        str: The formatted number.
-    """
-    try:
-        float_value = float(value)
-        if float_value.is_integer():
-            return str(int(float_value))
-        else:
-            return f"{float_value:.4f}".rstrip('0').rstrip('.')
-    except ValueError:
-        return value
-
-
-def create_feature_summary_table(df):
-    """
-    Creates a summary table containing descriptive statistics for the provided DataFrame.
-
-    Args:
-        df (DataFrame): DataFrame containing the dataset.
-
-    Returns:
-        summary_records (list of dict), columns (list of dict): Summary records and columns for DataTable.
-    """
-    if df.empty:
-        return [], []  # Returns empty values if df is empty
-
-    # Calculate descriptive statistics
-    summary = df.describe(percentiles=[.25, .5, .75, .97, .997], include='all').transpose()
-
-    # Calculate mode for each column
-    modes = df.mode().iloc[0]
-    summary['mode'] = [modes[col] if col in modes else "N/A" for col in df.columns]
-
-    # Format numerical values
-    for col in summary.columns:
-        summary[col] = summary[col].apply(format_number)
-
-    # Adjust column names for display in DataTable
-    summary.reset_index(inplace=True)
-    summary.rename(columns={'index': 'Feature'}, inplace=True)
-
-    summary_records = summary.to_dict('records')
-
-    # Define columns for the DataTable
-    columns = [{"name": col, "id": col} for col in summary.columns]
-
-    return summary_records, columns
-
-
-########################################################################################
-
-
 # Check if the cache folder exists
 def check_cache_folder_exists():
     """
@@ -1059,6 +936,124 @@ error_modal = dbc.Modal(
     keyboard=True,
     backdrop="static",
 )
+
+def download_dataset(dataset_id=None):
+    """
+    Downloads a dataset based on the provided dataset_id.
+
+    Args:
+        dataset_id (int): The ID of the dataset to download.
+
+    Returns:
+        df (DataFrame): DataFrame containing the dataset.
+        dataset_info (dict): Information about the downloaded dataset.
+    """
+    dataset_info = {}
+    if dataset_id:
+        try:
+            dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
+                                                  download_features_meta_data=False)
+            X, y, categorical_indicator, attribute_names = dataset.get_data(target=dataset.default_target_attribute,
+                                                                            dataset_format='dataframe')
+            df = pd.DataFrame(X, columns=attribute_names)
+            if y is not None:
+                df['target'] = y
+
+            try:
+                upload_date_obj = datetime.strptime(dataset.upload_date, '%Y-%m-%d')
+                formatted_date = upload_date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                formatted_date = dataset.upload_date
+
+            dataset_info = {
+                'name': dataset.name,
+                'features_count': len(attribute_names),
+                'instances_count': df.shape[0],
+                'upload_date': formatted_date
+            }
+        except Exception as e:
+            print(f"Error downloading the data set: {e}")
+    else:
+        print("No dataset_id specified. Attempts to load test file...")
+
+    return df, dataset_info
+
+
+def create_data_completeness_graph(df):
+    """
+    Creates a donut chart to visualize the completeness of the provided DataFrame.
+
+    Args:
+        df (DataFrame): DataFrame containing the dataset.
+
+    Returns:
+        fig (plotly.graph_objs.Figure): Plotly figure representing the data completeness.
+    """
+    if df.empty:
+        return go.Figure()  # Returns an empty figure if df is empty
+    total_values = np.prod(df.shape)  # Use np.prod() instead of np.product()
+    missing_values = df.isnull().sum().sum()
+    complete_values = total_values - missing_values
+    fig = go.Figure(data=[go.Pie(labels=['Complete data', 'Missing data fields'],
+                                 values=[complete_values, missing_values], hole=.6)])
+    fig.update_layout(title_text="Completeness of the dataset", title_x=0.5)
+    return fig
+
+
+def format_number(value):
+    """
+    Formats a number with up to four decimal places, but removes trailing zeros.
+
+    Args:
+        value: The number to format.
+
+    Returns:
+        str: The formatted number.
+    """
+    try:
+        float_value = float(value)
+        if float_value.is_integer():
+            return str(int(float_value))
+        else:
+            return f"{float_value:.4f}".rstrip('0').rstrip('.')
+    except ValueError:
+        return value
+
+
+def create_feature_summary_table(df):
+    """
+    Creates a summary table containing descriptive statistics for the provided DataFrame.
+
+    Args:
+        df (DataFrame): DataFrame containing the dataset.
+
+    Returns:
+        summary_records (list of dict), columns (list of dict): Summary records and columns for DataTable.
+    """
+    if df.empty:
+        return [], []  # Returns empty values if df is empty
+
+    # Calculate descriptive statistics
+    summary = df.describe(percentiles=[.25, .5, .75, .97, .997], include='all').transpose()
+
+    # Calculate mode for each column
+    modes = df.mode().iloc[0]
+    summary['mode'] = [modes[col] if col in modes else "N/A" for col in df.columns]
+
+    # Format numerical values
+    for col in summary.columns:
+        summary[col] = summary[col].apply(format_number)
+
+    # Adjust column names for display in DataTable
+    summary.reset_index(inplace=True)
+    summary.rename(columns={'index': 'Feature'}, inplace=True)
+
+    summary_records = summary.to_dict('records')
+
+    # Define columns for the DataTable
+    columns = [{"name": col, "id": col} for col in summary.columns]
+
+    return summary_records, columns
 
 # App Layout
 app.layout = dbc.Container([
@@ -1299,6 +1294,7 @@ app.layout = dbc.Container([
                 ]),
             ])
         ]),
+        # TODO Spinner verbessern, laggt!
         # Spinner component to indicate data processing
         dbc.Spinner(
             children=[
