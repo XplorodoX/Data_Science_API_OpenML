@@ -47,7 +47,6 @@ class DatasetMetrics:
         self.max_number_of_symbolic_features = max(self.max_number_of_symbolic_features,
                                                    ranges['NumberOfSymbolicFeatures'][1])
 
-
 metrics = DatasetMetrics()
 datasets = helper.fetchDataList()  # Fetch data lists
 
@@ -62,7 +61,6 @@ max_numeric_features = int(metrics.max_number_of_numeric_features)
 max_categorical_features = int(metrics.max_number_of_symbolic_features)
 max_instances = int(metrics.max_number_of_instances)
 maxDataset = len(datasets)
-
 
 def create_statistics_figure(filtered_info):
     """
