@@ -290,7 +290,6 @@ def update_histogram(active_cell, table_data):
     fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram' if fig_type == 'histogram' else 'bar'))
     return fig
 
-
 def prepare_table_data_from_df(df):
     """
     Creates a list of dictionaries for the DataTable from a DataFrame.
