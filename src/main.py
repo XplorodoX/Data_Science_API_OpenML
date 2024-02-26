@@ -19,7 +19,7 @@ import dash
 # Code Berreich Florian Merlau
 
 # Set the Cache Directory
-openml.config.set_root_cache_directory('cache')
+openml.config.set_root_cache_directory('cache') # <- Set the cache directory
 
 # Dash app setup
 app = dash.Dash(__name__,
@@ -27,7 +27,7 @@ app = dash.Dash(__name__,
                 suppress_callback_exceptions=True)
 
 # Set global Variables
-ITEMS_PER_PAGE = 10  # Max number of items per page
+ITEMS_PER_PAGE = 10  # <- Max number of items per page
 filtered_data = []  # All filtered data
 initial_df = pd.DataFrame()  # Initialize df here to ensure it's always defined
 
@@ -869,7 +869,7 @@ def download_set(n_clicks, store_data):
     if dataset_id is None:
         raise dash.exceptions.PreventUpdate
 
-    folder_name = 'Downloaded_Dataset'
+    folder_name = 'Downloaded_Dataset' # <- Define the folder name for the downloaded dataset
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
@@ -1347,5 +1347,6 @@ app.layout = dbc.Container([
     ]),
 ], fluid=True)
 
+# Run Server
 if __name__ == '__main__':
     app.run_server(debug=True, threaded=True)

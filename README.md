@@ -45,6 +45,10 @@ This project aims to provide an interface for exploring datasets hosted on OpenM
 
 4. Click on dataset items to view detailed information and visualizations.
 
+## Cache Directory Configuration
+
+To adjust the cache directory for storing OpenML data, modify the `CACHE_DIRECTORY` variable in the code:
+
 ## Contributing
 
 Contributions are welcome! If you find any bugs or have suggestions for improvements, please open an issue or submit a pull request.
