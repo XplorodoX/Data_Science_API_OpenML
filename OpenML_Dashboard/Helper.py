@@ -2,26 +2,41 @@ import openml
 import pandas as pd
 
 def fetchDataList():
+    """
+    Fetches a list of datasets from OpenML.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing information about datasets.
+    """
     datasets_list = openml.datasets.list_datasets(output_format='dataframe')
     return datasets_list
 
 def calcRangeDatasets(df):
-    if not isinstance(df, pd.DataFrame):
-        raise ValueError("df muss ein Pandas DataFrame sein")
+    """
+    Calculates the range (min and max) for various dataset attributes from a DataFrame.
 
-    # Liste der Spalten, für die Minima und Maxima berechnet werden sollen
+    Args:
+        df (pandas.DataFrame): The DataFrame containing dataset attributes.
+
+    Returns:
+        dict: A dictionary containing the ranges for different dataset attributes.
+    """
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("df must be a Pandas DataFrame")
+
+    # List of columns for which minima and maxima are to be calculated
     columns_to_calculate = [
         'NumberOfInstances', 'NumberOfFeatures', 'NumberOfClasses',
         'NumberOfMissingValues', 'NumberOfInstancesWithMissingValues',
         'NumberOfNumericFeatures', 'NumberOfSymbolicFeatures'
     ]
 
-    # Überprüfen, ob alle benötigten Spalten vorhanden sind
+    # Check if all required columns are present
     for col in columns_to_calculate:
         if col not in df.columns:
-            raise ValueError(f"Benötigte Spalte '{col}' fehlt im DataFrame")
+            raise ValueError(f"Required column '{col}' is missing in the DataFrame")
 
-    # Berechnen der Maxima und Minima für die relevanten Spalten
+    # Calculate the minima and maxima for the relevant columns
     ranges = {}
     for col in columns_to_calculate:
         ranges[col] = [df[col].min(), df[col].max()]
@@ -29,10 +44,20 @@ def calcRangeDatasets(df):
     return ranges
 
 def findDatasetNameWithMostFeatures(df, feature_column):
-    if feature_column not in df.columns or 'name' not in df.columns:
-        raise ValueError(f"Benötigte Spalten '{feature_column}' oder 'name' fehlen im DataFrame")
+    """
+    Finds the name of the dataset with the most features of a specific type.
 
-    # Finden des Namens des Datensatzes mit den meisten Features der angegebenen Art
+    Args:
+        df (pandas.DataFrame): The DataFrame containing dataset attributes.
+        feature_column (str): The column indicating the number of features of the desired type.
+
+    Returns:
+        str: The name of the dataset with the most features of the specified type.
+    """
+    if feature_column not in df.columns or 'name' not in df.columns:
+        raise ValueError(f"Required columns '{feature_column}' or 'name' are missing in the DataFrame")
+
+    # Find the name of the dataset with the most features of the specified type
     max_features = df[feature_column].max()
     dataset_name = df[df[feature_column] == max_features]['name'].iloc[0]
 

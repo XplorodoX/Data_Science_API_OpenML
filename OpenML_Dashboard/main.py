@@ -1,4 +1,4 @@
-# Imports der Bibliotheken
+# Libraries Imports
 import math
 import os
 from dash import dash_table
@@ -16,20 +16,20 @@ import Helper as helper
 import json
 import dash
 
-# Setzen des Cache-Verzeichnisses
+# Set the Cache Directory
 openml.config.set_root_cache_directory('cache')
 
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, 'https://use.fontawesome.com/releases/v5.8.1/css/all.css'], suppress_callback_exceptions=True)
 
 # Set global Variables
-ITEMS_PER_PAGE = 10 # Max Anzahl der Items pro page
-stop = False # Stop Variable
-filtered_data = [] # Alle Gefilterte Daten
-initial_df = pd.DataFrame() # Initialisieren Sie df hier, um sicherzustellen, dass es immer definiert ist
+ITEMS_PER_PAGE = 10  # Max number of items per page
+filtered_data = []  # All filtered data
+initial_df = pd.DataFrame()  # Initialize df here to ensure it's always defined
 
 class DatasetMetrics:
     def __init__(self):
+        # Initialize maximum values
         self.max_number_of_instances = 0
         self.max_number_of_features = 0
         self.max_number_of_numeric_features = 0
@@ -37,6 +37,7 @@ class DatasetMetrics:
 
     def update_max_values(self, ranges):
         """Update the maximum values based on the provided ranges."""
+        # Update maximum values for each metric
         self.max_number_of_instances = max(self.max_number_of_instances, ranges['NumberOfInstances'][1])
         self.max_number_of_features = max(self.max_number_of_features, ranges['NumberOfFeatures'][1])
         self.max_number_of_numeric_features = max(self.max_number_of_numeric_features,
@@ -45,8 +46,9 @@ class DatasetMetrics:
                                                    ranges['NumberOfSymbolicFeatures'][1])
 
 metrics = DatasetMetrics()
-datasets = helper.fetchDataList()
+datasets = helper.fetchDataList()  # Fetch data lists
 
+# Update metrics if datasets are not empty
 if not datasets.empty:
     numericalRange = helper.calcRangeDatasets(datasets)
     metrics.update_max_values(numericalRange)
@@ -59,26 +61,38 @@ max_instances = int(metrics.max_number_of_instances)
 maxDataset = len(datasets)
 
 def create_statistics_figure(filtered_info):
-    if not filtered_info:
-        return go.Figure()  # Gibt eine leere Figur zurück, wenn keine Daten vorhanden sind
+    """
+    Create a statistics figure based on the filtered dataset information.
 
-    # Extrahiere die Namen der Datensätze
-    dataset_names = [f"Dataset {idx+1}" for idx, dataset in enumerate(filtered_info)]
-    # Extrahiere die Anzahl der numerischen und kategorialen Features
+    Args:
+        filtered_info (list): A list of dictionaries containing information about filtered datasets.
+            Each dictionary should contain keys like 'name', 'numeric_features', and 'categorical_features'.
+
+    Returns:
+        plotly.graph_objs._figure.Figure: A Plotly figure displaying statistics of numeric and categorical features
+            for each dataset on the current page.
+    """
+    # Check if filtered_info is empty
+    if not filtered_info:
+        return go.Figure()  # Returns an empty figure if no data is available
+
+    # Extract actual dataset names
+    dataset_names = [dataset['name'] for dataset in filtered_info]
+    # Extract counts of numeric and categorical features
     numeric_feature_counts = [dataset['numeric_features'] for dataset in filtered_info]
     categorical_feature_counts = [dataset['categorical_features'] for dataset in filtered_info]
 
-    # Erstelle die Figur und füge die Daten für numerische und kategoriale Features hinzu
+    # Create the figure and add data for numeric and categorical features
     fig = go.Figure(data=[
         go.Bar(name='Numeric Features', x=dataset_names, y=numeric_feature_counts),
-        go.Bar(name='Categorial Features', x=dataset_names, y=categorical_feature_counts)
+        go.Bar(name='Categorical Features', x=dataset_names, y=categorical_feature_counts)
     ])
-    # Aktualisiere das Layout der Figur
+    # Update the layout of the figure
     fig.update_layout(
         title='Statistics of the datasets on the current page',
         xaxis_title='Datasets',
         yaxis_title='Number of features',
-        barmode='group'  # Gruppiere die Balken, um einen Vergleich zu ermöglichen
+        barmode='group'  # Group bars to enable comparison
     )
 
     return fig
@@ -106,6 +120,29 @@ def create_statistics_figure(filtered_info):
     ]
 )
 def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points, min_features, max_features, min_numerical_features, max_numerical_features, min_categorical_features, max_categorical_features, limit, current_page_text):
+    """
+    Callback function to handle search button click and pagination.
+
+    Args:
+        n_clicks (int): Number of times search button has been clicked.
+        prev_clicks (int): Number of times previous page button has been clicked.
+        next_clicks (int): Number of times next page button has been clicked.
+        start_date (str): Start date selected from the date range picker.
+        end_date (str): End date selected from the date range picker.
+        min_data_points (int): Minimum number of data points input value.
+        max_data_points (int): Maximum number of data points input value.
+        min_features (int): Minimum number of features input value.
+        max_features (int): Maximum number of features input value.
+        min_numerical_features (int): Minimum number of numerical features input value.
+        max_numerical_features (int): Maximum number of numerical features input value.
+        min_categorical_features (int): Minimum number of categorical features input value.
+        max_categorical_features (int): Maximum number of categorical features input value.
+        limit (int): Maximum number of datasets to display per page.
+        current_page_text (str): Current page number.
+
+    Returns:
+        tuple: A tuple containing list group items for datasets, a statistics figure, and the style for the statistics figure.
+    """
     global filtered_data
 
     list_group_items = []
@@ -120,20 +157,20 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     categorical_features_range = (min_categorical_features, max_categorical_features)
     data_points_range = (min_data_points, max_data_points)
 
-    # Datenabrufen und Verarbeitung
+    # Fetch and process data
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range, categorical_features_range, data_points_range, limit)
 
-    # Anfang des Callbacks oder der Funktion
-    # Stellen Sie sicher, dass 'current_page_text' nicht leer ist und das erwartete Format hat
+    # Start of the callback or function
+    # Make sure 'current_page_text' is not empty and has the expected format
     if current_page_text and len(current_page_text.split()) > 2:
         try:
             current_page = int(current_page_text.split()[1])
-        except ValueError:  # Fängt Fehler ab, falls die Konvertierung zu int fehlschlägt
-            current_page = 1  # Setzen Sie einen Standardwert, falls ein Fehler auftritt
+        except ValueError:  # Catch errors if conversion to int fails
+            current_page = 1  # Set a default value if an error occurs
     else:
-        current_page = 1  # Standardwert, falls 'current_page_text' nicht dem erwarteten Format entspricht
+        current_page = 1  # Default value if 'current_page_text' does not match the expected format
 
-    # Ihr Code für die Behandlung von Seitenwechseln
+    # Your code for handling page navigation
     changed_id = dash.callback_context.triggered[0]['prop_id']
     if 'next-page' in changed_id:
         current_page = min(current_page + 1, math.ceil(len(filtered_data) / ITEMS_PER_PAGE))
@@ -145,7 +182,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     for idx, dataset in enumerate(filtered_info, start=start):
         global_index = idx + 1
-        item_id = {"type": "dataset-click", "index": dataset['id']}    # Eindeutige ID für jedes Element
+        item_id = {"type": "dataset-click", "index": dataset['id']}    # Unique ID for each item
 
         list_group_item = dbc.ListGroupItem(
             html.Div([
@@ -156,9 +193,9 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
                         html.Small(f"Dimension: {int(dataset['features'])}×{int(dataset['instances'])}",
                                    className="text-secondary d-block"),
                         html.Small(
-                            f"Ordinale Features: {int(dataset.get('categorical_features', 0))}, Numerische Features: {int(dataset.get('numeric_features', 0))}",
+                            f"Ordinal Features: {int(dataset.get('categorical_features', 0))}, Numeric Features: {int(dataset.get('numeric_features', 0))}",
                             className="text-secondary d-block"),
-                        html.Small(f"Upload-Datum: {dataset['upload'][:10]}", className="text-secondary d-block")
+                        html.Small(f"Upload Date: {dataset['upload'][:10]}", className="text-secondary d-block")
                     ], className="mt-2")
                 ], style={'flex': '1'}),
             ], id=item_id, n_clicks=0, style={'cursor': 'pointer', 'text-decoration': 'none', 'color': 'inherit'}),
@@ -173,13 +210,13 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
         )
         list_group_items.append(list_group_item)
 
-    # Aktualisieren Sie die Statistikfigur basierend auf gefilterten Daten oder anderen Kriterien
+    # Update statistics figure based on filtered data or other criteria
     statistics_figure = create_statistics_figure(filtered_info)
     statistics_style = {'display': 'block'}
 
     return list_group_items, statistics_figure, statistics_style
 
-# Definieren Sie eine Liste von bekannten ordinalen Features, falls zutreffend
+# Define a list of known ordinal features if applicable
 ordinal_features = ['ordinal_feature1', 'ordinal_feature2']
 
 @app.callback(
@@ -189,12 +226,26 @@ ordinal_features = ['ordinal_feature1', 'ordinal_feature2']
     prevent_initial_call=True
 )
 def update_histogram(active_cell, table_data):
+    """
+    Callback function to update the feature histogram based on user selection.
+
+    Args:
+        active_cell (dict): The active cell selected in the feature summary table.
+        table_data (list): Data of the feature summary table.
+
+    Returns:
+        dict: A dictionary containing the figure data and layout for the feature histogram.
+    """
+    # Check if active cell and table data are available
     if not active_cell or not table_data:
         raise PreventUpdate
 
+    # Convert table data to a DataFrame
     df = pd.DataFrame(table_data)
+    # Get the selected feature from the active cell
     selected_feature = df.iloc[active_cell['row']]['Feature']
 
+    # Check if the selected feature exists in the initial DataFrame
     if selected_feature not in initial_df.columns:
         return {
             "data": [],
@@ -205,23 +256,21 @@ def update_histogram(active_cell, table_data):
             }
         }
 
-    # Überprüfen, ob das Feature numerisch ist
+    # Determine the type of figure to create based on the feature type
     if pd.api.types.is_numeric_dtype(initial_df[selected_feature]):
-        fig_type = 'histogram'
-    # Überprüfen, ob das Feature ordinal ist
+        fig_type = 'histogram'  # Numeric feature
     elif selected_feature in ordinal_features:
-        fig_type = 'bar'
-    # Andernfalls behandeln wir das Feature als nominal
+        fig_type = 'bar'  # Ordinal feature
     else:
-        fig_type = 'bar'
+        fig_type = 'bar'  # Treat as nominal feature if not numeric or ordinal
 
-    # Entscheiden, welche Art von Diagramm basierend auf dem Feature-Typ zu erstellen
+    # Create the appropriate type of chart based on the feature type
     if fig_type == 'histogram':
         fig = px.histogram(initial_df, x=selected_feature, title=f'Histogram of {selected_feature}')
     elif fig_type == 'bar':
         fig = px.bar(initial_df, x=selected_feature, title=f'Distribution of {selected_feature}')
 
-    # Optional: Hinzufügen von Quantillinien für numerische Features
+    # Optional: Add quantile lines for numeric features
     if fig_type == 'histogram':
         quantiles = initial_df[selected_feature].quantile([0.25, 0.5, 0.75, 0.97, 0.997]).to_dict()
         for quantile, value in quantiles.items():
@@ -229,63 +278,84 @@ def update_histogram(active_cell, table_data):
                           annotation_text=f"{quantile * 100}th: {value:.2f}", annotation_position="top right",
                           annotation=dict(font_size=10, font_color="green", showarrow=False))
 
+    # Update hover information for traces
     fig.update_traces(hoverinfo='x+y', selector=dict(type='histogram' if fig_type == 'histogram' else 'bar'))
-
     return fig
-
 def prepare_table_data_from_df(df):
-    """Erstellt eine Liste von Dictionaries für die DataTable aus einem DataFrame."""
-    # Erstellt eine Liste von Dictionaries, wobei jedes Dictionary eine Zeile repräsentiert
+    """
+    Creates a list of dictionaries for the DataTable from a DataFrame.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary represents a row in the DataTable.
+    """
+    # Create a list of dictionaries, where each dictionary represents a row
     table_data = [{"Feature": feature} for feature in df.columns]
     return table_data
 
 @app.callback(
-    [Output('detail-section', 'style'),
-     Output('filter-section', 'style'),
-     Output('list_histogram', 'children'),
-     Output('dataset-store', 'data')],
-    [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks'),
-     Input('back-button', 'n_clicks')],
-    prevent_initial_call=True
+    [Output('detail-section', 'style'),       # Output for the detail section style
+     Output('filter-section', 'style'),       # Output for the filter section style
+     Output('list_histogram', 'children'),    # Output for the list histogram children
+     Output('dataset-store', 'data')],        # Output for the dataset store data
+    [Input({'type': 'dataset-click', 'index': ALL}, 'n_clicks'),  # Input trigger for dataset clicks
+     Input('back-button', 'n_clicks')],       # Input trigger for back button click
+    prevent_initial_call=True                  # Prevent initial callback upon page load
 )
 def on_item_click(n_clicks, *args):
+    """
+    Callback function to handle clicks on dataset items and back button.
 
+    Args:
+        n_clicks (list): List of click counts for dataset items.
+        *args: Variable number of additional arguments.
+
+    Returns:
+        tuple: A tuple containing outputs for detail section style, filter section style,
+               list histogram children, and dataset store data.
+    """
+    # Get the callback context
     ctx = dash.callback_context
 
+    # If no input triggered the callback, prevent update
     if not ctx.triggered:
         raise PreventUpdate
 
-    # Ermitteln, welcher Input ausgelöst wurde
+    # Determine which input triggered the callback
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-    # Überprüfen, ob alle n_clicks-Werte null sind
+    # Check if all n_clicks values are None or 0
     if all(click is None or click == 0 for click in n_clicks):
         raise PreventUpdate
     elif 'dataset-click' in button_id:
+        # This is a click on a dataset item
+        dataset_id = json.loads(button_id.split('.')[0])['index']  # Extract dataset ID
 
-        # Dies ist ein Klick auf ein Dataset-Element
-        dataset_id = json.loads(button_id.split('.')[0])['index']
-
+        # Download dataset and retrieve information
         global initial_df
-
         initial_df, dataset_info = download_dataset(dataset_id)
         completeness_graph = create_data_completeness_graph(initial_df)
         summary_records, columns = create_feature_summary_table(initial_df)
 
+        # Define columns for the feature summary table
         columns = [
-    {"name": "Feature", "id": "Feature"},
-    {"name": "Count", "id": "count"},
-    {"name": "Mean", "id": "mean"},
-    {"name": "Std", "id": "std"},
-    {"name": "Min", "id": "min"},
-    {"name": "25%", "id": "25%"},
-    {"name": "50%", "id": "50%"},
-    {"name": "75%", "id": "75%"},
-    {"name": "97%", "id": "97%"},
-    {"name": "99.7%", "id": "99.7%"},
-    {"name": "Max", "id": "max"},
-    {"name": "Mode", "id": "mode"}
-]
+            {"name": "Feature", "id": "Feature"},
+            {"name": "Count", "id": "count"},
+            {"name": "Mean", "id": "mean"},
+            {"name": "Std", "id": "std"},
+            {"name": "Min", "id": "min"},
+            {"name": "25%", "id": "25%"},
+            {"name": "50%", "id": "50%"},
+            {"name": "75%", "id": "75%"},
+            {"name": "97%", "id": "97%"},
+            {"name": "99.7%", "id": "99.7%"},
+            {"name": "Max", "id": "max"},
+            {"name": "Mode", "id": "mode"}
+        ]
+
+        # Define components for the detail view
         detail_components = [
             dbc.ListGroupItem([
                 html.H4("Information of current dataset"),
@@ -301,8 +371,8 @@ def on_item_click(n_clicks, *args):
             dbc.ListGroupItem([
                 dash_table.DataTable(
                     id='feature-summary-table',
-                    columns=columns,  # Verwenden Sie die vorher definierten Spaltenüberschriften
-                    data=summary_records,  # Verwenden Sie hier die durch create_feature_summary_table generierten Daten
+                    columns=columns,  # Use the previously defined column headers
+                    data=summary_records,  # Use the data generated by create_feature_summary_table
                     style_table={'overflowX': 'auto', 'height': '391px'},
                     style_cell={'textAlign': 'left', 'padding': '6px'},
                     style_header={'fontWeight': 'bold'},
@@ -310,20 +380,21 @@ def on_item_click(n_clicks, *args):
                 dcc.Graph(id='feature-histogram')
             ]),
         ]
-        # Mache den Detailbereich sichtbar und verstecke den Filterbereich
+
+        # Make the detail section visible and hide the filter section
         return {'display': 'block'}, {'display': 'none'}, detail_components, {'selected_dataset_id': dataset_id}
 
-    # Detailansicht ausblenden, Filter anzeigen, wenn der Zurück-Button gedrückt wurde
+    # Hide detail view, show filter if back button clicked
     elif 'back-button' in button_id:
         return {'display': 'none'}, {'display': 'block'}, [], dash.no_update
 
 @app.callback(
     [
         Output('current-page', 'children'),
-        Output('current-page', 'style'),  # Steuert die Sichtbarkeit der Seitennummer
-        Output('previous-page', 'style'),  # Steuert die Sichtbarkeit des vorherigen Buttons
-        Output('next-page', 'style'),  # Steuert die Sichtbarkeit des nächsten Buttons
-        Output('pagination-container', 'style')  # Steuert die Sichtbarkeit des Gesamtcontainers
+        Output('current-page', 'style'),      # Controls the visibility of the page number
+        Output('previous-page', 'style'),     # Controls the visibility of the previous button
+        Output('next-page', 'style'),         # Controls the visibility of the next button
+        Output('pagination-container', 'style')  # Controls the visibility of the overall container
     ],
     [
         Input('search_button', 'n_clicks'),
@@ -336,44 +407,64 @@ def on_item_click(n_clicks, *args):
     ]
 )
 def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_text, maxData):
+    """
+    Callback function to update the page number and pagination controls.
+
+    Parameters:
+        - search_clicks: Number of clicks on the search button.
+        - prev_clicks: Number of clicks on the previous page button.
+        - next_clicks: Number of clicks on the next page button.
+        - current_page_text: Text indicating the current page number.
+        - maxData: Maximum number of datasets.
+
+    Returns:
+        - current_page_text: Text indicating the current page number.
+        - page_style: Style for displaying the current page number.
+        - prev_button_style: Style for displaying the previous page button.
+        - next_button_style: Style for displaying the next page button.
+        - container_style: Style for displaying the pagination container.
+    """
+
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
 
-    # Initialisieren Sie die Anzahl der maximalen Daten, falls nicht angegeben
-    maxData = maxData or 100  # Angenommen, 100 als Standardwert, falls nichts eingegeben wird
+    # Initialize the maximum data count if not provided
+    maxData = maxData or 100  # Assume 100 as default value if nothing is provided
 
-    # Berechnen Sie die Gesamtzahl der Seiten basierend auf maxData
+    # Calculate the total number of pages based on maxData
     total_pages = math.ceil(maxData / ITEMS_PER_PAGE)
 
-    # Bestimmen der aktuellen Seite basierend auf dem ausgelösten Ereignis
+    # Determine the current page based on the triggered event
     if 'search_button' in triggered_id:
-        current_page = 1  # Zurücksetzen auf die erste Seite, wenn die Suche ausgelöst wird
+        current_page = 1  # Reset to the first page if search is triggered
     elif 'next-page' in triggered_id and search_clicks:
-        current_page = min(int(current_page_text.split()[1]) + 1,
-                           total_pages) if current_page_text and ' ' in current_page_text else 2
+        current_page = min(int(current_page_text.split()[1]) + 1, total_pages) if current_page_text and ' ' in current_page_text else 2
     elif 'previous-page' in triggered_id and search_clicks:
-        current_page = max(int(current_page_text.split()[1]) - 1,
-                           1) if current_page_text and ' ' in current_page_text else 1
+        current_page = max(int(current_page_text.split()[1]) - 1, 1) if current_page_text and ' ' in current_page_text else 1
     else:
         current_page = int(current_page_text.split()[1]) if current_page_text and ' ' in current_page_text else 1
 
-    # Stil und Sichtbarkeitseinstellungen basierend auf der Anzahl der Klicks
+    # Style and visibility settings based on the number of clicks
     container_style = {'display': 'flex'} if search_clicks else {'display': 'none'}
-    page_style = {'visibility': 'visible', 'display': 'block'} if search_clicks else {'visibility': 'hidden','display': 'none'}
-    prev_button_style = {'visibility': 'visible','display': 'inline-block'} if current_page > 1 and search_clicks else {'visibility': 'hidden', 'display': 'none'}
+    page_style = {'visibility': 'visible', 'display': 'block'} if search_clicks else {'visibility': 'hidden', 'display': 'none'}
+    prev_button_style = {'visibility': 'visible', 'display': 'inline-block'} if current_page > 1 and search_clicks else {'visibility': 'hidden', 'display': 'none'}
     next_button_style = {'visibility': 'visible', 'display': 'inline-block'} if current_page < total_pages and search_clicks else {'visibility': 'hidden', 'display': 'none'}
     page_number_text = f"Page {current_page} of {total_pages}" if search_clicks else ""
 
     return page_number_text, page_style, prev_button_style, next_button_style, container_style
 
-#Datum Konvertierung
+
+# Date Conversion
 def parse_date(date_str):
     """
-    Konvertiert einen Datumsstring in ein datetime-Objekt, wobei nur Jahr, Monat und Tag berücksichtigt werden.
-    Wenn date_str bereits ein datetime.date oder datetime.datetime Objekt ist, wird es direkt zurückgegeben.
+    Convert a date string to a datetime object, considering only the year, month, and day.
+    If date_str is already a datetime.date or datetime.datetime object, it is returned directly.
 
-    :param date_str: Der zu konvertierende Datumsstring oder ein datetime.date/datetime.datetime Objekt.
-    :return: Ein datetime.date Objekt oder None, wenn date_str None ist.
+    Parameters:
+        - date_str: The date string to convert or a datetime.date/datetime.datetime object.
+
+    Returns:
+        - A datetime.date object or None if date_str is None.
     """
     if date_str:
         if isinstance(date_str, datetime):
@@ -382,74 +473,106 @@ def parse_date(date_str):
             return date_str
         else:
             try:
-                # Extrahiert nur das Jahr, den Monat und den Tag
+                # Extract only the year, month, and day
                 parsed_date = datetime.strptime(date_str.split('T')[0], '%Y-%m-%d')
                 return parsed_date.date()
             except ValueError as e:
-                print(f"Error while parsing Data '{date_str}': {e}")
+                print(f"Error while parsing Date '{date_str}': {e}")
     return None
 
-# Funktion zum Abrufen des Upload-Datums eines Datensatzes
+
 def getUploadDate(dataset_id):
     """
-        Zum abrufen des Upload-Datums eines Datensatzes.
+    Retrieves the upload date of a dataset.
 
-        :param dataset_id: Datenatz-ID
-        :return: Gibt das Uploaddatum des Datensets zurück.
-        """
+    Parameters:
+        - dataset_id (int): The ID of the dataset.
+
+    Returns:
+        - upload_date (str or None): The upload date of the dataset if available, else None.
+    """
     try:
-        dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
+        # Retrieve the dataset information without downloading data, qualities, or features metadata
+        dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
+                                              download_features_meta_data=False)
+
+        # Return the upload date of the dataset
         return dataset.upload_date
     except Exception as e:
+        # Print an error message if there's an exception during dataset retrieval
         print(f"Error on Dataset: {dataset_id}: {e}")
         return None
 
-# Function to filter datasets by attribute types
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
-    # TODO Filter nochmal überprüfen und testen
+    """
+    Processes datasets based on specified filters.
+
+    Parameters:
+        - start_date (str): Start date for filtering datasets.
+        - end_date (str): End date for filtering datasets.
+        - features_range (tuple): Range of features count (min, max) for filtering datasets.
+        - numerical_features_range (tuple): Range of numerical features count (min, max) for filtering datasets.
+        - categorical_features_range (tuple): Range of categorical features count (min, max) for filtering datasets.
+        - data_points_range (tuple): Range of data points count (min, max) for filtering datasets.
+        - limit (int): Maximum number of datasets to be processed.
+
+    Returns:
+        - filtered_datasets (list): List of dictionaries containing filtered dataset information.
+    """
+
+    # Set a default limit if not provided
     if limit is None:
         limit = float('inf')
 
+    # Get the list of dataset IDs
     dataset_ids = datasets['did'].tolist()
 
-    if start_date and end_date and start_date > end_date:
-        raise ValueError("Start date must be before end date.")
-
+    # Initialize a counter for processed datasets
     count = 0
+
+    # Initialize an empty list to store filtered datasets
     filtered_datasets = []
+
+    # Iterate through each dataset ID
     for dataset_id in dataset_ids:
 
-        global stop
+        # Check if the processing needs to be stopped
+        if count >= limit:
+            break
 
+        # Get the upload date of the dataset
         upload_date = getUploadDate(dataset_ids[dataset_id])
 
+        # Parse start and end dates
         start_date = parse_date(start_date)
         end_date = parse_date(end_date)
 
-        if count >= limit or stop == True:
-            break
+        # Continue to the next dataset if the upload date is not available
+        if not upload_date:
+            continue
 
-        if upload_date:
-            dataset_date = parse_date(upload_date)
+        # Parse the dataset date
+        dataset_date = parse_date(upload_date)
 
-            if start_date and dataset_date < start_date:
-                continue
-            if end_date and dataset_date > end_date:
-                continue
+        # Apply filtering conditions
+        if ((not start_date or start_date <= dataset_date) and
+                (not end_date or end_date >= dataset_date)):
 
+            # Retrieve dataset information from the dataset list
             num_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfFeatures'].iloc[0]
             num_numeric_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfNumericFeatures'].iloc[0]
             num_categorical_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfSymbolicFeatures'].iloc[0]
             num_instances = datasets.loc[datasets['did'] == dataset_id, 'NumberOfInstances'].iloc[0]
             name = datasets.loc[datasets['did'] == dataset_id, 'name'].iloc[0]
 
-            if ((not start_date or start_date <= dataset_date) and
-                    (not end_date or end_date >= dataset_date) and
-                    (not features_range or (features_range[0] <= num_features <= features_range[1])) and
+            # Check if the dataset satisfies all filtering criteria
+            if ((not features_range or (features_range[0] <= num_features <= features_range[1])) and
                     (not numerical_features_range or (numerical_features_range[0] <= num_numeric_features <= numerical_features_range[1])) and
                     (not categorical_features_range or (categorical_features_range[0] <= num_categorical_features <= categorical_features_range[1])) and
                     (not data_points_range or (data_points_range[0] <= num_instances <= data_points_range[1]))):
+
+                # Append the dataset information to the filtered datasets list
                 filtered_datasets.append({
                     'id': dataset_id,
                     'name': name,
@@ -457,57 +580,113 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
                     'features': num_features,
                     'numeric_features': num_numeric_features,
                     'categorical_features': num_categorical_features,
-                    'upload' : upload_date
+                    'upload': upload_date
                 })
                 count += 1
 
     return filtered_datasets
 
-# Callbacks for toggling intervals and collapsing items
+
+# Callback for toggling intervals based on search button clicks
 @app.callback(
-    Output('interval-component', 'disabled'),
-    [Input('search_button', 'n_clicks')],
-    [State('interval-component', 'disabled')]
+    Output('interval-component', 'disabled'),  # Output: Disabling the interval component
+    [Input('search_button', 'n_clicks')],  # Input: Clicks on the search button
+    [State('interval-component', 'disabled')]  # State: Current disabled state of the interval component
 )
 def toggle_interval(n_clicks, disabled):
-    if n_clicks:
-        return False
-    return True
+    """
+    Callback function to toggle the interval component based on search button clicks.
 
-# Callback-Funktion
+    Args:
+        n_clicks (int): The number of clicks on the search button.
+        disabled (bool): The current disabled state of the interval component.
+
+    Returns:
+        bool: True if the interval component should be disabled, False otherwise.
+    """
+    if n_clicks:
+        return False  # Enable interval component if search button is clicked
+    return True  # Disable interval component if search button is not clicked
+
+# Callback function to update output for numerical features range
 @app.callback(
-    Output('output_numerical_features', 'children'),
-    [Input('range_numerical_features', 'value')]
+    Output('output_numerical_features', 'children'),  # Output: Display for selected numerical features range
+    [Input('range_numerical_features', 'value')]  # Input: Selected range of numerical features
 )
 def update_output(value):
-    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
+    """
+    Callback function to update the displayed range of selected numerical features.
 
-# Callback-Funktion für Anzahl der Features
+    Args:
+        value (tuple): The selected range of numerical features.
+
+    Returns:
+        str: A string indicating the selected range of numerical features.
+    """
+    return f"Selected range: {value[0]} to {value[1]}"
+
+# Callback function to update output for total features range
 @app.callback(
-    Output('output_features', 'children'),
-    [Input('range_features', 'value')]
+    Output('output_features', 'children'),  # Output: Display for selected total features range
+    [Input('range_features', 'value')]  # Input: Selected range of total features
 )
 def update_output_features(value):
-    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
+    """
+    Callback function to update the displayed range of selected total features.
 
-# Callback-Funktion für Anzahl der Kategorialen Features
+    Args:
+        value (tuple): The selected range of total features.
+
+    Returns:
+        str: A string indicating the selected range of total features.
+    """
+    return f"Selected range: {value[0]} to {value[1]}"
+
+# Callback function to update output for categorical features range
 @app.callback(
-    Output('output_categorical_features', 'children'),
-    [Input('range_categorical_features', 'value')]
+    Output('output_categorical_features', 'children'),  # Output: Display for selected categorical features range
+    [Input('range_categorical_features', 'value')]  # Input: Selected range of categorical features
 )
 def update_output_categorical_features(value):
-    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
+    """
+    Callback function to update the displayed range of selected categorical features.
 
-# Callback-Funktion für Anzahl Datenpunkte
+    Args:
+        value (tuple): The selected range of categorical features.
+
+    Returns:
+        str: A string indicating the selected range of categorical features.
+    """
+    return f"Selected range: {value[0]} to {value[1]}"
+
+# Callback function to update output for data points range
 @app.callback(
-    Output('output_data_points', 'children'),
-    [Input('range_data_points', 'value')]
+    Output('output_data_points', 'children'),  # Output: Display for selected data points range
+    [Input('range_data_points', 'value')]  # Input: Selected range of data points
 )
 def update_output_data_points(value):
-    return f"Ausgewählter Bereich: {value[0]} bis {value[1]}"
+    """
+    Callback function to update the displayed range of selected data points.
 
-######### Dennis Code ##############
+    Args:
+        value (tuple): The selected range of data points.
+
+    Returns:
+        str: A string indicating the selected range of data points.
+    """
+    return f"Selected range: {value[0]} to {value[1]}"
+
 def download_dataset(dataset_id=None):
+    """
+    Downloads a dataset based on the provided dataset_id.
+
+    Args:
+        dataset_id (int): The ID of the dataset to download.
+
+    Returns:
+        df (DataFrame): DataFrame containing the dataset.
+        dataset_info (dict): Information about the downloaded dataset.
+    """
     dataset_info = {}
     if dataset_id:
         try:
@@ -538,9 +717,18 @@ def download_dataset(dataset_id=None):
     return df, dataset_info
 
 def create_data_completeness_graph(df):
+    """
+    Creates a pie chart to visualize the completeness of the provided DataFrame.
+
+    Args:
+        df (DataFrame): DataFrame containing the dataset.
+
+    Returns:
+        fig (plotly.graph_objs.Figure): Plotly figure representing the data completeness.
+    """
     if df.empty:
-        return go.Figure()  # Gibt eine leere Figur zurück, wenn df leer ist
-    total_values = np.prod(df.shape)  # Verwende np.prod() statt np.product()
+        return go.Figure()  # Returns an empty figure if df is empty
+    total_values = np.prod(df.shape)  # Use np.prod() instead of np.product()
     missing_values = df.isnull().sum().sum()
     complete_values = total_values - missing_values
     fig = go.Figure(data=[go.Pie(labels=['Complete data', 'Missing data fields'],
@@ -549,7 +737,15 @@ def create_data_completeness_graph(df):
     return fig
 
 def format_number(value):
-    """Formatiert eine Zahl mit bis zu vier Nachkommastellen, entfernt jedoch nachfolgende Nullen."""
+    """
+    Formats a number with up to four decimal places, but removes trailing zeros.
+
+    Args:
+        value: The number to format.
+
+    Returns:
+        str: The formatted number.
+    """
     try:
         float_value = float(value)
         if float_value.is_integer():
@@ -560,56 +756,86 @@ def format_number(value):
         return value
 
 def create_feature_summary_table(df):
-    if df.empty:
-        return [], []  # Gibt leere Werte zurück, wenn df leer ist
+    """
+    Creates a summary table containing descriptive statistics for the provided DataFrame.
 
-    # Berechnung der deskriptiven Statistiken
+    Args:
+        df (DataFrame): DataFrame containing the dataset.
+
+    Returns:
+        summary_records (list of dict), columns (list of dict): Summary records and columns for DataTable.
+    """
+    if df.empty:
+        return [], []  # Returns empty values if df is empty
+
+    # Calculate descriptive statistics
     summary = df.describe(percentiles=[.25, .5, .75, .97, .997], include='all').transpose()
 
-    # Modus für jede Spalte berechnen
+    # Calculate mode for each column
     modes = df.mode().iloc[0]
     summary['mode'] = [modes[col] if col in modes else "N/A" for col in df.columns]
 
-    # Formatieren der numerischen Werte
+    # Format numerical values
     for col in summary.columns:
         summary[col] = summary[col].apply(format_number)
 
-    # Anpassen der Spaltennamen für die Darstellung in der DataTable
+    # Adjust column names for display in DataTable
     summary.reset_index(inplace=True)
     summary.rename(columns={'index': 'Feature'}, inplace=True)
 
     summary_records = summary.to_dict('records')
 
-    # Definieren der Spalten für die DataTable
+    # Define columns for the DataTable
     columns = [{"name": col, "id": col} for col in summary.columns]
 
     return summary_records, columns
 
 ########################################################################################
-
-# Überprüfen Sie, ob der Cache-Ordner existiert
+# Check if the cache folder exists
 def check_cache_folder_exists():
-    return os.path.exists('cache')  # Ändern Sie den Pfad zu Ihrem cache-Ordner nach Bedarf
+    """
+    Checks if the cache folder exists.
 
-# Callback-Funktion für die Aktualisierung des Fortschrittsbalkens und die Sichtbarkeit der Ladesektion
+    Returns:
+        bool: True if the cache folder exists, False otherwise.
+    """
+    return os.path.exists('cache')  # Modify the path to your cache folder as needed
+
+# Callback function for updating the progress bar visibility and the visibility of the loading section
 @app.callback(
     [
         Output('progress_bar', 'value'),
         Output('progress_bar', 'label'),  # Add label output
         Output('loading-section', 'style'),
         Output('filter-section', 'style', allow_duplicate=True),
-        Output('cache-status-store', 'data')# Fügen Sie eine neue Output-Komponente hinzu
+        Output('cache-status-store', 'data')  # Add a new Output component
     ],
     [
         Input('progress_interval', 'n_intervals'),
-        Input('cache-status-store', 'data')  # Verwenden der gespeicherten Cache-Status-Information
+        Input('cache-status-store', 'data')  # Use the stored cache status information
     ],
     [
-        State('loading-section', 'style'),  # Zustand des aktuellen Stils der Ladesektion
-        State('filter-section', 'style')  # Zustand des aktuellen Stils der Filtersektion
+        State('loading-section', 'style'),  # State of the current loading section style
+        State('filter-section', 'style')  # State of the current filter section style
     ], prevent_initial_call=True
 )
 def update_progress_visibility_and_filter_visibility(n, cache_status, loading_style, filter_style):
+    """
+    Updates the progress bar visibility and the visibility of the loading section.
+
+    Args:
+        n (int): Number of intervals.
+        cache_status (dict): Cache status information.
+        loading_style (dict): Current style of the loading section.
+        filter_style (dict): Current style of the filter section.
+
+    Returns:
+        new_value (int): New value for the progress bar.
+        label (str): New label for the progress bar.
+        new_loading_style (dict): New style for the loading section.
+        new_filter_style (dict): New style for the filter section.
+        new_cache_status (dict): New cache status information.
+    """
     # Check if the cache folder exists
     cache_exists = check_cache_folder_exists()
 
@@ -643,16 +869,31 @@ def update_progress_visibility_and_filter_visibility(n, cache_status, loading_st
         new_filter_style['display'] = 'none' if new_value < 100 else 'block'
 
     return new_value, f"{new_value}%", new_loading_style, new_filter_style, new_cache_status
-
 # Update your callback function
 @app.callback(
-    [Output('download-modal', 'is_open'),  # Um das Modal zu öffnen oder zu schließen
-     Output('download-modal-body', 'children')],  # Um die Nachricht im Modal zu aktualisieren
-    Input('download-button', 'n_clicks'),
-    State('dataset-store', 'data'),
-    prevent_initial_call=True  # Verhindert, dass das Modal beim ersten Laden der Seite angezeigt wird
+    [
+        Output('download-modal', 'is_open'),  # To open or close the modal
+        Output('download-modal-body', 'children')  # To update the message in the modal
+    ],
+    [
+        Input('download-button', 'n_clicks')
+    ],
+    [
+        State('dataset-store', 'data')
+    ],
+    prevent_initial_call=True  # Prevents the modal from being displayed on the first load of the page
 )
 def download_set(n_clicks, store_data):
+    """
+    Callback function to handle dataset download.
+
+    Args:
+        n_clicks (int): Number of clicks on the download button.
+        store_data (dict): Data stored in the dataset store.
+
+    Returns:
+        tuple: Tuple containing the open/close status of the modal and the message to display.
+    """
     if n_clicks is None or store_data is None:
         raise dash.exceptions.PreventUpdate
 
@@ -670,16 +911,31 @@ def download_set(n_clicks, store_data):
     file_path = os.path.join(folder_name, f"dataset_{dataset_id}.csv")
     df.to_csv(file_path, index=False)
 
-    # Geben Sie die neue Nachricht für das Modal und den Befehl zum Öffnen des Modals zurück
+    # Return the new message for the modal and the command to open the modal
     return True, f'Dataset {dataset_id} has been saved as CSV: {file_path}'
 
 # Callback to close the modal
 @app.callback(
     Output('download-modal', 'is_open', allow_duplicate=True),
-    Input('close-modal', 'n_clicks'),
-    State('download-modal', 'is_open'), prevent_initial_call=True
+    [
+        Input('close-modal', 'n_clicks')
+    ],
+    [
+        State('download-modal', 'is_open')
+    ],
+    prevent_initial_call=True
 )
 def close_modal(n_clicks, is_open):
+    """
+    Callback function to close the modal.
+
+    Args:
+        n_clicks (int): Number of clicks on the close button.
+        is_open (bool): Current open status of the modal.
+
+    Returns:
+        bool: New open status of the modal.
+    """
     if n_clicks:
         return False
     return is_open
@@ -698,9 +954,10 @@ modal = dbc.Modal(
 
 # App Layout
 app.layout = dbc.Container([
+    # Loading section displayed at app start
     html.Div(
         id='loading-section',
-        style={'display': 'block'},
+        style={'display': 'block'},  # Initially visible
         children=[
             dbc.Row(
                 dbc.Col(
@@ -721,7 +978,7 @@ app.layout = dbc.Container([
         ],
         className="mt-5"
     ),
-    # Verstecke diesen Teil standardmäßig durch Setzen von 'display': 'none' im style
+    # Detail section displayed after data loading
     html.Div(id='detail-section', style={'display': 'none'}, children=[
         dbc.ListGroup(id='list_histogram', flush=True, className="mt-4"),
         html.Button("Back", id='back-button', className="btn btn-secondary mt-3"),
@@ -729,11 +986,13 @@ app.layout = dbc.Container([
         modal,
         dcc.Store(id='dataset-store', storage_type='session'),
     ]),
+    # Filter section for filtering data
     html.Div(id='filter-section', style={'display': 'block'}, children=[
         dbc.Card([
             dbc.CardHeader("Filter"),
             dbc.CardBody([
                 dbc.Row([
+                    # Filter for upload date
                     dbc.Col([
                         dbc.Card([
                             dbc.CardHeader("Upload-Date"),
@@ -750,6 +1009,7 @@ app.layout = dbc.Container([
                             ]),
                         ]),
                     ], md=5),
+                    # Filter for number of data points
                     dbc.Col([
                         dbc.Card([
                             dbc.CardHeader("Number of Data Points"),
@@ -783,7 +1043,7 @@ app.layout = dbc.Container([
                             ]),
                         ]),
                     ], md=5),
-
+                    # Filter for maximum datasets
                     dbc.Col([
                         dbc.Card([
                             dbc.CardHeader("Max Datasets"),
@@ -806,6 +1066,7 @@ app.layout = dbc.Container([
                         ]),
                     ], md=2),
                 ], className="mb-4"),
+                # Filter for number of features
                 dbc.Row([
                     dbc.Col([
                         dbc.Card([
@@ -840,6 +1101,7 @@ app.layout = dbc.Container([
                             ]),
                         ]),
                     ], md=4),
+                    # Filter for number of numerical features
                     dbc.Col([
                         dbc.Card([
                             dbc.CardHeader("Number of Numerical Features"),
@@ -873,6 +1135,7 @@ app.layout = dbc.Container([
                             ]),
                         ]),
                     ], md=4),
+                    # Filter for number of categorical features
                     dbc.Col([
                         dbc.Card([
                             dbc.CardHeader("Number of Categorical Features"),
@@ -907,6 +1170,7 @@ app.layout = dbc.Container([
                         ]),
                     ], md=4),
                 ], className="mb-4"),
+                # Search button
                 dbc.Row([
                     dbc.Col([
                         dbc.Row([
@@ -916,49 +1180,51 @@ app.layout = dbc.Container([
                 ]),
             ])
         ]),
-        dbc.Spinner(  # Fügen Sie den Spinner hier ein
-            children=[  # Beginn der Kinder, die geladen werden
+        # Spinner component to indicate data processing
+        dbc.Spinner(
+            children=[
                 dcc.Graph(id='statistics_figure', style={'display': 'none'}),
                 dbc.ListGroup(id='list_group', flush=True, className="mt-4")
             ],
-            size="lg",  # Größe des Spinners
-            color="primary",  # Farbe des Spinners
-            type="border",  # Art des Spinners, z.B. 'border' oder 'grow'
-            fullscreen=False,  # Ob der Spinner den ganzen Bildschirm abdecken soll
+            size="lg",
+            color="primary",
+            type="border",
+            fullscreen=False,
         ),
         dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
         html.Div(id='list-container', className="list-container mt-4"),
+        # Pagination buttons
         html.Div([
             dbc.Button(
-                html.Span(className="fas fa-chevron-left"),  # FontAwesome Pfeil nach links
+                html.Span(className="fas fa-chevron-left"),
                 id='previous-page',
                 n_clicks=0,
-                className="mr-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
+                className="mr-2 btn btn-lg",
                 style={
-                    'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
-                    'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
+                    'visibility': 'hidden',
+                    'backgroundColor': '#78909C',
                     'color': 'white',
-                    'borderRadius': '20px',  # Abgerundete Ecken
-                    'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
+                    'borderRadius': '20px',
+                    'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'
                 }
             ),
             html.Span(
                 id='current-page',
-                children="",  # Der Text wird durch einen Dash Callback gesetzt
-                className="px-3",  # Fügen Sie etwas Padding hinzu für besseren Abstand
-                style={'fontSize': '20px'}  # Größere Schriftart für die Seitenzahl
+                children="",
+                className="px-3",
+                style={'fontSize': '20px'}
             ),
             dbc.Button(
-                html.Span(className="fas fa-chevron-right"),  # FontAwesome Pfeil nach rechts
+                html.Span(className="fas fa-chevron-right"),
                 id='next-page',
                 n_clicks=0,
-                className="ml-2 btn btn-lg",  # Entfernen Sie btn-primary für ein angepasstes Design
+                className="ml-2 btn btn-lg",
                 style={
-                    'visibility': 'hidden',  # Anfänglich unsichtbar, wird durch Dash Callbacks gesteuert
-                    'backgroundColor': '#78909C',  # Dunkelgraue Farbe, passen Sie diese an Ihr Design an
+                    'visibility': 'hidden',
+                    'backgroundColor': '#78909C',
                     'color': 'white',
-                    'borderRadius': '20px',  # Abgerundete Ecken
-                    'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'  # Schatten für Tiefe
+                    'borderRadius': '20px',
+                    'boxShadow': '0 4px 8px rgba(0, 0, 0, 0.2)'
                 }
             )
         ], className="d-flex justify-content-center align-items-center mt-4", id='pagination-container'),
