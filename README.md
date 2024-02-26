@@ -1,6 +1,6 @@
 # OpenML Dataset Explorer
 
-![OpenML Logo](img.png)
+![OpenML Logo](picture/Screenshot.png)
 
 This project aims to provide an interface for exploring datasets hosted on OpenML (https://www.openml.org/search?type=data&sort=runs&status=active). The interface allows users to search for datasets based on various criteria and visualize the search results. It utilizes Python for accessing OpenML data and Dash for creating the web interface.
 
