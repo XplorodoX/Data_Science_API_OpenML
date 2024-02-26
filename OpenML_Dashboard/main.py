@@ -595,6 +595,7 @@ def check_cache_folder_exists():
 @app.callback(
     [
         Output('progress_bar', 'value'),
+        Output('progress_bar', 'label'),  # Add label output
         Output('loading-section', 'style'),
         Output('filter-section', 'style', allow_duplicate=True),
         Output('cache-status-store', 'data')# Fügen Sie eine neue Output-Komponente hinzu
@@ -609,44 +610,47 @@ def check_cache_folder_exists():
     ], prevent_initial_call=True
 )
 def update_progress_visibility_and_filter_visibility(n, cache_status, loading_style, filter_style):
-    # Überprüfen Sie, ob der Cache-Ordner existiert
+    # Check if the cache folder exists
     cache_exists = check_cache_folder_exists()
 
-    # Initialisieren Sie die Ausgabewerte
+    # Initialize the output values
     new_value = 0
     new_loading_style = loading_style.copy()
     new_filter_style = filter_style.copy()
     new_cache_status = cache_status if cache_status else {'updated': False}
 
-    # Bei Programmneustart, wenn Cache existiert und noch kein Update signalisiert wurde
+    # When the program restarts, if cache exists and no update has been signaled
     if cache_exists and n == 0:
         new_value = 100
         new_loading_style['display'] = 'none'
         new_filter_style['display'] = 'block'
         new_cache_status['updated'] = True
-        return new_value, new_loading_style, new_filter_style, new_cache_status
+        return new_value, f"{new_value}%", new_loading_style, new_filter_style, new_cache_status
     elif cache_exists and new_cache_status.get('updated'):
-        # Wenn der Cache existiert und bereits aktualisiert wurde, verhindern Sie ein Update
+        # If the cache exists and has already been updated, prevent an update
         raise PreventUpdate
 
-    # Wenn der Cache-Ordner existiert, aber die Aktion noch nicht durchgeführt wurde
+    # If the cache folder exists, but the action has not yet been performed
     if cache_exists and not new_cache_status.get('updated'):
         new_value = 100
         new_loading_style['display'] = 'none'
         new_filter_style['display'] = 'block'
-        new_cache_status['updated'] = True  # Markieren, dass die Aktion durchgeführt wurde
+        new_cache_status['updated'] = True  # Mark that the action has been performed
     elif not cache_exists:
-        # Logik für den Fall, dass der Cache nicht existiert
+        # Logic for when the cache does not exist
         new_value = min((n * 10), 100)
         new_loading_style['display'] = 'block' if new_value < 100 else 'none'
         new_filter_style['display'] = 'none' if new_value < 100 else 'block'
 
-    return new_value, new_loading_style, new_filter_style, new_cache_status
+    return new_value, f"{new_value}%", new_loading_style, new_filter_style, new_cache_status
 
+# Update your callback function
 @app.callback(
-    Output('detail-section', 'children'),
+    [Output('download-modal', 'is_open'),  # Um das Modal zu öffnen oder zu schließen
+     Output('download-modal-body', 'children')],  # Um die Nachricht im Modal zu aktualisieren
     Input('download-button', 'n_clicks'),
-    State('dataset-store', 'data')
+    State('dataset-store', 'data'),
+    prevent_initial_call=True  # Verhindert, dass das Modal beim ersten Laden der Seite angezeigt wird
 )
 def download_set(n_clicks, store_data):
     if n_clicks is None or store_data is None:
@@ -656,21 +660,41 @@ def download_set(n_clicks, store_data):
     if dataset_id is None:
         raise dash.exceptions.PreventUpdate
 
-    # Ersetzen Sie diesen Teil, um das Dataset lokal zu speichern
-    folder_name = 'Downloaded_Dataset'  # Definieren Sie den Ordnernamen
-    if not os.path.exists(folder_name):  # Erstellen Sie den Ordner, wenn er nicht existiert
+    folder_name = 'Downloaded_Dataset'
+    if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
-    # Dataset von OpenML herunterladen
     dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False, download_features_meta_data=False)
     df, _, _, _ = dataset.get_data(target=dataset.default_target_attribute)
 
-    # Speichern Sie das Dataset als CSV in dem neuen Ordner
     file_path = os.path.join(folder_name, f"dataset_{dataset_id}.csv")
     df.to_csv(file_path, index=False)
 
-    # Hinweis für den Benutzer erstellen
-    return f'Dataset {dataset_id} wurde als CSV gespeichert: {file_path}'
+    # Geben Sie die neue Nachricht für das Modal und den Befehl zum Öffnen des Modals zurück
+    return True, f'Dataset {dataset_id} has been saved as CSV: {file_path}'
+
+# Callback to close the modal
+@app.callback(
+    Output('download-modal', 'is_open', allow_duplicate=True),
+    Input('close-modal', 'n_clicks'),
+    State('download-modal', 'is_open'), prevent_initial_call=True
+)
+def close_modal(n_clicks, is_open):
+    if n_clicks:
+        return False
+    return is_open
+
+modal = dbc.Modal(
+    [
+        dbc.ModalHeader(dbc.ModalTitle("Download Complete")),
+        dbc.ModalBody("Your dataset has been successfully downloaded.", id='download-modal-body'),  # Add the ID here
+        dbc.ModalFooter(
+            dbc.Button("Close", id="close-modal", className="ms-auto", n_clicks=0)
+        ),
+    ],
+    id="download-modal",
+    is_open=False,  # This ensures the modal is not shown initially
+)
 
 # App Layout
 app.layout = dbc.Container([
@@ -681,9 +705,10 @@ app.layout = dbc.Container([
             dbc.Row(
                 dbc.Col(
                     [
-                        html.H4("Daten werden geladen, bitte warten...", className="text-center mb-3"),
-                        dbc.Progress(id='progress_bar', value=0, striped=True, animated=True, style={"height": "30px"}),
-                        html.P("Der Ladevorgang kann einige Momente dauern. Vielen Dank für Ihre Geduld.",
+                        html.H4("Data is loading, please wait...", className="text-center mb-3"),
+                        dbc.Progress(id='progress_bar', value=0, striped=True, animated=True, label="0%",
+                                     style={"height": "30px"}),
+                        html.P("The data must be pre-cached, which can take 5-10 minutes. Thank you for your patience.",
                                className="text-center mt-3"),
                         dcc.Store(id='cache-status-store', storage_type='session'),
                         dcc.Interval(id='progress_interval', interval=1000, n_intervals=0)
@@ -691,7 +716,6 @@ app.layout = dbc.Container([
                     ],
                     width={"size": 10, "offset": 1},
                     style={'max-width': '800px', 'margin': 'auto'}
-                    # Stellen Sie sicher, dass dies korrekt innerhalb von dbc.Col ist
                 )
             )
         ],
@@ -702,6 +726,7 @@ app.layout = dbc.Container([
         dbc.ListGroup(id='list_histogram', flush=True, className="mt-4"),
         html.Button("Back", id='back-button', className="btn btn-secondary mt-3"),
         html.Button("Download", id='download-button', className="btn btn-secondary mt-3"),
+        modal,
         dcc.Store(id='dataset-store', storage_type='session'),
     ]),
     html.Div(id='filter-section', style={'display': 'block'}, children=[
