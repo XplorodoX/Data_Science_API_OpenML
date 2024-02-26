@@ -16,6 +16,8 @@ import Helper as helper
 import json
 import dash
 
+# Code Berreich Florian Merlau
+
 # Set the Cache Directory
 openml.config.set_root_cache_directory('cache')
 
@@ -522,6 +524,7 @@ def getUploadDate(dataset_id):
         print(f"Error on Dataset: {dataset_id}: {e}")
         return None
 
+# TODO Verbessern!
 def check_input_ranges(*range_labels_max):
     """
     Checks if the input ranges are valid and do not exceed the specified maximum values.
@@ -860,6 +863,8 @@ def create_feature_summary_table(df):
 
 
 ########################################################################################
+
+
 # Check if the cache folder exists
 def check_cache_folder_exists():
     """
@@ -880,6 +885,8 @@ def cache_all_openml_datasets():
         # Fortschritt aktualisieren
         progress = i / total_datasets * 100
         yield progress
+
+#TODO Progressbar/init Cache implementieren!!!!
 
 # Callback function for updating the progress bar visibility and the visibility of the loading section
 @app.callback(
@@ -965,6 +972,8 @@ def update_progress_visibility_and_filter_visibility(n, cache_status, loading_st
     ],
     prevent_initial_call=True  # Prevents the modal from being displayed on the first load of the page
 )
+
+
 def download_set(n_clicks, store_data):
     """
     Callback function to handle dataset download.
@@ -1023,7 +1032,6 @@ def close_modal(n_clicks, is_open):
     if n_clicks:
         return False
     return is_open
-
 
 modal = dbc.Modal(
     [
