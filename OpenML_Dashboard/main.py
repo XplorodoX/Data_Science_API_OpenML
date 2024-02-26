@@ -96,7 +96,6 @@ def create_statistics_figure(filtered_info):
         yaxis_title='Number of features',
         barmode='group'  # Group bars to enable comparison
     )
-
     return fig
 
 
@@ -137,7 +136,6 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
         raise PreventUpdate
 
     list_group_items = []
-    statistics_style = {'display': 'none'}
 
     # Create ranges from min and max values for validation
     features_range = (min_features, max_features)
@@ -145,12 +143,12 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     categorical_features_range = (min_categorical_features, max_categorical_features)
     data_points_range = (min_data_points, max_data_points)
 
-    # Correctly formatted call to the modified check_input_ranges function
+    # Example call to the modified check_input_ranges function
     valid, messages = check_input_ranges(
-        ((min_features, max_features), 'Features range'),
-        ((min_numerical_features, max_numerical_features), 'Numerical Features range'),
-        ((min_categorical_features, max_categorical_features), 'Categorical Features range'),
-        ((min_data_points, max_data_points), 'Data Points range')
+        ((min_features, max_features), 'Features range', max_features),
+        ((min_numerical_features, max_numerical_features), 'Numerical Features range', max_numeric_features),
+        ((min_categorical_features, max_categorical_features), 'Categorical Features range', max_categorical_features),
+        ((min_data_points, max_data_points), 'Data Points range', max_instances)
     )
 
     # If the validation fails, return error message and open modal
@@ -524,25 +522,27 @@ def getUploadDate(dataset_id):
         print(f"Error on Dataset: {dataset_id}: {e}")
         return None
 
-def check_input_ranges(*ranges):
+def check_input_ranges(*range_labels_max):
     """
-    Checks if the input ranges are valid.
+    Checks if the input ranges are valid and do not exceed the specified maximum values.
 
     Parameters:
-        - ranges (tuple): Variable number of tuples, each representing a range in the form (min, max).
+        - range_labels_max (tuple): Variable number of tuples, each representing a range in the form ((min, max), label, max_allowed).
 
     Returns:
-        - valid (bool): True if all ranges are valid, False otherwise.
-        - messages (list): List of error messages for invalid ranges.
+        - valid (bool): True if all ranges are valid and within limits, False otherwise.
+        - messages (list): List of error messages for invalid or exceeded ranges.
     """
     valid = True
     messages = []
 
     # Iterate through each range
-    for index, (range_tuple, label) in enumerate(ranges):
-        # Unpack the tuple
-        if range_tuple is not None:  # Only check non-None ranges
-            min_val, max_val = range_tuple
+    for index, (range_tuple, label, max_allowed) in enumerate(range_labels_max):
+        # Check if the range is non-None and unpack it
+        if range_tuple is not None:
+            # Unpack range_tuple and ensure both values are not None
+            min_val, max_val = (range_tuple[0] if range_tuple[0] is not None else 0,
+                                range_tuple[1] if range_tuple[1] is not None else 0)
 
             # Check if the range is valid
             if min_val > max_val:
@@ -550,8 +550,16 @@ def check_input_ranges(*ranges):
                 messages.append(
                     f"Error in {label}: Minimum value ({min_val}) is greater than maximum value ({max_val}).")
 
-    return valid, messages
+            # Check if max_allowed is not None and if the max_val does not exceed the max_allowed
+            if max_allowed is not None and max_val > max_allowed:
+                valid = False
+                messages.append(
+                    f"Error in {label}: Maximum value ({max_val}) exceeds the allowed maximum of {max_allowed}.")
+            elif max_allowed is None:  # Handle the case where max_allowed is None if necessary
+                # You can add custom logic here, for example, set valid to False, or ignore this case.
+                pass  # Currently does nothing, adjust based on your needs
 
+    return valid, messages
 
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
