@@ -199,7 +199,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
                         html.Small(f"Dimension: {int(dataset['features'])}×{int(dataset['instances'])}",
                                    className="text-secondary d-block"),
                         html.Small(
-                            f"Ordinal Features: {int(dataset.get('categorical_features', 0))}, Numeric Features: {int(dataset.get('numeric_features', 0))}",
+                            f"Categorical Features: {int(dataset.get('categorical_features', 0))}, Numeric Features: {int(dataset.get('numeric_features', 0))}",
                             className="text-secondary d-block"),
                         html.Small(f"Upload Date: {dataset['upload'][:10]}", className="text-secondary d-block")
                     ], className="mt-2")
@@ -223,8 +223,8 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     return list_group_items, statistics_figure, statistics_style
 
 
-# Define a list of known ordinal features if applicable
-ordinal_features = ['ordinal_feature1', 'ordinal_feature2']
+# Define a list of known categorical features if applicable
+categorical_features = ['categorical_feature1', 'categorical_feature2']
 
 
 @app.callback(
@@ -267,10 +267,10 @@ def update_histogram(active_cell, table_data):
     # Determine the type of figure to create based on the feature type
     if pd.api.types.is_numeric_dtype(initial_df[selected_feature]):
         fig_type = 'histogram'  # Numeric feature
-    elif selected_feature in ordinal_features:
-        fig_type = 'bar'  # Ordinal feature
+    elif selected_feature in categorical_features:
+        fig_type = 'bar'  # Categorical feature
     else:
-        fig_type = 'bar'  # Treat as nominal feature if not numeric or ordinal
+        fig_type = 'bar'  # Treat as nominal feature if not numeric or categorical
 
     # Create the appropriate type of chart based on the feature type
     if fig_type == 'histogram':
