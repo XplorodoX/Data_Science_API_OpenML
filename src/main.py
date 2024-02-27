@@ -16,8 +16,6 @@ import Helper as helper
 import json
 import dash
 
-# Code Berreich Florian Merlau
-
 # Set the Cache Directory
 openml.config.set_root_cache_directory('cache') # <- Set the cache directory
 
@@ -31,6 +29,7 @@ ITEMS_PER_PAGE = 10  # <- Max number of items per page
 filtered_data = []  # All filtered data
 initial_df = pd.DataFrame()  # Initialize df here to ensure it's always defined
 
+# (FM)
 class DatasetMetrics:
     def __init__(self):
         # Initialize maximum values
@@ -58,7 +57,7 @@ if not datasets.empty:
     metrics.update_max_values(numericalRange)
 
 # Convert maximum values to integers and use them directly from the metrics object
-max_features = int(metrics.max_number_of_features)
+maxi_features = int(metrics.max_number_of_features)
 max_numeric_features = int(metrics.max_number_of_numeric_features)
 max_categorical_features = int(metrics.max_number_of_symbolic_features)
 max_instances = int(metrics.max_number_of_instances)
@@ -66,7 +65,7 @@ maxDataset = len(datasets)
 
 def create_statistics_figure(filtered_info):
     """
-    Create a statistics figure based on the filtered dataset information.
+    Create a statistics figure based on the filtered dataset information. (DS)
 
     Args:
         filtered_info (list): A list of dictionaries containing information about filtered datasets.
@@ -100,7 +99,6 @@ def create_statistics_figure(filtered_info):
     )
     return fig
 
-
 @app.callback(
     [
         Output('list_group', 'children'),
@@ -128,6 +126,9 @@ def create_statistics_figure(filtered_info):
 def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points,
                            min_features, max_features, min_numerical_features, max_numerical_features,
                            min_categorical_features, max_categorical_features, limit, current_page_text):
+    # (FM)
+    #TODO aus Overleafe entfernen von Dennis
+
     global filtered_data
 
     # Determine which input triggered the callback
@@ -147,7 +148,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     # Example call to the modified check_input_ranges function
     valid, messages = check_input_ranges(
-        ((min_features, max_features), 'Features range', max_features),
+        ((min_features, max_features), 'Features range', maxi_features),
         ((min_numerical_features, max_numerical_features), 'Numerical Features range', max_numeric_features),
         ((min_categorical_features, max_categorical_features), 'Categorical Features range', max_categorical_features),
         ((min_data_points, max_data_points), 'Data Points range', max_instances)
@@ -241,7 +242,7 @@ categorical_features = ['categorical_feature1', 'categorical_feature2']
 )
 def update_histogram(active_cell, table_data):
     """
-    Callback function to update the feature histogram based on user selection.
+    Callback function to update the feature histogram based on user selection. (DS)
 
     Args:
         active_cell (dict): The active cell selected in the feature summary table.
@@ -298,7 +299,7 @@ def update_histogram(active_cell, table_data):
 
 def prepare_table_data_from_df(df):
     """
-    Creates a list of dictionaries for the DataTable from a DataFrame.
+    Creates a list of dictionaries for the DataTable from a DataFrame.  (DS)
 
     Args:
         df (pandas.DataFrame): The DataFrame containing the data.
@@ -321,7 +322,7 @@ def prepare_table_data_from_df(df):
 )
 def on_item_click(n_clicks, *args):
     """
-    Callback function to handle clicks on dataset items and back button.
+    Callback function to handle clicks on dataset items and back button. (DS)
 
     Args:
         n_clicks (list): List of click counts for dataset items.
@@ -424,7 +425,7 @@ def on_item_click(n_clicks, *args):
 
 def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_text, maxData):
     """
-    Callback function to update the page number and pagination controls.
+    Callback function to update the page number and pagination controls. (FM)
 
     Parameters:
         - search_clicks: Number of clicks on the search button.
@@ -480,7 +481,7 @@ def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_tex
 def parse_date(date_str):
     """
     Convert a date string to a datetime object, considering only the year, month, and day.
-    If date_str is already a datetime.date or datetime.datetime object, it is returned directly.
+    If date_str is already a datetime.date or datetime.datetime object, it is returned directly. (FM)
 
     Parameters:
         - date_str: The date string to convert or a datetime.date/datetime.datetime object.
@@ -504,7 +505,7 @@ def parse_date(date_str):
 
 def getUploadDate(dataset_id):
     """
-    Retrieves the upload date of a dataset.
+    Retrieves the upload date of a dataset. (FM)
 
     Parameters:
         - dataset_id (int): The ID of the dataset.
@@ -527,7 +528,8 @@ def getUploadDate(dataset_id):
 # TODO Probleme mit dem max Data und hinzufügen der Überprüfung von max datasets
 def check_input_ranges(*range_labels_max):
     """
-    Checks if the input ranges are valid and do not exceed the specified maximum values.
+    Checks if the input ranges are valid, do not exceed the specified maximum values,
+    and are not None due to exceeding the predefined bounds.
 
     Parameters:
         - range_labels_max (tuple): Variable number of tuples, each representing a range in the form ((min, max), label, max_allowed).
@@ -543,31 +545,33 @@ def check_input_ranges(*range_labels_max):
     for index, (range_tuple, label, max_allowed) in enumerate(range_labels_max):
         # Check if the range is non-None and unpack it
         if range_tuple is not None:
-            # Unpack range_tuple and ensure both values are not None
-            min_val, max_val = (range_tuple[0] if range_tuple[0] is not None else 0,
-                                range_tuple[1] if range_tuple[1] is not None else 0)
+            min_val, max_val = range_tuple
 
-            # Check if the range is valid
-            if min_val > max_val:
+            # Check if min_val or max_val are None, which indicates they're out of the allowed range
+            if min_val is None:
                 valid = False
-                messages.append(
-                    f"Error in {label}: Minimum value ({min_val}) is greater than maximum value ({max_val}).")
+                messages.append(f"Error in {label}: Minimum value is missing or below the allowed range.")
+            if max_val is None:
+                valid = False
+                messages.append(f"Error in {label}: Maximum value is missing or above the allowed maximum of {max_allowed}.")
 
-            # Check if max_allowed is not None and if the max_val does not exceed the max_allowed
-            if max_allowed is not None and max_val > max_allowed:
-                valid = False
-                messages.append(
-                    f"Error in {label}: Maximum value ({max_val}) exceeds the allowed maximum of {max_allowed}.")
-            elif max_allowed is None:  # Handle the case where max_allowed is None if necessary
-                # You can add custom logic here, for example, set valid to False, or ignore this case.
-                pass  # Currently does nothing, adjust based on your needs
+            # If both values are not None, check if they are within the allowed range
+            if min_val is not None and max_val is not None:
+                if min_val > max_val:
+                    valid = False
+                    messages.append(f"Error in {label}: Minimum value ({min_val}) is greater than maximum value ({max_val}).")
+                if max_val > max_allowed:
+                    valid = False
+                    messages.append(f"Error in {label}: Maximum value ({max_val}) exceeds the allowed maximum of {max_allowed}.")
 
     return valid, messages
+
+
 
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
     """
-    Processes datasets based on specified filters.
+    Processes datasets based on specified filters. (FM)
 
     Parameters:
         - start_date (str): Start date for filtering datasets.
@@ -657,7 +661,7 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
 )
 def toggle_interval(n_clicks, disabled):
     """
-    Callback function to toggle the interval component based on search button clicks.
+    Callback function to toggle the interval component based on search button clicks. (FM)
 
     Args:
         n_clicks (int): The number of clicks on the search button.
@@ -678,7 +682,7 @@ def toggle_interval(n_clicks, disabled):
 )
 def update_output(value):
     """
-    Callback function to update the displayed range of selected numerical features.
+    Callback function to update the displayed range of selected numerical features. (FM)
 
     Args:
         value (tuple): The selected range of numerical features.
@@ -696,7 +700,7 @@ def update_output(value):
 )
 def update_output_features(value):
     """
-    Callback function to update the displayed range of selected total features.
+    Callback function to update the displayed range of selected total features. (FM)
 
     Args:
         value (tuple): The selected range of total features.
@@ -714,7 +718,7 @@ def update_output_features(value):
 )
 def update_output_categorical_features(value):
     """
-    Callback function to update the displayed range of selected categorical features.
+    Callback function to update the displayed range of selected categorical features. (FM)
 
     Args:
         value (tuple): The selected range of categorical features.
@@ -732,7 +736,7 @@ def update_output_categorical_features(value):
 )
 def update_output_data_points(value):
     """
-    Callback function to update the displayed range of selected data points.
+    Callback function to update the displayed range of selected data points. (FM)
 
     Args:
         value (tuple): The selected range of data points.
@@ -745,7 +749,7 @@ def update_output_data_points(value):
 # Check if the cache folder exists
 def check_cache_folder_exists():
     """
-    Checks if the cache folder exists.
+    Checks if the cache folder exists. (FM)
 
     Returns:
         bool: True if the cache folder exists, False otherwise.
@@ -754,6 +758,7 @@ def check_cache_folder_exists():
 
 # Funktion zum Cachen aller Datensätze
 def cache_all_openml_datasets():
+    # (FM)
     datasets = openml.datasets.list_datasets()
     total_datasets = len(datasets)
     for i, (_, dataset) in enumerate(datasets.items(), 1):
@@ -785,7 +790,7 @@ def cache_all_openml_datasets():
 )
 def update_progress_visibility_and_filter_visibility(n, cache_status, loading_style, filter_style):
     """
-    Updates the progress bar visibility and the visibility of the loading section.
+    Updates the progress bar visibility and the visibility of the loading section. (FM)
 
     Args:
         n (int): Number of intervals.
@@ -850,10 +855,9 @@ def update_progress_visibility_and_filter_visibility(n, cache_status, loading_st
     prevent_initial_call=True  # Prevents the modal from being displayed on the first load of the page
 )
 
-
 def download_set(n_clicks, store_data):
     """
-    Callback function to handle dataset download.
+    Callback function to handle dataset download. (FM)
 
     Args:
         n_clicks (int): Number of clicks on the download button.
@@ -897,7 +901,7 @@ def download_set(n_clicks, store_data):
 )
 def close_modal(n_clicks, is_open):
     """
-    Callback function to close the modal.
+    Callback function to close the modal. (FM)
 
     Args:
         n_clicks (int): Number of clicks on the close button.
@@ -910,6 +914,7 @@ def close_modal(n_clicks, is_open):
         return False
     return is_open
 
+# (FM)
 modal = dbc.Modal(
     [
         dbc.ModalHeader(dbc.ModalTitle("Download Complete")),
@@ -922,6 +927,7 @@ modal = dbc.Modal(
     is_open=False,  # This ensures the modal is not shown initially
 )
 
+# (FM)
 error_modal = dbc.Modal(
     [
         dbc.ModalHeader(dbc.ModalTitle("Error: Invalid Input")),
@@ -939,7 +945,7 @@ error_modal = dbc.Modal(
 
 def download_dataset(dataset_id=None):
     """
-    Downloads a dataset based on the provided dataset_id.
+    Downloads a dataset based on the provided dataset_id. (DS)
 
     Args:
         dataset_id (int): The ID of the dataset to download.
@@ -981,7 +987,7 @@ def download_dataset(dataset_id=None):
 
 def create_data_completeness_graph(df):
     """
-    Creates a donut chart to visualize the completeness of the provided DataFrame.
+    Creates a donut chart to visualize the completeness of the provided DataFrame. (DS)
 
     Args:
         df (DataFrame): DataFrame containing the dataset.
@@ -1002,7 +1008,7 @@ def create_data_completeness_graph(df):
 
 def format_number(value):
     """
-    Formats a number with up to four decimal places, but removes trailing zeros.
+    Formats a number with up to four decimal places, but removes trailing zeros. (DS)
 
     Args:
         value: The number to format.
@@ -1022,7 +1028,7 @@ def format_number(value):
 
 def create_feature_summary_table(df):
     """
-    Creates a summary table containing descriptive statistics for the provided DataFrame.
+    Creates a summary table containing descriptive statistics for the provided DataFrame. (DS)
 
     Args:
         df (DataFrame): DataFrame containing the dataset.
@@ -1055,7 +1061,7 @@ def create_feature_summary_table(df):
 
     return summary_records, columns
 
-# App Layout
+# App Layout (FM)
 app.layout = dbc.Container([
     # Loading section displayed at app start
     html.Div(
@@ -1182,7 +1188,7 @@ app.layout = dbc.Container([
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Min"),
                                             dbc.Input(id='min_features', type='number', value=0, min=0,
-                                                      max=max_features),
+                                                      max=maxi_features),
                                         ]),
                                         width=6,
                                     ),
@@ -1190,12 +1196,12 @@ app.layout = dbc.Container([
                                         dbc.InputGroup([
                                             dbc.InputGroupText("Max"),
                                             dbc.Input(id='max_features', type='number', value=50, min=0,
-                                                      max=max_features),
+                                                      max=maxi_features),
                                         ]),
                                         width=6,
                                     ),
                                 ]),
-                                dbc.Tooltip(f"Previous max range was 0 to {max_features}.", target="max_features"),
+                                dbc.Tooltip(f"Previous max range was 0 to {maxi_features}.", target="max_features"),
                                 html.Div(
                                     id='output_features',
                                     style={
