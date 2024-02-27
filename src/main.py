@@ -131,14 +131,11 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
 
     global filtered_data
 
-    # Determine which input triggered the callback
-    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-
-    # If the search button wasn't clicked, don't update the search results or errors
-    if triggered_id != 'search_button':
-        raise PreventUpdate
-
     list_group_items = []
+    statistics_style = {'display': 'none'}
+
+    if n_clicks is None:
+        return list_group_items, go.Figure(), statistics_style, False, ""
 
     # Create ranges from min and max values for validation
     features_range = (min_features, max_features)
@@ -151,7 +148,8 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
         ((min_features, max_features), 'Features range', maxi_features),
         ((min_numerical_features, max_numerical_features), 'Numerical Features range', max_numeric_features),
         ((min_categorical_features, max_categorical_features), 'Categorical Features range', max_categorical_features),
-        ((min_data_points, max_data_points), 'Data Points range', max_instances)
+        ((min_data_points, max_data_points), 'Data Points range', max_instances),
+        ((1, limit), 'Max Datasets', maxDataset)
     )
 
     # If the validation fails, return error message and open modal
@@ -423,6 +421,7 @@ def on_item_click(n_clicks, *args):
     ]
 )
 
+# TODO Seitenzahl richtig anzeigen
 def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_text, maxData):
     """
     Callback function to update the page number and pagination controls. (FM)
@@ -445,12 +444,10 @@ def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_tex
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
 
-    # Initialize the maximum data count if not provided
-    maxData = maxData or 100  # Assume 100 as default value if nothing is provided
-
-    # Calculate the total number of pages based on maxData
+    # Initialisieren Sie die Anzahl der maximalen Daten, falls nicht angegeben
+    maxData = maxData or 100  # Angenommen, 100 als Standardwert, falls nichts eingegeben wird
+    # Berechnen Sie die Gesamtzahl der Seiten basierend auf maxData
     total_pages = math.ceil(maxData / ITEMS_PER_PAGE)
-
     # Determine the current page based on the triggered event
     if 'search_button' in triggered_id:
         current_page = 1  # Reset to the first page if search is triggered
@@ -525,7 +522,6 @@ def getUploadDate(dataset_id):
         print(f"Error on Dataset: {dataset_id}: {e}")
         return None
 
-# TODO Probleme mit dem max Data und hinzufügen der Überprüfung von max datasets
 def check_input_ranges(*range_labels_max):
     """
     Checks if the input ranges are valid, do not exceed the specified maximum values,
@@ -756,18 +752,6 @@ def check_cache_folder_exists():
     """
     return os.path.exists('cache')  # Modify the path to your cache folder as needed
 
-# Funktion zum Cachen aller Datensätze
-def cache_all_openml_datasets():
-    # (FM)
-    datasets = openml.datasets.list_datasets()
-    total_datasets = len(datasets)
-    for i, (_, dataset) in enumerate(datasets.items(), 1):
-        print(f"Caching dataset {i}/{total_datasets}: {dataset.name}...")
-        openml.datasets.get_dataset(dataset.dataset_id)
-        # Fortschritt aktualisieren
-        progress = i / total_datasets * 100
-        yield progress
-
 #TODO Progressbar/init Cache implementieren!!!!
 
 # Callback function for updating the progress bar visibility and the visibility of the loading section
@@ -781,63 +765,43 @@ def cache_all_openml_datasets():
     ],
     [
         Input('progress_interval', 'n_intervals'),
-        Input('cache-status-store', 'data')  # Use the stored cache status information
     ],
     [
         State('loading-section', 'style'),  # State of the current loading section style
-        State('filter-section', 'style')  # State of the current filter section style
+        State('filter-section', 'style'),  # State of the current filter section style
+        State('cache-status-store', 'data')
     ], prevent_initial_call=True
 )
-def update_progress_visibility_and_filter_visibility(n, cache_status, loading_style, filter_style):
-    """
-    Updates the progress bar visibility and the visibility of the loading section. (FM)
+def update_progress(n, loading_section_style, filter_section_style, cache_status):
+    new_cache_status = cache_status.copy()  # Kopie des Status, um Änderungen vorzunehmen
+    # Get the list of dataset IDs
+    dataset_ids = datasets['did'].tolist()
 
-    Args:
-        n (int): Number of intervals.
-        cache_status (dict): Cache status information.
-        loading_style (dict): Current style of the loading section.
-        filter_style (dict): Current style of the filter section.
+    total_datasets = len(dataset_ids)
+    processed_datasets = new_cache_status.get('processed', 0)
 
-    Returns:
-        new_value (int): New value for the progress bar.
-        label (str): New label for the progress bar.
-        new_loading_style (dict): New style for the loading section.
-        new_filter_style (dict): New style for the filter section.
-        new_cache_status (dict): New cache status information.
-    """
-    # Check if the cache folder exists
-    cache_exists = check_cache_folder_exists()
+    for dataset_id in dataset_ids[processed_datasets:processed_datasets + 5]:  # Verarbeitet bis zu 5 Datasets pro Aufruf
+        try:
+            # Versuchen, das Dataset zu cachen (ersetzen Sie dies durch Ihren Caching-Mechanismus)
+            dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
+                                                  download_features_meta_data=False)
+            # Aktualisieren Sie den Cache-Status, wenn erforderlich
+            processed_datasets += 1
+        except Exception as e:
+            print(f"Error caching dataset {dataset_id}: {e}")
+            # Behandeln Sie Fehler, z.B. durch Protokollierung oder Wiederholung später
 
-    # Initialize the output values
-    new_value = 0
-    new_loading_style = loading_style.copy()
-    new_filter_style = filter_style.copy()
-    new_cache_status = cache_status if cache_status else {'updated': False}
+    new_cache_status['processed'] = processed_datasets
+    progress = int((processed_datasets / total_datasets) * 100) if total_datasets > 0 else 100
 
-    # When the program restarts, if cache exists and no update has been signaled
-    if cache_exists and n == 0:
-        new_value = 100
-        new_loading_style['display'] = 'none'
-        new_filter_style['display'] = 'block'
-        new_cache_status['updated'] = True
-        return new_value, f"{new_value}%", new_loading_style, new_filter_style, new_cache_status
-    elif cache_exists and new_cache_status.get('updated'):
-        # If the cache exists and has already been updated, prevent an update
-        raise PreventUpdate
-
-    # If the cache folder exists, but the action has not yet been performed
-    if cache_exists and not new_cache_status.get('updated'):
-        new_value = 100
-        new_loading_style['display'] = 'none'
-        new_filter_style['display'] = 'block'
-        new_cache_status['updated'] = True  # Mark that the action has been performed
-    elif not cache_exists:
-        # Logic for when the cache does not exist
-        new_value = min((n * 10), 100)
-        new_loading_style['display'] = 'block' if new_value < 100 else 'none'
-        new_filter_style['display'] = 'none' if new_value < 100 else 'block'
-
-    return new_value, f"{new_value}%", new_loading_style, new_filter_style, new_cache_status
+    if processed_datasets >= total_datasets:
+        # Alle Datasets wurden verarbeitet
+        new_cache_status['processing'] = False
+        return progress, f"{progress}%", {'display': 'none'}, {'display': 'block'}, new_cache_status
+    else:
+        # Es gibt noch mehr Datasets zu verarbeiten
+        new_cache_status['processing'] = True
+        return progress, f"{progress}%", {'display': 'block'}, {'display': 'none'}, new_cache_status
 
 
 # Update your callback function
@@ -1094,7 +1058,7 @@ app.layout = dbc.Container([
                                      style={"height": "30px"}),
                         html.P("The data must be pre-cached, which can take 5-10 minutes. Thank you for your patience.",
                                className="text-center mt-3"),
-                        dcc.Store(id='cache-status-store', storage_type='session'),
+                        dcc.Store(id='cache-status-store', data={'processed': 0, 'processing': False}),
                         dcc.Interval(id='progress_interval', interval=1000, n_intervals=0)
                         # Timer set to tick every second
                     ],
