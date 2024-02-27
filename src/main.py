@@ -1,6 +1,8 @@
 # Libraries Imports
 import math
 import os
+from pathlib import Path
+
 from dash import dash_table, callback_context
 import numpy as np
 import pandas as pd
@@ -196,7 +198,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
                         html.Small(
                             f"Categorical Features: {int(dataset.get('categorical_features', 0))}, Numeric Features: {int(dataset.get('numeric_features', 0))}",
                             className="text-secondary d-block"),
-                        html.Small(f"Upload Date: {dataset['upload'][:10]}", className="text-secondary d-block")
+                        html.Small(f"Upload Date: {dataset['upload'].strftime('%Y-%m-%d')}", className="text-secondary d-block")
                     ], className="mt-2")
                 ], style={'flex': '1'}),
             ], id=item_id, n_clicks=0, style={'cursor': 'pointer', 'text-decoration': 'none', 'color': 'inherit'}),
@@ -474,53 +476,20 @@ def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_tex
 
     return page_number_text, page_style, prev_button_style, next_button_style, container_style
 
-# Date Conversion
-def parse_date(date_str):
-    """
-    Convert a date string to a datetime object, considering only the year, month, and day.
-    If date_str is already a datetime.date or datetime.datetime object, it is returned directly. (FM)
+# Convert string dates to datetime objects for comparison
+def parse_date(date_string):
+    if isinstance(date_string, datetime):
+        # If date_string is already a datetime object, return it directly
+        return date_string
 
-    Parameters:
-        - date_str: The date string to convert or a datetime.date/datetime.datetime object.
+    formats = ["%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"]   # Keep your existing formats
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_string, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"time data {date_string!r} does not match any of the expected formats: {formats}")
 
-    Returns:
-        - A datetime.date object or None if date_str is None.
-    """
-    if date_str:
-        if isinstance(date_str, datetime):
-            return date_str.date()
-        elif isinstance(date_str, date):
-            return date_str
-        else:
-            try:
-                # Extract only the year, month, and day
-                parsed_date = datetime.strptime(date_str.split('T')[0], '%Y-%m-%d')
-                return parsed_date.date()
-            except ValueError as e:
-                print(f"Error while parsing Date '{date_str}': {e}")
-    return None
-
-def getUploadDate(dataset_id):
-    """
-    Retrieves the upload date of a dataset. (FM)
-
-    Parameters:
-        - dataset_id (int): The ID of the dataset.
-
-    Returns:
-        - upload_date (str or None): The upload date of the dataset if available, else None.
-    """
-    try:
-        # Retrieve the dataset information without downloading data, qualities, or features metadata
-        dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
-                                              download_features_meta_data=False)
-
-        # Return the upload date of the dataset
-        return dataset.upload_date
-    except Exception as e:
-        # Print an error message if there's an exception during dataset retrieval
-        print(f"Error on Dataset: {dataset_id}: {e}")
-        return None
 
 def check_input_ranges(*range_labels_max):
     """
@@ -563,7 +532,6 @@ def check_input_ranges(*range_labels_max):
     return valid, messages
 
 
-
 def processData(start_date=None, end_date=None, features_range=None, numerical_features_range=None,
                 categorical_features_range=None, data_points_range=None, limit=None):
     """
@@ -602,50 +570,50 @@ def processData(start_date=None, end_date=None, features_range=None, numerical_f
         if count >= limit:
             break
 
-        # Get the upload date of the dataset
-        upload_date = getUploadDate(dataset_ids[dataset_id])
+        # Retrieve the dataset information without downloading data, qualities, or features metadata
+        dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
+                                                  download_features_meta_data=False)
+        upload_date = dataset.upload_date
 
-        # Parse start and end dates
-        start_date = parse_date(start_date)
-        end_date = parse_date(end_date)
+        # Assuming 'start_date' and 'end_date' are strings initially:
+        start_date = parse_date(start_date) if start_date else None
+        end_date = parse_date(end_date) if end_date else None
+        upload_date = parse_date(upload_date) if upload_date else None
 
-        # Continue to the next dataset if the upload date is not available
-        if not upload_date:
-            continue
+        # Inside your dataset loop
+        if upload_date:  # This check is now for a datetime object
+            # Ensure that upload_date is compared as datetime object
+            if ((not start_date or start_date <= upload_date) and
+                    (not end_date or upload_date <= end_date)):
 
-        # Parse the dataset date
-        dataset_date = parse_date(upload_date)
+                # Retrieve dataset information from the dataset list
+                num_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfFeatures'].iloc[0]
+                num_numeric_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfNumericFeatures'].iloc[0]
+                num_categorical_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfSymbolicFeatures'].iloc[0]
+                num_instances = datasets.loc[datasets['did'] == dataset_id, 'NumberOfInstances'].iloc[0]
+                name = datasets.loc[datasets['did'] == dataset_id, 'name'].iloc[0]
 
-        # Apply filtering conditions
-        if ((not start_date or start_date <= dataset_date) and
-                (not end_date or end_date >= dataset_date)):
-
-            # Retrieve dataset information from the dataset list
-            num_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfFeatures'].iloc[0]
-            num_numeric_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfNumericFeatures'].iloc[0]
-            num_categorical_features = datasets.loc[datasets['did'] == dataset_id, 'NumberOfSymbolicFeatures'].iloc[0]
-            num_instances = datasets.loc[datasets['did'] == dataset_id, 'NumberOfInstances'].iloc[0]
-            name = datasets.loc[datasets['did'] == dataset_id, 'name'].iloc[0]
-
-            # Check if the dataset satisfies all filtering criteria
-            if ((not features_range or (features_range[0] <= num_features <= features_range[1])) and
-                    (not numerical_features_range or (
-                            numerical_features_range[0] <= num_numeric_features <= numerical_features_range[1])) and
-                    (not categorical_features_range or (
-                            categorical_features_range[0] <= num_categorical_features <= categorical_features_range[
-                        1])) and
-                    (not data_points_range or (data_points_range[0] <= num_instances <= data_points_range[1]))):
-                # Append the dataset information to the filtered datasets list
-                filtered_datasets.append({
-                    'id': dataset_id,
-                    'name': name,
-                    'instances': num_instances,
-                    'features': num_features,
-                    'numeric_features': num_numeric_features,
-                    'categorical_features': num_categorical_features,
-                    'upload': upload_date
-                })
-                count += 1
+                # Check if the dataset satisfies all filtering criteria
+                if ((not features_range or (features_range[0] <= num_features <= features_range[1])) and
+                        (not numerical_features_range or (
+                                numerical_features_range[0] <= num_numeric_features <= numerical_features_range[1])) and
+                        (not categorical_features_range or (
+                                categorical_features_range[0] <= num_categorical_features <= categorical_features_range[
+                            1])) and
+                        (not data_points_range or (data_points_range[0] <= num_instances <= data_points_range[1]))):
+                    # Append the dataset information to the filtered datasets list
+                    filtered_datasets.append({
+                        'id': dataset_id,
+                        'name': name,
+                        'instances': num_instances,
+                        'features': num_features,
+                        'numeric_features': num_numeric_features,
+                        'categorical_features': num_categorical_features,
+                        'upload': upload_date
+                    })
+                    count += 1
+            else:
+                continue
 
     return filtered_datasets
 
@@ -773,12 +741,25 @@ def check_cache_folder_exists():
     ], prevent_initial_call=True
 )
 def update_progress(n, loading_section_style, filter_section_style, cache_status):
-    new_cache_status = cache_status.copy()  # Kopie des Status, um Änderungen vorzunehmen
+    current_working_directory = Path(os.getcwd())
+    cache_directory_path = Path('/cache/org/openml/www/datasets')
+    new_cache_status = cache_status.copy()
+
+    # Relativen Pfad zum Cache-Verzeichnis erstellen
+    cache_directory_path = current_working_directory / 'cache/org/openml/www/datasets'
+
     # Get the list of dataset IDs
     dataset_ids = datasets['did'].tolist()
 
     total_datasets = len(dataset_ids)
     processed_datasets = new_cache_status.get('processed', 0)
+    # Kopie des Status, um Änderungen vorzunehmen
+
+    # Zählen, wie viele Ordner sich im Cache-Ordner befinden
+    if cache_directory_path.is_dir():
+        # Nutzen von pathlib
+        new_cache_status['processing'] = False
+        return 100, "100%", {'display': 'none'}, {'display': 'block'}, new_cache_status
 
     for dataset_id in dataset_ids[processed_datasets:processed_datasets + 5]:  # Verarbeitet bis zu 5 Datasets pro Aufruf
         try:
@@ -1078,7 +1059,7 @@ app.layout = dbc.Container([
         dcc.Store(id='dataset-store', storage_type='session'),
     ]),
     # Filter section for filtering data
-    html.Div(id='filter-section', style={'display': 'block'}, children=[
+    html.Div(id='filter-section', style={'display': 'None'}, children=[
         dbc.Card([
             dbc.CardHeader("Filter"),
             dbc.CardBody([
