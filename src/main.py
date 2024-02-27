@@ -956,7 +956,7 @@ import pandas as pd
 def create_data_completeness_graph(df):
     """
     Creates a donut chart to visualize the completeness of the provided DataFrame, 
-    including a hover feature to show missing features. (DS)
+    including a hover feature to show missing features and total missing data fields. (DS)
 
     Args:
         df (DataFrame): DataFrame containing the dataset.
@@ -977,8 +977,11 @@ def create_data_completeness_graph(df):
     missing_features_info = "<br>".join([f"{feature}: {missing} missing" 
                                          for feature, missing in missing_features.items()])
 
+    # Adding total missing data fields information to the hover text
+    missing_features_summary = f"Total missing data fields: {missing_values}<br>{missing_features_info}"
+
     # Configuring hover text for the 'Missing data fields' segment
-    hover_text = [None, missing_features_info]  # No hover info for 'Complete data'
+    hover_text = [None, missing_features_summary]  # No hover info for 'Complete data'
 
     fig = go.Figure(data=[go.Pie(labels=['Complete data', 'Missing data fields'],
                                  values=[complete_values, missing_values], hole=.6,
@@ -986,6 +989,7 @@ def create_data_completeness_graph(df):
     fig.update_layout(title_text="Completeness of the dataset", title_x=0.5)
 
     return fig
+
 
 
 def format_number(value):
