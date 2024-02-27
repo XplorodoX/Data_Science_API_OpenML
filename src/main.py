@@ -985,9 +985,14 @@ def download_dataset(dataset_id=None):
     return df, dataset_info
 
 
+import numpy as np
+import plotly.graph_objs as go
+import pandas as pd
+
 def create_data_completeness_graph(df):
     """
-    Creates a donut chart to visualize the completeness of the provided DataFrame. (DS)
+    Creates a donut chart to visualize the completeness of the provided DataFrame, 
+    including a hover feature to show missing features. (DS)
 
     Args:
         df (DataFrame): DataFrame containing the dataset.
@@ -997,12 +1002,25 @@ def create_data_completeness_graph(df):
     """
     if df.empty:
         return go.Figure()  # Returns an empty figure if df is empty
-    total_values = np.prod(df.shape)  # Use np.prod() instead of np.product()
+
+    total_values = np.prod(df.shape)
     missing_values = df.isnull().sum().sum()
     complete_values = total_values - missing_values
+
+    # Identifying missing features and their missing value count
+    missing_info = df.isnull().sum()
+    missing_features = missing_info[missing_info > 0]
+    missing_features_info = "<br>".join([f"{feature}: {missing} missing" 
+                                         for feature, missing in missing_features.items()])
+
+    # Configuring hover text for the 'Missing data fields' segment
+    hover_text = [None, missing_features_info]  # No hover info for 'Complete data'
+
     fig = go.Figure(data=[go.Pie(labels=['Complete data', 'Missing data fields'],
-                                 values=[complete_values, missing_values], hole=.6)])
+                                 values=[complete_values, missing_values], hole=.6,
+                                 hoverinfo='label+percent+text', hovertext=hover_text)])
     fig.update_layout(title_text="Completeness of the dataset", title_x=0.5)
+
     return fig
 
 
