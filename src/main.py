@@ -1005,7 +1005,12 @@ def create_feature_summary_table(df):
     """
     if df.empty:
         return [], []  # Returns empty values if df is empty
-
+    
+    # Convert sparse columns to dense
+    for col in df.columns:
+        if isinstance(df[col].dtype, pd.SparseDtype):
+            df[col] = df[col].sparse.to_dense()
+            
     # Calculate descriptive statistics
     summary = df.describe(percentiles=[.25, .5, .75, .97, .997], include='all').transpose()
 
