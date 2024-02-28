@@ -2,7 +2,6 @@
 import math
 import os
 from pathlib import Path
-
 from dash import dash_table, callback_context
 import numpy as np
 import pandas as pd
@@ -129,8 +128,6 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
                            min_features, max_features, min_numerical_features, max_numerical_features,
                            min_categorical_features, max_categorical_features, limit, current_page_text):
     # (FM)
-    #TODO aus Overleafe entfernen von Dennis
-
     global filtered_data
 
     list_group_items = []
@@ -422,8 +419,7 @@ def on_item_click(n_clicks, *args):
         State('input_max_datasets', 'value')
     ]
 )
-
-# TODO Seitenzahl richtig anzeigen
+# TODO Fehler mit Seiten Nummer beheben!!
 def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_text, maxData):
     """
     Callback function to update the page number and pagination controls. (FM)
@@ -718,11 +714,8 @@ def check_cache_folder_exists():
     Returns:
         bool: True if the cache folder exists, False otherwise.
     """
-    return os.path.exists('cache')  # Modify the path to your cache folder as needed
+    return os.path.exists('../cache')  # Modify the path to your cache folder as needed
 
-#TODO Progressbar/init Cache implementieren!!!!
-
-# Callback function for updating the progress bar visibility and the visibility of the loading section
 @app.callback(
     [
         Output('progress_bar', 'value'),
@@ -737,53 +730,48 @@ def check_cache_folder_exists():
     [
         State('loading-section', 'style'),  # State of the current loading section style
         State('filter-section', 'style'),  # State of the current filter section style
-        State('cache-status-store', 'data')
-    ], prevent_initial_call=True
+        State('cache-status-store', 'data')  # Current cache status
+    ],
+    prevent_initial_call=True
 )
 def update_progress(n, loading_section_style, filter_section_style, cache_status):
+    # Vorbereitungen und Setup
     current_working_directory = Path(os.getcwd())
-    cache_directory_path = Path('/cache/org/openml/www/datasets')
-    new_cache_status = cache_status.copy()
-
-    # Relativen Pfad zum Cache-Verzeichnis erstellen
     cache_directory_path = current_working_directory / 'cache/org/openml/www/datasets'
-
-    # Get the list of dataset IDs
-    dataset_ids = datasets['did'].tolist()
-
+    new_cache_status = cache_status.copy()
+    dataset_ids = datasets['did'].tolist()  # Annahme, dass datasets irgendwo definiert wird
     total_datasets = len(dataset_ids)
     processed_datasets = new_cache_status.get('processed', 0)
-    # Kopie des Status, um Änderungen vorzunehmen
+    cache_directory_count = sum(1 for _ in cache_directory_path.iterdir()) if cache_directory_path.is_dir() else 0
+    tolerance = 60  # Definieren eines Toleranzbereichs
 
-    # Zählen, wie viele Ordner sich im Cache-Ordner befinden
-    if cache_directory_path.is_dir():
-        # Nutzen von pathlib
-        new_cache_status['processing'] = False
-        return 100, "100%", {'display': 'none'}, {'display': 'block'}, new_cache_status
-
-    for dataset_id in dataset_ids[processed_datasets:processed_datasets + 5]:  # Verarbeitet bis zu 5 Datasets pro Aufruf
-        try:
-            # Versuchen, das Dataset zu cachen (ersetzen Sie dies durch Ihren Caching-Mechanismus)
-            dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
-                                                  download_features_meta_data=False)
-            # Aktualisieren Sie den Cache-Status, wenn erforderlich
-            processed_datasets += 1
-        except Exception as e:
-            print(f"Error caching dataset {dataset_id}: {e}")
-            # Behandeln Sie Fehler, z.B. durch Protokollierung oder Wiederholung später
-
-    new_cache_status['processed'] = processed_datasets
-    progress = int((processed_datasets / total_datasets) * 100) if total_datasets > 0 else 100
-
-    if processed_datasets >= total_datasets:
-        # Alle Datasets wurden verarbeitet
-        new_cache_status['processing'] = False
-        return progress, f"{progress}%", {'display': 'none'}, {'display': 'block'}, new_cache_status
-    else:
-        # Es gibt noch mehr Datasets zu verarbeiten
+    # Überprüfen der Cache-Verhältnisse
+    if cache_directory_count == 0 and processed_datasets == 0:  # Überprüft, ob der Cache ursprünglich leer ist
+        new_cache_status['originally_empty'] = True
+    if abs(cache_directory_count - total_datasets) > tolerance:
         new_cache_status['processing'] = True
-        return progress, f"{progress}%", {'display': 'block'}, {'display': 'none'}, new_cache_status
+    else:
+        new_cache_status['processing'] = False
 
+    # Wenn der Cache ursprünglich leer war und jetzt nicht mehr verarbeitet wird
+    if new_cache_status.get('originally_empty', False) and not new_cache_status.get('processing', False):
+        new_cache_status['originally_empty'] = False  # Zurücksetzen, damit dies nicht wiederholt ausgelöst wird
+        return 100, "100%", {'display': 'none'}, {'display': 'block'}, new_cache_status
+    elif new_cache_status.get('processing', True):
+        # Verarbeitung der Datasets, falls erforderlich
+        for dataset_id in dataset_ids[processed_datasets:processed_datasets + 5]:  # Verarbeitet bis zu 5 Datasets pro Aufruf
+            try:
+                # Versuchen, das Dataset zu cachen
+                dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
+                                                      download_features_meta_data=False)
+                processed_datasets += 1  # Erfolgreiche Verarbeitung
+            except Exception as e:
+                print(f"Error caching dataset {dataset_id}: {e}")
+        new_cache_status['processed'] = processed_datasets
+        progress = int((processed_datasets / total_datasets) * 100) if total_datasets > 0 else 100
+        return progress, f"{progress}%", {'display': 'block'}, {'display': 'none'}, new_cache_status
+    else:
+        raise PreventUpdate  # Keine Änderung im Zustand
 
 # Update your callback function
 @app.callback(
@@ -929,11 +917,6 @@ def download_dataset(dataset_id=None):
 
     return df, dataset_info
 
-
-import numpy as np
-import plotly.graph_objs as go
-import pandas as pd
-
 def create_data_completeness_graph(df):
     """
     Creates a donut chart to visualize the completeness of the provided DataFrame, 
@@ -1038,7 +1021,7 @@ app.layout = dbc.Container([
     # Loading section displayed at app start
     html.Div(
         id='loading-section',
-        style={'display': 'block'},  # Initially visible
+        style={'display': 'None'},  # Initially visible
         children=[
             dbc.Row(
                 dbc.Col(
@@ -1046,7 +1029,7 @@ app.layout = dbc.Container([
                         html.H4("Data is loading, please wait...", className="text-center mb-3"),
                         dbc.Progress(id='progress_bar', value=0, striped=True, animated=True, label="0%",
                                      style={"height": "30px"}),
-                        html.P("The data must be pre-cached, which can take 5-10 minutes. Thank you for your patience.",
+                        html.P("The data must be pre-cached, which can take up to an 1 houre. Thank you for your patience.",
                                className="text-center mt-3"),
                         dcc.Store(id='cache-status-store', data={'processed': 0, 'processing': False}),
                         dcc.Interval(id='progress_interval', interval=1000, n_intervals=0)
@@ -1068,7 +1051,7 @@ app.layout = dbc.Container([
         dcc.Store(id='dataset-store', storage_type='session'),
     ]),
     # Filter section for filtering data
-    html.Div(id='filter-section', style={'display': 'None'}, children=[
+    html.Div(id='filter-section', style={'display': 'Block'}, children=[
         dbc.Card([
             dbc.CardHeader("Filter"),
             dbc.CardBody([
@@ -1272,7 +1255,6 @@ app.layout = dbc.Container([
                 ]),
             ])
         ]),
-        # TODO Spinner verbessern, laggt!
         # Spinner component to indicate data processing
         dbc.Spinner(
             children=[
