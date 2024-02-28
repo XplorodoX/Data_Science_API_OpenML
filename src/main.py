@@ -1042,11 +1042,21 @@ app.layout = dbc.Container([
         ],
         className="mt-5"
     ),
-    # Detail section displayed after data loading
     html.Div(id='detail-section', style={'display': 'none'}, children=[
         dbc.ListGroup(id='list_histogram', flush=True, className="mt-4"),
-        html.Button("Back", id='back-button', className="btn btn-secondary mt-3"),
-        html.Button("Download", id='download-button', className="btn btn-secondary mt-3"),
+
+        html.Button("Back", id='back-button', className="btn btn-primary mt-3 me-2", style={
+            'boxShadow': '0 4px 8px 0 rgba(0, 0, 0, 0.2)',
+            'transition': '0.3s',
+            'border': 'none'
+        }),
+
+        html.Button("Download", id='download-button', className="btn btn-success mt-3", style={
+            'boxShadow': '0 4px 8px 0 rgba(0, 0, 0, 0.2)',
+            'transition': '0.3s',
+            'border': 'none'
+        }),
+
         modal,
         dcc.Store(id='dataset-store', storage_type='session'),
     ]),
