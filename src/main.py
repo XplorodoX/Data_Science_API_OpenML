@@ -163,7 +163,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range,
                                 categorical_features_range, data_points_range, limit)
 
-    datasets_length = len(filtered_data)
+    datasets_length = len(filtered_data) # Update the length of the datasets for pagination
 
     # Start of the callback or function
     # Make sure 'current_page_text' is not empty and has the expected format
@@ -726,10 +726,10 @@ def check_cache_folder_exists():
 @app.callback(
     [
         Output('progress_bar', 'value'),
-        Output('progress_bar', 'label'),  # Add label output
+        Output('progress_bar', 'label'),  # Label output added to show progress percentage
         Output('loading-section', 'style'),
         Output('filter-section', 'style', allow_duplicate=True),
-        Output('cache-status-store', 'data')  # Add a new Output component
+        Output('cache-status-store', 'data')  # New Output component added for cache status
     ],
     [
         Input('progress_interval', 'n_intervals'),
@@ -742,43 +742,56 @@ def check_cache_folder_exists():
     prevent_initial_call=True
 )
 def update_progress(n, loading_section_style, filter_section_style, cache_status):
-    # Vorbereitungen und Setup
+    """
+    Updates the progress bar and cache status based on caching progress.
+
+    Args:
+        n (int): The number of interval updates.
+        loading_section_style (dict): The current style of the loading section.
+        filter_section_style (dict): The current style of the filter section.
+        cache_status (dict): The current cache status.
+
+    Returns:
+        tuple: A tuple containing updated values for the progress bar, loading section style, filter section style,
+        and cache status.
+    """
+    # Prepare and setup
     current_working_directory = Path(os.getcwd())
     cache_directory_path = current_working_directory / 'cache/org/openml/www/datasets'
     new_cache_status = cache_status.copy()
-    dataset_ids = datasets['did'].tolist()  # Annahme, dass datasets irgendwo definiert wird
+    dataset_ids = datasets['did'].tolist()  # Assumption: datasets is defined somewhere
     total_datasets = len(dataset_ids)
     processed_datasets = new_cache_status.get('processed', 0)
     cache_directory_count = sum(1 for _ in cache_directory_path.iterdir()) if cache_directory_path.is_dir() else 0
-    tolerance = 60  # Definieren eines Toleranzbereichs
+    tolerance = 60  # Define a tolerance range
 
-    # Überprüfen der Cache-Verhältnisse
-    if cache_directory_count == 0 and processed_datasets == 0:  # Überprüft, ob der Cache ursprünglich leer ist
+    # Check cache conditions
+    if cache_directory_count == 0 and processed_datasets == 0:  # Check if cache was originally empty
         new_cache_status['originally_empty'] = True
     if abs(cache_directory_count - total_datasets) > tolerance:
         new_cache_status['processing'] = True
     else:
         new_cache_status['processing'] = False
 
-    # Wenn der Cache ursprünglich leer war und jetzt nicht mehr verarbeitet wird
+    # If cache was originally empty and is not being processed anymore
     if new_cache_status.get('originally_empty', False) and not new_cache_status.get('processing', False):
-        new_cache_status['originally_empty'] = False  # Zurücksetzen, damit dies nicht wiederholt ausgelöst wird
+        new_cache_status['originally_empty'] = False  # Reset to avoid repeated triggers
         return 100, "100%", {'display': 'none'}, {'display': 'block'}, new_cache_status
     elif new_cache_status.get('processing', True):
-        # Verarbeitung der Datasets, falls erforderlich
-        for dataset_id in dataset_ids[processed_datasets:processed_datasets + 5]:  # Verarbeitet bis zu 5 Datasets pro Aufruf
+        # Process datasets if necessary
+        for dataset_id in dataset_ids[processed_datasets:processed_datasets + 5]:  # Process up to 5 datasets per call
             try:
-                # Versuchen, das Dataset zu cachen
+                # Try to cache the dataset
                 dataset = openml.datasets.get_dataset(dataset_id, download_data=False, download_qualities=False,
                                                       download_features_meta_data=False)
-                processed_datasets += 1  # Erfolgreiche Verarbeitung
+                processed_datasets += 1  # Successful processing
             except Exception as e:
                 print(f"Error caching dataset {dataset_id}: {e}")
         new_cache_status['processed'] = processed_datasets
         progress = int((processed_datasets / total_datasets) * 100) if total_datasets > 0 else 100
         return progress, f"{progress}%", {'display': 'block'}, {'display': 'none'}, new_cache_status
     else:
-        raise PreventUpdate  # Keine Änderung im Zustand
+        raise PreventUpdate  # No change in state
 
 # Update your callback function
 @app.callback(
