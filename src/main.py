@@ -29,6 +29,7 @@ app = dash.Dash(__name__,
 ITEMS_PER_PAGE = 10  # <- Max number of items per page
 filtered_data = []  # All filtered data
 initial_df = pd.DataFrame()  # Initialize df here to ensure it's always defined
+datasets_length = 0  # Length of the datasets
 
 # (FM)
 class DatasetMetrics:
@@ -106,7 +107,8 @@ def create_statistics_figure(filtered_info):
         Output('statistics_figure', 'figure'),
         Output('statistics_figure', 'style'),
         Output('error-modal', 'is_open'),  # Output for opening/closing the modal
-        Output('error-invalid-range', 'children')  # Output for the error message
+        Output('error-invalid-range', 'children'),
+        Output('dataset_length_store', 'data')
     ],
     [Input('search_button', 'n_clicks'), Input('previous-page', 'n_clicks'), Input('next-page', 'n_clicks')],
     [
@@ -121,12 +123,13 @@ def create_statistics_figure(filtered_info):
         State('min_categorical_features', 'value'),
         State('max_categorical_features', 'value'),
         State('input_max_datasets', 'value'),
-        State('current-page', 'children')
+        State('current-page', 'children'),
+        State('dataset_length_store', 'data')
     ]
 )
 def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_date, min_data_points, max_data_points,
                            min_features, max_features, min_numerical_features, max_numerical_features,
-                           min_categorical_features, max_categorical_features, limit, current_page_text):
+                           min_categorical_features, max_categorical_features, limit, current_page_text, datasets_length):
     # (FM)
     global filtered_data
 
@@ -134,7 +137,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     statistics_style = {'display': 'none'}
 
     if n_clicks is None:
-        return list_group_items, go.Figure(), statistics_style, False, ""
+        return list_group_items, go.Figure(), statistics_style, False, "", datasets_length
 
     # Create ranges from min and max values for validation
     features_range = (min_features, max_features)
@@ -154,11 +157,13 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     # If the validation fails, return error message and open modal
     if not valid:
         error_message = '\n'.join(messages)  # Combine all error messages into a single string
-        return [], go.Figure(), {'display': 'none'}, True, error_message  # Use the actual error message
+        return [], go.Figure(), {'display': 'none'}, True, error_message, None  # Use the actual error message
 
     # If the inputs are valid, continue with the data processing
     filtered_data = processData(start_date, end_date, features_range, numerical_features_range,
                                 categorical_features_range, data_points_range, limit)
+
+    datasets_length = len(filtered_data)
 
     # Start of the callback or function
     # Make sure 'current_page_text' is not empty and has the expected format
@@ -215,7 +220,7 @@ def on_search_button_click(n_clicks, prev_clicks, next_clicks, start_date, end_d
     statistics_style = {'display': 'block'}
 
     # Return the normal state if there are no errors
-    return list_group_items, statistics_figure, statistics_style, False, ""  # Keep the modal closed, no error message
+    return list_group_items, statistics_figure, statistics_style, False, "", datasets_length  # Keep the modal closed, no error message
 
 @app.callback(
     Output('error-modal', 'is_open', allow_duplicate=True),
@@ -404,23 +409,24 @@ def on_item_click(n_clicks, *args):
 @app.callback(
     [
         Output('current-page', 'children'),
-        Output('current-page', 'style'),  # Controls the visibility of the page number
-        Output('previous-page', 'style'),  # Controls the visibility of the previous button
-        Output('next-page', 'style'),  # Controls the visibility of the next button
-        Output('pagination-container', 'style')  # Controls the visibility of the overall container
+        Output('current-page', 'style'),
+        Output('previous-page', 'style'),
+        Output('next-page', 'style'),
+        Output('pagination-container', 'style')
     ],
     [
         Input('search_button', 'n_clicks'),
         Input('previous-page', 'n_clicks'),
-        Input('next-page', 'n_clicks')
+        Input('next-page', 'n_clicks'),
+        Input('interval-component_page', 'n_intervals')  # Neuer Input von Interval
     ],
     [
         State('current-page', 'children'),
-        State('input_max_datasets', 'value')
+        State('input_max_datasets', 'value'),
+        State('dataset_length_store', 'data')
     ]
 )
-# TODO Fehler mit Seiten Nummer beheben!!
-def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_text, maxData):
+def update_page_number(search_clicks, prev_clicks, next_clicks, n_intervals, current_page_text, maxData, datasets_length):
     """
     Callback function to update the page number and pagination controls. (FM)
 
@@ -442,10 +448,11 @@ def update_page_number(search_clicks, prev_clicks, next_clicks, current_page_tex
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
 
-    # Initialisieren Sie die Anzahl der maximalen Daten, falls nicht angegeben
-    maxData = maxData or 100  # Angenommen, 100 als Standardwert, falls nichts eingegeben wird
-    # Berechnen Sie die Gesamtzahl der Seiten basierend auf maxData
-    total_pages = math.ceil(maxData / ITEMS_PER_PAGE)
+    # Initialisieren Sie die Anzahl der Datensätze, falls nicht angegeben
+    datasets_length = datasets_length or 0  # Angenommen, 0 als Standardwert, falls nichts eingegeben wird
+    # Berechnen Sie die Gesamtzahl der Seiten basierend auf der Anzahl der Datensätze
+    total_pages = math.ceil(datasets_length / ITEMS_PER_PAGE)
+
     # Determine the current page based on the triggered event
     if 'search_button' in triggered_id:
         current_page = 1  # Reset to the first page if search is triggered
@@ -1032,7 +1039,7 @@ app.layout = dbc.Container([
                         html.P("The data must be pre-cached, which can take up to an 1 houre. Thank you for your patience.",
                                className="text-center mt-3"),
                         dcc.Store(id='cache-status-store', data={'processed': 0, 'processing': False}),
-                        dcc.Interval(id='progress_interval', interval=1000, n_intervals=0)
+                        dcc.Interval(id='progress_interval', interval=500, n_intervals=0)
                         # Timer set to tick every second
                     ],
                     width={"size": 10, "offset": 1},
@@ -1279,8 +1286,18 @@ app.layout = dbc.Container([
         error_modal,
         dcc.Interval(id='interval-component', interval=100, n_intervals=0, disabled=True),
         html.Div(id='list-container', className="list-container mt-4"),
+        dcc.Store(
+            id='dataset_length_store',
+            data=0
+        ),
+
         # Pagination buttons
         html.Div([
+            dcc.Interval(
+                id='interval-component_page',  # Die ID, die im Callback verwendet wird
+                interval=5*100,          # in Millisekunden (5*1000ms = 5s)
+                n_intervals=0
+            ),
             dbc.Button(
                 html.Span(className="fas fa-chevron-left"),
                 id='previous-page',
