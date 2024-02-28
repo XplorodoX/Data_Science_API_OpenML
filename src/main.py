@@ -448,9 +448,9 @@ def update_page_number(search_clicks, prev_clicks, next_clicks, n_intervals, cur
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
 
-    # Initialisieren Sie die Anzahl der Datensätze, falls nicht angegeben
-    datasets_length = datasets_length or 0  # Angenommen, 0 als Standardwert, falls nichts eingegeben wird
-    # Berechnen Sie die Gesamtzahl der Seiten basierend auf der Anzahl der Datensätze
+    # Initialize the number of datasets if not specified
+    datasets_length = datasets_length or 0  # # Assuming 0 as the default value if nothing is provided
+    #Calculate the total number of pages based on the number of datasets
     total_pages = math.ceil(datasets_length / ITEMS_PER_PAGE)
 
     # Determine the current page based on the triggered event
